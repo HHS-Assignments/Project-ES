@@ -28,15 +28,13 @@ jobs:
         with:
           fetch-depth: 0  # Get full history, including tags for versioning
 
-      # Step 2: Install the Doxygen tool
-      - name: Install Doxygen and Graphviz
-        run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
-
-      # Step 3: Generate documentation with Doxygen
+      # Step 2: Generate documentation with Doxygen
       - name: Generate docs
-        run: doxygen Doxyfile  # Run Doxygen using configuration in Doxyfile
+        uses: mattnotmitt/doxygen-action@v1
+        with:
+          doxyfile-path: './Doxyfile'
 
-      # Step 4: Commit and push the generated documentation back to the repository
+      # Step 3: Commit and push the generated documentation back to the repository
       - name: Commit and push documentation
         run: |
           # Configure Git with bot identity for the commit
