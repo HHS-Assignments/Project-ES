@@ -3,6 +3,10 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# Doxygen generated documentation
+Doxygen/
+docs/
+
 # User-specific files
 *.rsuser
 *.suo
