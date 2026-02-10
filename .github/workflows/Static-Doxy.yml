@@ -6,13 +6,13 @@ on:
   push:
     branches:
       - main      # Run when code is pushed to main branch
-      - Test      # Run when code is pushed to Test branch
+      - dev      # Run when code is pushed to dev branch
   pull_request:
     types:
       - closed    # This will trigger when a PR is closed
     branches:
       - main      # Only for PRs targeting main branch
-      - Test      # Only for PRs targeting Test branch
+      - dev      # Only for PRs targeting dev branch
 
 jobs:
   build:
@@ -39,18 +39,10 @@ jobs:
         with:
           doxyfile-path: './Doxyfile'
 
-      # Step 3: Commit and push the generated documentation back to the repository
-      - name: Commit and push documentation
-        run: |
-          # Configure Git with bot identity for the commit
-          git config --local user.name 'github-actions[bot]'
-          git config --local user.email 'github-actions[bot]@users.noreply.github.com'
-
-          # Stage the documentation files for commit
-          git add ./Doxygen/
-
-          # Commit the changes (or show message if nothing to commit)
-          git commit -m "Update Doxygen documentation" || echo "No changes to commit"
-
-          # Push changes back to the branch that triggered this workflow
-          git push
+      # Step 3: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./Doxygen
+          publish_branch: gh-pages
