@@ -1,0 +1,56 @@
+# Name of the workflow as it will appear in GitHub Actions tab
+name: Generate Documentation
+
+# Define when this workflow will run
+on:
+  push:
+    branches:
+      - main      # Run when code is pushed to main branch
+      - Test      # Run when code is pushed to Test branch
+  pull_request:
+    types:
+      - closed    # This will trigger when a PR is closed
+    branches:
+      - main      # Only for PRs targeting main branch
+      - Test      # Only for PRs targeting Test branch
+
+jobs:
+  build:
+    # Only run this job when a PR is merged (not just closed) or on direct pushes
+    if: github.event.pull_request.merged == true || github.event_name == 'push'
+    # Specify the environment to run on
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository code
+      - name: Checkout code
+        uses: actions/checkout@v2  # GitHub-provided action to clone the repository
+        with:
+          fetch-depth: 0  # Get full history, including tags for versioning
+
+      # Step 2: Install the Doxygen tool
+      - name: Install Doxygen
+        run: sudo apt-get install doxygen
+
+      # Step 3: Generate documentation with Doxygen
+      - name: Generate docs
+        run: doxygen Doxyfile  # Run Doxygen using configuration in Doxyfile
+
+      # Step 4: Commit and push the generated documentation back to the repository
+      - name: Commit and push documentation
+        run: |
+          # Configure Git with bot identity for the commit
+          git config --local user.name 'github-actions[bot]'
+          git config --local user.email 'github-actions[bot]@users.noreply.github.com'
+
+          # Stage the documentation files for commit
+          git add ./Doxygen/
+
+          # Commit the changes (or show message if nothing to commit)
+          git commit -m "Update Doxygen documentation" || echo "No changes to commit"
+
+          # Push changes back to the branch that triggered this workflow
+          git push origin HEAD:${GITHUB_REF_NAME}
+        env:
+          # Use GitHub's automatically provided token for authentication
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

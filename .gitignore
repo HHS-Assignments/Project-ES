@@ -428,3 +428,6 @@ temp/
 
 # Docker secret files
 .env
+
+# Generated DoxyGen Files
+Doxygen/
