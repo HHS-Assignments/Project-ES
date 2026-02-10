@@ -20,6 +20,10 @@ jobs:
     if: github.event.pull_request.merged == true || github.event_name == 'push'
     # Specify the environment to run on
     runs-on: ubuntu-latest
+    
+    # Grant write permissions to push changes
+    permissions:
+      contents: write
 
     steps:
       # Step 1: Check out the repository code
@@ -27,6 +31,7 @@ jobs:
         uses: actions/checkout@v2  # GitHub-provided action to clone the repository
         with:
           fetch-depth: 0  # Get full history, including tags for versioning
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       # Step 2: Generate documentation with Doxygen
       - name: Generate docs
@@ -48,7 +53,4 @@ jobs:
           git commit -m "Update Doxygen documentation" || echo "No changes to commit"
 
           # Push changes back to the branch that triggered this workflow
-          git push origin HEAD:${GITHUB_REF_NAME}
-        env:
-          # Use GitHub's automatically provided token for authentication
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git push
