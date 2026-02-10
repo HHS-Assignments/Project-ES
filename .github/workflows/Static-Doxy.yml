@@ -29,8 +29,8 @@ jobs:
           fetch-depth: 0  # Get full history, including tags for versioning
 
       # Step 2: Install the Doxygen tool
-      - name: Install Doxygen
-        run: sudo apt-get install doxygen
+      - name: Install Doxygen and Graphviz
+        run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
 
       # Step 3: Generate documentation with Doxygen
       - name: Generate docs
