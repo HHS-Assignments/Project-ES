@@ -14,7 +14,6 @@ on:
       - main      # Only for PRs targeting main branch
       - dev      # Only for PRs targeting dev branch
   workflow_dispatch:  # Allows manual triggering from Actions tab
-
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
