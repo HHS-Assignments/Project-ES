@@ -1,5 +1,5 @@
 # Name of the workflow as it will appear in GitHub Actions tab
-name: Generate Documentation with Copilot AI
+name: Generate Documentation
 
 # Define when this workflow will run
 on:
@@ -9,9 +9,7 @@ on:
       - dev      # Run when code is pushed to dev branch
   pull_request:
     types:
-      - opened    # Run when PR is opened
-      - synchronize  # Run when code is pushed to PR
-      - closed    # Run when a PR is closed
+      - closed    # This will trigger when a PR is closed
     branches:
       - main      # Only for PRs targeting main branch
       - dev      # Only for PRs targeting dev branch
@@ -22,7 +20,6 @@ permissions:
   contents: read
   pages: write
   id-token: write
-  pull-requests: write
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
@@ -44,163 +41,17 @@ jobs:
         with:
           fetch-depth: 0  # Get full history, including tags for versioning
 
-      # Step 2: Add missing Doxygen comments to code
-      - name: Add Doxygen Comments to Code
-        run: |
-          #!/bin/bash
-          set -e
-          
-          echo "🔍 Scanning code files for missing Doxygen comments..."
-          
-          # Find all C/C++ files (excluding .github, Doxygen, and other directories)
-          FILES=$(find . -type f \( -name "*.c" -o -name "*.cpp" -o -name "*.h" -o -name "*.hpp" -o -name "*.ino" \) \
-            ! -path "./.git/*" \
-            ! -path "./.github/*" \
-            ! -path "./Doxygen/*" \
-            ! -path "./node_modules/*" \
-            ! -path "./.vscode/*")
-          
-          MODIFIED=0
-          COMMENTS_ADDED=0
-          
-          for file in $FILES; do
-            if [ ! -f "$file" ]; then
-              continue
-            fi
-            
-            echo "📄 Processing: $file"
-            FILE_MODIFIED=false
-            
-            # Create temporary file for modifications
-            temp_file=$(mktemp)
-            
-            # Read file and process line by line
-            while IFS= read -r line || [ -n "$line" ]; do
-              # Check if line starts with existing Doxygen comment
-              if [[ "$line" =~ ^[[:space:]]*(\/\*\*|\/\/\/|\/\/!) ]]; then
-                echo "$line" >> "$temp_file"
-                continue
-              fi
-              
-              # Check for function definition (simplified pattern)
-              if [[ "$line" =~ ^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_:*&]*[[:space:]]+[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*\([^)]*\)[[:space:]]*(\{|const|noexcept) ]]; then
-                # Extract function name
-                func_name=$(echo "$line" | sed -E 's/.*[^a-zA-Z0-9_]([a-zA-Z_][a-zA-Z0-9_]*)[[:space:]]*\(.*/\1/')
-                
-                # Check if previous line has Doxygen comment
-                if ! tail -1 "$temp_file" | grep -q "^\s*\(\*\|/\)" && ! tail -5 "$temp_file" | grep -q "^\s*/\*\*"; then
-                  # Add Doxygen comment
-                  echo "  /**" >> "$temp_file"
-                  echo "   * @brief ${func_name} function." >> "$temp_file"
-                  echo "   * @details Add detailed description here." >> "$temp_file"
-                  echo "   * @return Description of return value." >> "$temp_file"
-                  echo "   */" >> "$temp_file"
-                  
-                  ((COMMENTS_ADDED++))
-                  FILE_MODIFIED=true
-                fi
-                echo "$line" >> "$temp_file"
-                continue
-              fi
-              
-              # Check for class/struct definition
-              if [[ "$line" =~ ^[[:space:]]*(class|struct|union)[[:space:]]+([a-zA-Z_][a-zA-Z0-9_]*) ]]; then
-                class_name=$(echo "$line" | sed -E 's/.*\b(class|struct|union)\s+([a-zA-Z_][a-zA-Z0-9_]*).*/\2/')
-                
-                # Check if previous line has Doxygen comment
-                if ! tail -1 "$temp_file" | grep -q "^\s*\(\*\|/\)" && ! tail -5 "$temp_file" | grep -q "^\s*/\*\*"; then
-                  # Add Doxygen comment
-                  echo "  /**" >> "$temp_file"
-                  echo "   * @brief ${class_name} class/struct." >> "$temp_file"
-                  echo "   * @details Add class description here." >> "$temp_file"
-                  echo "   */" >> "$temp_file"
-                  
-                  ((COMMENTS_ADDED++))
-                  FILE_MODIFIED=true
-                fi
-                echo "$line" >> "$temp_file"
-                continue
-              fi
-              
-              echo "$line" >> "$temp_file"
-            done < "$file"
-            
-            # Replace original file if modified
-            if [ "$FILE_MODIFIED" = true ]; then
-              mv "$temp_file" "$file"
-              ((MODIFIED++))
-              echo "   ✅ Modified: $(($COMMENTS_ADDED)) comments added"
-            else
-              rm "$temp_file"
-            fi
-          done
-          
-          echo ""
-          echo "📊 Summary:"
-          echo "   Files modified: $MODIFIED"
-          echo "   Comments added: $COMMENTS_ADDED"
-          echo ""
-          
-          # Configure git
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          
-          # Commit changes if any
-          if [ $COMMENTS_ADDED -gt 0 ]; then
-            git add -A
-            git commit -m "docs: auto-add Doxygen comments to functions and classes
-
-- Added $COMMENTS_ADDED Doxygen comment blocks
-- Modified $MODIFIED files
-- Existing comments preserved
-- Generated by GitHub Actions workflow"
-            echo "✅ Changes committed successfully!"
-          else
-            echo "ℹ️  No new comments needed - all code properly documented!"
-          fi
-
-      # Step 3: Enable GitHub Advanced Security for Code Scanning
-      - name: Initialize CodeQL Analysis
-        uses: github/codeql-action/init@v2
-        with:
-          languages: 'cpp,c'
-          queries: security-and-quality
-
-      # Step 4: Auto-build (if needed for analysis)
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v2
-
-      # Step 5: Perform CodeQL Analysis
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-        with:
-          category: "/language:cpp"
-
-      # Step 6: Generate documentation with Doxygen
-      # Step 6: Generate documentation with Doxygen
-      - name: Generate docs with Doxygen
+      # Step 2: Generate documentation with Doxygen
+      - name: Generate docs
         uses: mattnotmitt/doxygen-action@v1
         with:
           doxyfile-path: './Doxyfile'
 
-      # Step 7: Upload documentation as artifact
+      # Step 3: Upload documentation as artifact
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./Doxygen
-
-      # Step 8: Create PR comment with documentation link (for PR events)
-      - name: Comment PR with Documentation Link
-        if: github.event_name == 'pull_request' && github.event.pull_request.merged != true
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '## 📚 Documentation Updated\n\n✅ **Doxygen documentation** has been generated for this pull request.\n\n**Note:** Doxygen comments have been auto-generated for any undocumented functions and classes.\n\n- Use `/** @brief ... */` for brief descriptions\n- Add `@param` tags for function parameters\n- Add `@return` tag for return values\n- Use `@details` for extended descriptions\n\n**Copilot Tip:** You can use GitHub Copilot to refine auto-generated comments by selecting code and asking for improvements.'
-            })
 
   # Deployment job
   deploy:
@@ -216,38 +67,13 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
       
-      # Create detailed summary with best practices
-      - name: Create Workflow Summary
-        run: |
-          echo "## 📚 Documentation Generated & Deployed" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **Doxygen documentation** successfully generated and deployed!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔗 Documentation Link" >> $GITHUB_STEP_SUMMARY
-          echo "[${{ steps.deployment.outputs.page_url }}](${{ steps.deployment.outputs.page_url }})" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🤖 GitHub Copilot Integration" >> $GITHUB_STEP_SUMMARY
-          echo "Your repository is now set up to use **GitHub Copilot** for improving code documentation." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**How to use Copilot for Doxygen comments:**" >> $GITHUB_STEP_SUMMARY
-          echo "1. In the GitHub editor, select your code" >> $GITHUB_STEP_SUMMARY
-          echo "2. Press `Ctrl+I` (or `Cmd+I` on Mac) to open Copilot" >> $GITHUB_STEP_SUMMARY
-          echo "3. Ask: **'Add Doxygen documentation comment for this function'**" >> $GITHUB_STEP_SUMMARY
-          echo "4. Review and accept the suggestion" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📝 Doxygen Comment Best Practices" >> $GITHUB_STEP_SUMMARY
-          echo "- Use \`/** @brief ... */\` for function descriptions" >> $GITHUB_STEP_SUMMARY
-          echo "- Add \`@param name\` for each parameter" >> $GITHUB_STEP_SUMMARY
-          echo "- Add \`@return\` for return value description" >> $GITHUB_STEP_SUMMARY
-          echo "- Use \`@details\` for extended explanations" >> $GITHUB_STEP_SUMMARY
-          echo "- Document classes with \`@class\` and \`@details\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔍 Code Analysis" >> $GITHUB_STEP_SUMMARY
-          echo "CodeQL analysis has also been run to check for code quality and security." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-      
-      # Output the URL (for visibility in logs)
+      # Output the URL
       - name: Documentation URL
         run: |
           echo "✅ Documentation deployed successfully!"
           echo "📄 View your documentation at: ${{ steps.deployment.outputs.page_url }}"
+          echo "## 📚 Documentation Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Documentation has been successfully generated and deployed!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 **View Documentation:** [${{ steps.deployment.outputs.page_url }}](${{ steps.deployment.outputs.page_url }})" >> $GITHUB_STEP_SUMMARY
