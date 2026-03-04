@@ -10,6 +10,7 @@ on:
       - '**.h'
       - '**.hpp'
       - '**.ino'
+  workflow_dispatch:  # Allows manual triggering from Actions tab
 
 permissions:
   contents: write
