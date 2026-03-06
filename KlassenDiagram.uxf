@@ -1,0 +1,494 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="15.1">
+  <zoom_level>7</zoom_level>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>364</x>
+      <y>203</y>
+      <w>147</w>
+      <h>133</h>
+    </coordinates>
+    <panel_attributes>Raspberry pi 1
+--
+- ID: int
+- IpAddress: double
+- status: bool
+--
++ VerzendData()
++ OntvangData()
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>672</x>
+      <y>203</y>
+      <w>147</w>
+      <h>133</h>
+    </coordinates>
+    <panel_attributes>Raspberry pi 2
+--
+- ID: int
+- IpAddress: double
+- status: bool
+--
++ VerzendData()
++ OntvangData()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>574</x>
+      <y>504</y>
+      <w>147</w>
+      <h>77</h>
+    </coordinates>
+    <panel_attributes>RFIDLezer
+--
+-id: String
+--
++leesKaart(): RFIDKaart
++validerenKaart(kaart: RFIDKaart): bool</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>574</x>
+      <y>651</y>
+      <w>147</w>
+      <h>91</h>
+    </coordinates>
+    <panel_attributes>RFIDKaart
+--
+- KaartID: double
+- Gebruiker: String
+--
++ GetID(): String</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1267</x>
+      <y>287</y>
+      <w>147</w>
+      <h>98</h>
+    </coordinates>
+    <panel_attributes>NoodKnop
+--
+-locatie: String
+-ingedrukt: bool
+--
++druk(): void
++triggerAlarm(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>735</x>
+      <y>504</y>
+      <w>147</w>
+      <h>98</h>
+    </coordinates>
+    <panel_attributes>Deur
+--
+-id: String
+-isOpen: bool
+-positie: String
+--
++open(): void
++sluit(): void
++getStatus(): bool</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>903</x>
+      <y>504</y>
+      <w>147</w>
+      <h>91</h>
+    </coordinates>
+    <panel_attributes>Bewegingssensor
+--
+-id: String
+-locatie: String
+-bewegingGedetecteerd: bool
+--
++detecteer(): bool
++triggerActie(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>819</x>
+      <y>385</y>
+      <w>147</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>Microcontroller
+--
+- id: int
+- Status: bool
+--
++ LeesSensor()
++ StuurActuatorAan()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1071</x>
+      <y>504</y>
+      <w>189</w>
+      <h>112</h>
+    </coordinates>
+    <panel_attributes>Schemerlamp
+--
+-id: String
+-aan: bool
+-helderheid: int
+--
++aan(): void
++uit(): void
++setHelderheid(niveau: int): void
++autoReacteerOpLicht(lux: float): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1274</x>
+      <y>504</y>
+      <w>175</w>
+      <h>140</h>
+    </coordinates>
+    <panel_attributes>RGBLamp
+--
+-rood: int
+-groen: int
+-blauw: int
+-aanUit: bool
+-id: String
+--
++setKleur(r: int, g: int, b: int): void
++aan(): void
++uit(): void
++dimmen(niveau: int): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>364</x>
+      <y>525</y>
+      <w>147</w>
+      <h>77</h>
+    </coordinates>
+    <panel_attributes>TemperatuurSensor
+--
+-id: String
+--
++ MeetTemperatuur()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>189</x>
+      <y>525</y>
+      <w>147</w>
+      <h>77</h>
+    </coordinates>
+    <panel_attributes>LichtKrant
+--
+-id: String
+--
++ ToonBericht()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>280</x>
+      <y>392</y>
+      <w>147</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>Microcontroller
+--
+- id: int
+- Status: bool
+--
++ LeesSensor()
++ StuurActuatorAan()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>7</x>
+      <y>518</y>
+      <w>147</w>
+      <h>84</h>
+    </coordinates>
+    <panel_attributes>RelaxStoel
+--
+-id: String
+--
++ ZetStand()
++ ZetAan()
++ ZetUit()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1022</x>
+      <y>161</y>
+      <w>273</w>
+      <h>84</h>
+    </coordinates>
+    <panel_attributes>BalieMedewerkster
+--
+-medewerker: String
+--
++pasInstellingAan(instelling: String, waarde: String): void
++getStatusLEDs(): LEDStatus
++controleerVerdieping(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>504</x>
+      <y>259</y>
+      <w>182</w>
+      <h>28</h>
+    </coordinates>
+    <panel_attributes>lt=-
+Socket verbinding</panel_attributes>
+    <additional_attributes>10.0;20.0;240.0;20.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>742</x>
+      <y>329</y>
+      <w>161</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>lt=-
+Bestuurd</panel_attributes>
+    <additional_attributes>10.0;10.0;210.0;80.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>350</x>
+      <y>329</y>
+      <w>98</w>
+      <h>77</h>
+    </coordinates>
+    <panel_attributes>lt=-
+Bestuurd</panel_attributes>
+    <additional_attributes>120.0;10.0;10.0;90.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>70</x>
+      <y>455</y>
+      <w>294</w>
+      <h>77</h>
+    </coordinates>
+    <panel_attributes>lt=-
+Stuurt aan</panel_attributes>
+    <additional_attributes>400.0;10.0;10.0;90.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>252</x>
+      <y>455</y>
+      <w>112</w>
+      <h>84</h>
+    </coordinates>
+    <panel_attributes>lt=-
+Stuurt bericht</panel_attributes>
+    <additional_attributes>140.0;10.0;10.0;100.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>343</x>
+      <y>455</y>
+      <w>105</w>
+      <h>84</h>
+    </coordinates>
+    <panel_attributes>lt=-
+Leest uit</panel_attributes>
+    <additional_attributes>10.0;10.0;130.0;100.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>637</x>
+      <y>448</y>
+      <w>266</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>lt=-
+Leest uit</panel_attributes>
+    <additional_attributes>360.0;10.0;10.0;80.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>805</x>
+      <y>448</y>
+      <w>98</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>lt=-
+Beweegt</panel_attributes>
+    <additional_attributes>120.0;10.0;10.0;80.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>875</x>
+      <y>448</y>
+      <w>119</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>lt=-
+Detecteerd beweging</panel_attributes>
+    <additional_attributes>20.0;10.0;140.0;80.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>637</x>
+      <y>574</y>
+      <w>63</w>
+      <h>91</h>
+    </coordinates>
+    <panel_attributes>lt=-
+Leest pas</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;110.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>959</x>
+      <y>336</y>
+      <w>322</w>
+      <h>105</h>
+    </coordinates>
+    <panel_attributes>lt=-
+Meld nood</panel_attributes>
+    <additional_attributes>10.0;130.0;440.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>959</x>
+      <y>448</y>
+      <w>196</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>lt=-
+Stelt lamp in</panel_attributes>
+    <additional_attributes>10.0;10.0;260.0;80.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>959</x>
+      <y>448</y>
+      <w>399</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>lt=-
+Stelt lamp in</panel_attributes>
+    <additional_attributes>10.0;10.0;550.0;80.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>812</x>
+      <y>210</y>
+      <w>224</w>
+      <h>77</h>
+    </coordinates>
+    <panel_attributes>lt=-
+Verstuurd data</panel_attributes>
+    <additional_attributes>10.0;90.0;300.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>728</x>
+      <y>28</y>
+      <w>140</w>
+      <h>84</h>
+    </coordinates>
+    <panel_attributes>LEDStatus
+--
+-kleur: String
+-status: bool
+--
++setStatus(status: bool): void
++getKleur(): String</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>952</x>
+      <y>14</y>
+      <w>140</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>ControleLED
+--
+-kleur: String
+-aan: bool
+--
++aan(): void
++uit(): void
++knipperAlarm(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>784</x>
+      <y>105</y>
+      <w>294</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>lt=-
+Zet aan</panel_attributes>
+    <additional_attributes>10.0;10.0;400.0;80.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1015</x>
+      <y>77</y>
+      <w>77</w>
+      <h>98</h>
+    </coordinates>
+    <panel_attributes>lt=-
+Zet aan</panel_attributes>
+    <additional_attributes>10.0;10.0;70.0;120.0</additional_attributes>
+  </element>
+</diagram>
