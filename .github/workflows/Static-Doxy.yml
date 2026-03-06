@@ -7,6 +7,12 @@ on:
     branches:
       - main      # Run when code is pushed to main branch
       - dev      # Run when code is pushed to dev branch
+    paths:
+      - '**.c'
+      - '**.cpp'
+      - '**.h'
+      - '**.hpp'
+      - '**.ino'
   pull_request:
     types:
       - closed    # This will trigger when a PR is closed
@@ -14,7 +20,15 @@ on:
       - main      # Only for PRs targeting main branch
       - dev      # Only for PRs targeting dev branch
   workflow_dispatch:  # Allows manual triggering from Actions tab
-
+    # To run manually:
+    # 1. Go to GitHub Actions tab in your repository
+    # 2. Click "Generate Documentation" workflow in the left sidebar
+    # 3. Click the "Run workflow" button above the workflow runs list
+    # 4. Select the branch you want to run on
+    # 5. Click "Run workflow"
+    #
+    # Note: The "Run workflow" button only appears for workflows
+    # that use the workflow_dispatch event trigger.
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
