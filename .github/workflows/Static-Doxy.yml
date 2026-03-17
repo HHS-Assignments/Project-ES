@@ -8,6 +8,7 @@ on:
       - main      # Run when code is pushed to main branch
       - dev      # Run when code is pushed to dev branch
     paths:
+      - '.github/workflows/**'
       - '**.c'
       - '**.cpp'
       - '**.h'
