@@ -1,3 +1,9 @@
+/**
+ * @file Pi-2c.c
+ * @brief TCP client that sends JSON sensor data and parses a JSON response.
+ *
+ * Usage: ./Pi-2c <hostname> <port>
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -8,12 +14,22 @@
 #include <netdb.h>
 #include "cJSON.h" 
 
+/**
+ * @brief Print an error message and terminate the process.
+ * @param msg Error text shown with perror.
+ */
 void error(const char *msg)
 {
     perror(msg);
     exit(0);
 }
 
+/**
+ * @brief Connect to a TCP server, send JSON payload, and print the response.
+ * @param argc Number of command-line arguments.
+ * @param argv Command-line arguments. argv[1] is hostname, argv[2] is port.
+ * @return 0 on normal termination.
+ */
 int main(int argc, char *argv[])
 {
     int sockfd, portno, n;

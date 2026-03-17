@@ -1,6 +1,9 @@
-/* A simple server in the internet domain using TCP
-   The port number is passed as an argument
-   Enhanced with JSON parsing using cJSON */
+/**
+ * @file Pi-1s.c
+ * @brief TCP server that receives JSON, parses it, and returns a JSON response.
+ *
+ * Usage: ./Pi-1s <port>
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,12 +13,22 @@
 #include <netinet/in.h>
 #include "cJSON.h"
 
+/**
+ * @brief Print an error message and terminate the process.
+ * @param msg Error text shown with perror.
+ */
 void error(const char *msg)
 {
     perror(msg);
     exit(1);
 }
 
+/**
+ * @brief Start the TCP server, process one client message, and send a response.
+ * @param argc Number of command-line arguments.
+ * @param argv Command-line arguments. argv[1] must be the TCP port.
+ * @return 0 on normal termination.
+ */
 int main(int argc, char *argv[])
 {
      int sockfd, newsockfd, portno;
