@@ -55,13 +55,30 @@ jobs:
         with:
           fetch-depth: 0  # Get full history, including tags for versioning
 
-      # Step 2: Generate documentation with Doxygen
+      # Step 2: Compile socket programs
+      - name: Compile socket programs
+        run: |
+          cd Socket
+          gcc -o Pi-1s Pi-1s.c cJSON.c -lm
+          gcc -o Pi-2c Pi-2c.c cJSON.c -lm
+
+      # Step 3: Upload compiled socket binaries
+      - name: Upload socket binaries artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: socket-binaries
+          path: |
+            Socket/Pi-1s
+            Socket/Pi-2c
+          if-no-files-found: error
+
+      # Step 4: Generate documentation with Doxygen
       - name: Generate docs
         uses: mattnotmitt/doxygen-action@v1
         with:
           doxyfile-path: './Doxyfile'
 
-      # Step 3: Upload documentation as artifact
+      # Step 5: Upload documentation as artifact
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
