@@ -432,3 +432,8 @@ temp/
 
 # Docker secret files
 .env
+
+
+#compiled Binarys Files
+Socket/Pi-1s
+Socket/Pi-2c
