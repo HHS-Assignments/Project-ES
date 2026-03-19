@@ -70,23 +70,25 @@ jobs:
           gcc -O2 -o Pi-2c-linux-x86_64 Pi-2c.c cJSON.c -lm
           aarch64-linux-gnu-gcc -O2 -o Pi-1s-linux-aarch64 Pi-1s.c cJSON.c -lm
           aarch64-linux-gnu-gcc -O2 -o Pi-2c-linux-aarch64 Pi-2c.c cJSON.c -lm
-          zip -9 socket-linux-x86_64.zip Pi-1s-linux-x86_64 Pi-2c-linux-x86_64
-          zip -9 socket-linux-aarch64.zip Pi-1s-linux-aarch64 Pi-2c-linux-aarch64
 
-      # Step 4a: Upload combined linux-x86_64 socket binaries zip
-      - name: Upload linux-x86_64 socket zip artifact
+      # Step 4a: Upload linux-x86_64 socket binaries as one artifact
+      - name: Upload linux-x86_64 socket artifact
         uses: actions/upload-artifact@v4
         with:
           name: socket-binaries-linux-x86_64
-          path: Socket/socket-linux-x86_64.zip
+          path: |
+            Socket/Pi-1s-linux-x86_64
+            Socket/Pi-2c-linux-x86_64
           if-no-files-found: error
 
-      # Step 4b: Upload combined linux-aarch64 socket binaries zip
-      - name: Upload linux-aarch64 socket zip artifact
+      # Step 4b: Upload linux-aarch64 socket binaries as one artifact
+      - name: Upload linux-aarch64 socket artifact
         uses: actions/upload-artifact@v4
         with:
           name: socket-binaries-linux-aarch64
-          path: Socket/socket-linux-aarch64.zip
+          path: |
+            Socket/Pi-1s-linux-aarch64
+            Socket/Pi-2c-linux-aarch64
           if-no-files-found: error
 
       # Step 5: Generate documentation with Doxygen
