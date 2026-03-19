@@ -63,20 +63,14 @@ jobs:
           gcc -o Pi-1s Pi-1s.c cJSON.c -lm
           gcc -o Pi-2c Pi-2c.c cJSON.c -lm
 
-      # Step 3a: Upload Pi-1s binary artifact
-      - name: Upload Pi-1s binary artifact
+      # Step 3: Upload compiled socket binaries
+      - name: Upload socket binaries artifact
         uses: actions/upload-artifact@v4
         with:
-          name: socket-binary-Pi-1s
-          path: Socket/Pi-1s
-          if-no-files-found: error
-
-      # Step 3b: Upload Pi-2c binary artifact
-      - name: Upload Pi-2c binary artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: socket-binary-Pi-2c
-          path: Socket/Pi-2c
+          name: socket-binaries
+          path: |
+            Socket/Pi-1s
+            Socket/Pi-2c
           if-no-files-found: error
 
       # Step 4: Generate documentation with Doxygen
