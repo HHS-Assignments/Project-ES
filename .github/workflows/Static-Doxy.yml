@@ -56,30 +56,46 @@ jobs:
         with:
           fetch-depth: 0  # Get full history, including tags for versioning
 
-      # Step 2: Compile socket programs
-      - name: Compile socket programs
+      # Step 2: Install cross-compiler for Raspberry Pi 4 (ARM64)
+      - name: Install cross-compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      # Step 3: Compile socket programs for linux-x86_64 and linux-aarch64
+      - name: Compile socket programs for both architectures
         run: |
           cd Socket
-          gcc -o Pi-1s Pi-1s.c cJSON.c -lm
-          gcc -o Pi-2c Pi-2c.c cJSON.c -lm
+          gcc -O2 -o Pi-1s-linux-x86_64 Pi-1s.c cJSON.c -lm
+          gcc -O2 -o Pi-2c-linux-x86_64 Pi-2c.c cJSON.c -lm
+          aarch64-linux-gnu-gcc -O2 -o Pi-1s-linux-aarch64 Pi-1s.c cJSON.c -lm
+          aarch64-linux-gnu-gcc -O2 -o Pi-2c-linux-aarch64 Pi-2c.c cJSON.c -lm
+          zip -9 socket-linux-x86_64.zip Pi-1s-linux-x86_64 Pi-2c-linux-x86_64
+          zip -9 socket-linux-aarch64.zip Pi-1s-linux-aarch64 Pi-2c-linux-aarch64
 
-      # Step 3: Upload compiled socket binaries
-      - name: Upload socket binaries artifact
+      # Step 4a: Upload combined linux-x86_64 socket binaries zip
+      - name: Upload linux-x86_64 socket zip artifact
         uses: actions/upload-artifact@v4
         with:
-          name: socket-binaries
-          path: |
-            Socket/Pi-1s
-            Socket/Pi-2c
+          name: socket-binaries-linux-x86_64
+          path: Socket/socket-linux-x86_64.zip
           if-no-files-found: error
 
-      # Step 4: Generate documentation with Doxygen
+      # Step 4b: Upload combined linux-aarch64 socket binaries zip
+      - name: Upload linux-aarch64 socket zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: socket-binaries-linux-aarch64
+          path: Socket/socket-linux-aarch64.zip
+          if-no-files-found: error
+
+      # Step 5: Generate documentation with Doxygen
       - name: Generate docs
         uses: mattnotmitt/doxygen-action@v1
         with:
           doxyfile-path: './Doxyfile'
 
-      # Step 5: Upload documentation as artifact
+      # Step 6: Upload documentation as artifact
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
