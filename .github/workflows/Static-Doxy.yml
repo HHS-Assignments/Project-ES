@@ -9,6 +9,7 @@ on:
       - dev      # Run when code is pushed to dev branch
     paths:
       - '.github/workflows/**'
+      - 'Doxyfile'
       - '**.c'
       - '**.cpp'
       - '**.h'
