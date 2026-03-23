@@ -1063,7 +1063,13 @@ EXCLUDE_PATTERNS       = */Example\ Code/* \
                          */.git/* \
                          */.github/* \
                          */node_modules/* \
-                         */.vscode/*
+                         */.vscode/* \
+                         */MicroController-*/Drivers/* \
+                         */MicroController-*/Core/Inc/* \
+                         */MicroController-*/Core/Startup/* \
+                         */MicroController-*/*.ioc \
+                         */MicroController-*/*.ld \
+                         */MicroController-*/STM32L432KCUX_FLASH.ld
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the
