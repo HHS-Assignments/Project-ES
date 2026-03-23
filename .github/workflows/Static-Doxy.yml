@@ -50,11 +50,13 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ubuntu:latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       # Step 1: Check out the repository code
       - name: Checkout code
-        uses: actions/checkout@v4  # GitHub-provided action to clone the repository
+        uses: actions/checkout@v4.1.7  # GitHub-provided action to clone the repository
         with:
           fetch-depth: 0  # Get full history, including tags for versioning
 
@@ -76,7 +78,7 @@ jobs:
 
       # Step 4a: Upload linux-x86_64 socket binaries as one artifact
       - name: Upload linux-x86_64 socket artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.3.6
         with:
           name: socket-binaries-linux-x86_64
           path: |
@@ -86,7 +88,7 @@ jobs:
 
       # Step 4b: Upload linux-aarch64 socket binaries as one artifact
       - name: Upload linux-aarch64 socket artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.3.6
         with:
           name: socket-binaries-linux-aarch64
           path: |
@@ -96,13 +98,13 @@ jobs:
 
       # Step 5: Generate documentation with Doxygen
       - name: Generate docs
-        uses: mattnotmitt/doxygen-action@v1
+        uses: mattnotmitt/doxygen-action@v1.11.5
         with:
           doxyfile-path: './Doxyfile'
 
       # Step 6: Upload documentation as artifact
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v3.0.1
         with:
           path: ./Doxygen
 
@@ -113,12 +115,14 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     
     steps:
       # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v4.0.5
       
       # Output the URL
       - name: Documentation URL
