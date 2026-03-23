@@ -98,7 +98,7 @@ jobs:
 
       # Step 5: Generate documentation with Doxygen
       - name: Generate docs
-        uses: mattnotmitt/doxygen-action@v1.11.5
+        uses: mattnotmitt/doxygen-action@v1.9.5
         with:
           doxyfile-path: './Doxyfile'
 
