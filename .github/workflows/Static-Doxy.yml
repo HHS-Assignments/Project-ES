@@ -7,6 +7,13 @@ on:
     branches:
       - main      # Run when code is pushed to main branch
       - dev      # Run when code is pushed to dev branch
+    paths:
+      - '.github/workflows/**'
+      - '**.c'
+      - '**.cpp'
+      - '**.h'
+      - '**.hpp'
+      - '**.ino'
   pull_request:
     types:
       - closed    # This will trigger when a PR is closed
@@ -14,7 +21,15 @@ on:
       - main      # Only for PRs targeting main branch
       - dev      # Only for PRs targeting dev branch
   workflow_dispatch:  # Allows manual triggering from Actions tab
-
+    # To run manually:
+    # 1. Go to GitHub Actions tab in your repository
+    # 2. Click "Generate Documentation" workflow in the left sidebar
+    # 3. Click the "Run workflow" button above the workflow runs list
+    # 4. Select the branch you want to run on
+    # 5. Click "Run workflow"
+    #
+    # Note: The "Run workflow" button only appears for workflows
+    # that use the workflow_dispatch event trigger.
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
@@ -41,13 +56,48 @@ jobs:
         with:
           fetch-depth: 0  # Get full history, including tags for versioning
 
-      # Step 2: Generate documentation with Doxygen
+      # Step 2: Install cross-compiler for Raspberry Pi 4 (ARM64)
+      - name: Install cross-compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      # Step 3: Compile socket programs for linux-x86_64 and linux-aarch64
+      - name: Compile socket programs for both architectures
+        run: |
+          cd Socket
+          gcc -O2 -o Pi-1s-linux-x86_64 Pi-1s.c cJSON.c -lm
+          gcc -O2 -o Pi-2c-linux-x86_64 Pi-2c.c cJSON.c -lm
+          aarch64-linux-gnu-gcc -O2 -o Pi-1s-linux-aarch64 Pi-1s.c cJSON.c -lm
+          aarch64-linux-gnu-gcc -O2 -o Pi-2c-linux-aarch64 Pi-2c.c cJSON.c -lm
+
+      # Step 4a: Upload linux-x86_64 socket binaries as one artifact
+      - name: Upload linux-x86_64 socket artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: socket-binaries-linux-x86_64
+          path: |
+            Socket/Pi-1s-linux-x86_64
+            Socket/Pi-2c-linux-x86_64
+          if-no-files-found: error
+
+      # Step 4b: Upload linux-aarch64 socket binaries as one artifact
+      - name: Upload linux-aarch64 socket artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: socket-binaries-linux-aarch64
+          path: |
+            Socket/Pi-1s-linux-aarch64
+            Socket/Pi-2c-linux-aarch64
+          if-no-files-found: error
+
+      # Step 5: Generate documentation with Doxygen
       - name: Generate docs
         uses: mattnotmitt/doxygen-action@v1
         with:
           doxyfile-path: './Doxyfile'
 
-      # Step 3: Upload documentation as artifact
+      # Step 6: Upload documentation as artifact
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

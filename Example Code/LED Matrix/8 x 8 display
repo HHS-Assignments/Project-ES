@@ -1,0 +1,28 @@
+#include <LedControl.h>
+
+LedControl lc = LedControl(D7, D5, D8, 1);
+
+bool smiley[8][8] = {
+  {0,0,0,0,0,0,0,0},  // rij 0
+  {0,0,0,0,0,0,0,0},  // rij 1
+  {0,0,0,1,1,0,0,0},  // rij 2
+  {0,0,0,1,1,0,0,0},  // rij 3
+  {0,0,0,1,1,0,0,0},  // rij 4
+  {0,0,0,1,1,0,0,0},  // rij 5
+  {0,1,1,0,0,1,1,0},  // rij 6
+  {0,1,1,0,0,1,1,0}   // rij 7
+};
+
+void setup() {
+  lc.shutdown(0, false);
+  lc.setIntensity(0, 8);
+  lc.clearDisplay(0);
+
+  for (int rij = 0; rij < 8; rij++) {
+    for (int kolom = 0; kolom < 8; kolom++) {
+      lc.setLed(0, rij, kolom, smiley[rij][kolom]);
+    }
+  }
+}
+
+void loop() {}
