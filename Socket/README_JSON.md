@@ -1,107 +1,153 @@
-# Socket with JSON Parsing - Build Instructions
+# Socket – JSON Communication between WMos, Pi 1 and Pi 2
 
 ## Overview
-The socket code has been enhanced with JSON parsing capabilities using the **cJSON** library.
 
-### Modified Files:
-- **Pi-1s.c** - TCP Server with JSON parsing support
-- **Pi-2c.c** - TCP Client with JSON message creation
+The socket layer implements a three-node pipeline:
 
-## Features Added
+```
+WMos D1 Mini  ──HTTP POST──▶  Pi 1 (Pi-1s)  ──TCP──▶  Pi 2 (Pi-2s)
+```
 
-### Server (Pi-1s.c):
-- Receives JSON messages from clients
-- Parses JSON data
-- Extracts fields like "name" and "value"
-- Sends back a JSON response with status information
+1. **WMos D1 Mini** (`WMos-Wifi/WMos-Wifi.ino`) — when the button on pin D2 is
+   pressed it sends an HTTP POST to Pi 1 on port 9000 with a JSON body.
+2. **Pi 1** (`Pi-1s.c`) — listens on port 9000, parses the incoming JSON, and
+   forwards it to Pi 2 over a TCP socket.
+3. **Pi 2** (`Pi-2s.c`) — listens for forwarded JSON from Pi 1 and prints the
+   Device, Button and Data fields to standard output.
 
-### Client (Pi-2c.c):
-- Creates JSON messages with sensor data
-- Sends JSON to the server
-- Parses JSON responses
+`Pi-2c.c` is kept as a legacy client example (it sends a generic JSON message
+to a server).
+
+---
+
+## JSON Message Format
+
+### WMos → Pi 1 (HTTP POST body)
+
+```json
+{"Device": "Wmos", "Button": "Buttons, servos, temp", "Data": 1}
+```
+
+| Field    | Type          | Description                              |
+|----------|---------------|------------------------------------------|
+| Device   | string        | Identifies the sender (`"Wmos"`)         |
+| Button   | string        | Category / label of the input            |
+| Data     | number/string | Payload – button press count for WMos    |
+
+### Pi 1 → Pi 2 (raw TCP, compact JSON)
+
+Pi 1 forwards the same JSON (serialised without whitespace) over a direct TCP
+connection.
+
+---
 
 ## Compilation
 
-### Option 1: Using system cJSON library (Linux/Mac)
 ```bash
-gcc -o Pi-1s Pi-1s.c cJSON.c -lm
-gcc -o Pi-2c Pi-2c.c cJSON.c -lm
+# x86-64
+gcc -O2 -o Pi-1s Pi-1s.c cJSON.c -lm
+gcc -O2 -o Pi-2s Pi-2s.c cJSON.c -lm
+gcc -O2 -o Pi-2c Pi-2c.c cJSON.c -lm   # legacy client
+
+# ARM64 (Raspberry Pi)
+aarch64-linux-gnu-gcc -O2 -o Pi-1s Pi-1s.c cJSON.c -lm
+aarch64-linux-gnu-gcc -O2 -o Pi-2s Pi-2s.c cJSON.c -lm
 ```
 
-### Option 2: Download cJSON source
-1. Get cJSON from: https://github.com/DaveGamble/cJSON
-2. Copy `cJSON.c` and `cJSON.h` to the Socket directory
-3. Compile as shown in Option 1
+---
 
-### For Windows with MinGW:
-```cmd
-gcc -o Pi-1s.exe Pi-1s.c cJSON.c
-gcc -o Pi-2c.exe Pi-2c.c cJSON.c
-```
+## Usage
 
-## Usage Example
+### 1. Start Pi 2 (terminal 1)
 
-### 1. Start the server (in terminal 1):
 ```bash
-./Pi-1s 9000
+./Pi-2s 9001
 ```
 
-### 2. Run the client (in terminal 2):
+### 2. Start Pi 1 (terminal 2)
+
 ```bash
-./Pi-2c localhost 9000
+./Pi-1s 9000 <pi2-hostname> 9001
 ```
 
-### Example JSON Messages:
+Replace `<pi2-hostname>` with the hostname or IP of the Pi 2 machine (e.g.
+`10.0.42.2` or `localhost` for local testing).
 
-**Client sends to server:**
-```json
-{
-  "name": "temperature_sensor",
-  "value": 23.5,
-  "unit": "celsius"
-}
+### 3. Trigger from WMos
+
+Flash `WMos-Wifi/WMos-Wifi.ino`, connect to the `Project-ES` WiFi, then press
+the button wired to pin **D2**.  The WMos sends:
+
+```
+POST http://10.0.42.1:9000/
+Content-Type: application/json
+
+{"Device":"Wmos","Button":"Buttons, servos, temp","Data":1}
 ```
 
-**Server responds with:**
-```json
-{
-  "status": "success",
-  "message": "I got your message",
-  "received_bytes": 72
-}
+Pi 1 parses the request and forwards to Pi 2, which prints:
+
+```
+--- Received message from Pi-1 (57 bytes) ---
+  Device: Wmos
+  [WMos] Button category : Buttons, servos, temp
+  [WMos] Data            : 1
+---------------------------------------------
 ```
 
-## Code Features
+---
 
-### Parsing JSON (Server):
-```c
-cJSON *json = cJSON_Parse(buffer);
-if (json) {
-    cJSON *name = cJSON_GetObjectItemCaseSensitive(json, "name");
-    if (name && name->valuestring) {
-        printf("Name: %s\n", name->valuestring);
-    }
-    cJSON_Delete(json);
-}
+## Adding a New Device
+
+1. Implement a handler function in `Pi-2s.c` with the `DeviceHandlerFn`
+   signature:
+
+   ```c
+   static void handle_my_device(const cJSON *json) {
+       /* extract and print the fields you need */
+   }
+   ```
+
+2. Add a row to the `device_handlers` table:
+
+   ```c
+   static const DeviceHandler device_handlers[] = {
+       { "Wmos",     handle_wmos      },
+       { "MyDevice", handle_my_device }, /* ← new entry */
+   };
+   ```
+
+No other changes are required.  Unknown devices are handled automatically by
+the `handle_unknown` fallback which dumps all JSON fields.
+
+---
+
+## Automated Tests
+
+```bash
+bash Socket/tests/test_socket.sh
 ```
 
-### Creating JSON (Client):
-```c
-cJSON *json = cJSON_CreateObject();
-cJSON_AddStringToObject(json, "name", "temperature_sensor");
-cJSON_AddNumberToObject(json, "value", 23.5);
-char *jsonString = cJSON_Print(json);
-write(sockfd, jsonString, strlen(jsonString));
-cJSON_Delete(json);
-```
+The script compiles the binaries, starts Pi-1s and Pi-2s as background
+processes, sends synthetic HTTP POST requests (mimicking the WMos) via
+`curl`, and verifies that Pi-2s produces the expected output.
 
-## Notes for STM32 Integration
-- cJSON is lightweight and suitable for embedded systems
-- For STM32 microcontrollers, ensure you have enough memory for JSON parsing
-- The simplified version in `cJSON.c` (if provided) uses standard malloc/free
-- Consider using `cJSON_InitHooks()` to provide custom memory allocation for embedded systems
+Tests covered:
+
+| # | Scenario                              |
+|---|---------------------------------------|
+| 1 | WMos button press, numeric Data       |
+| 2 | Second press – incremented Data value |
+| 3 | Invalid JSON body → error response    |
+| 4 | Unknown device → fallback handler     |
+| 5 | String Data field                     |
+
+---
 
 ## Dependencies
+
 - Standard C library (libc)
-- Math library (-lm flag during compilation)
-- Unix socket APIs (sys/socket.h, netinet/in.h)
+- Math library (`-lm` flag)
+- Unix socket APIs (`sys/socket.h`, `netinet/in.h`)
+- Bundled [cJSON](https://github.com/DaveGamble/cJSON) (`cJSON.c` / `cJSON.h`)
+
