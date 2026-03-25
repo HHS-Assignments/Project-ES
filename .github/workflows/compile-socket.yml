@@ -1,0 +1,78 @@
+# Compile Socket Binaries
+#
+# Compiles Pi-1.c and Pi-2.c for both linux-x86_64 (native) and
+# linux-aarch64 (Raspberry Pi) and uploads the binaries as workflow
+# artifacts so the test workflow can download and run them without
+# recompiling.
+#
+# Triggered when any C source or header in the Socket folder changes.
+# Can also be triggered manually from the Actions tab.
+
+name: Compiling Socket Binaries
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - 'Socket/**.c'
+      - 'Socket/**.h'
+      - '.github/workflows/compile-socket.yml'
+  pull_request:
+    branches:
+      - main
+      - dev
+    paths:
+      - 'Socket/**.c'
+      - 'Socket/**.h'
+      - '.github/workflows/compile-socket.yml'
+  workflow_dispatch:
+
+jobs:
+  compile:
+    name: Compiling Socket Binaries
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.7
+
+      - name: Install build tools
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq build-essential gcc-aarch64-linux-gnu
+
+      - name: Compile for linux-x86_64
+        run: |
+          cd Socket
+          gcc -O2 -Wall -o Pi-1-linux-x86_64 Pi-1.c cJSON.c -lm -lpthread
+          gcc -O2 -Wall -o Pi-2-linux-x86_64 Pi-2.c cJSON.c -lm -lpthread
+
+      - name: Compile for linux-aarch64 (Raspberry Pi)
+        run: |
+          cd Socket
+          aarch64-linux-gnu-gcc -O2 -Wall -o Pi-1-linux-aarch64 Pi-1.c cJSON.c -lm -lpthread
+          aarch64-linux-gnu-gcc -O2 -Wall -o Pi-2-linux-aarch64 Pi-2.c cJSON.c -lm -lpthread
+
+      - name: Upload linux-x86_64 artifacts
+        uses: actions/upload-artifact@v4.3.6
+        with:
+          name: socket-binaries-linux-x86_64
+          path: |
+            Socket/Pi-1-linux-x86_64
+            Socket/Pi-2-linux-x86_64
+          if-no-files-found: error
+
+      - name: Upload linux-aarch64 artifacts
+        uses: actions/upload-artifact@v4.3.6
+        with:
+          name: socket-binaries-linux-aarch64
+          path: |
+            Socket/Pi-1-linux-aarch64
+            Socket/Pi-2-linux-aarch64
+          if-no-files-found: error

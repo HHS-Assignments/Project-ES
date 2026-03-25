@@ -1,0 +1,106 @@
+# Deploying Doxygen
+#
+# Generates Doxygen HTML documentation from all source files and deploys it
+# to GitHub Pages.
+#
+# Runs independently of the socket compile/test workflows — documentation is
+# always regenerated whenever any source file, header, or the Doxyfile
+# changes, regardless of whether the socket binaries compile successfully.
+#
+# Can also be triggered manually from the Actions tab.
+
+name: Deploying Doxygen
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - 'Doxyfile'
+      - '**.c'
+      - '**.cpp'
+      - '**.h'
+      - '**.hpp'
+      - '**.ino'
+      - '.github/workflows/deploy-doxygen.yml'
+  pull_request:
+    # Deploy when a PR targeting main or dev is merged.
+    types:
+      - closed
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+# Allow GitHub Pages deployment.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deployment at a time; do not cancel in-progress deployments.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-docs:
+    name: Generate Doxygen Documentation
+    # For pull_request events, only run when the PR was actually merged.
+    # push and workflow_dispatch events always run.
+    if: >
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.7
+        with:
+          fetch-depth: 0
+
+      - name: Install Doxygen
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq doxygen graphviz
+
+      - name: Generate documentation
+        uses: mattnotmitt/doxygen-action@v1.9.5
+        with:
+          doxyfile-path: './Doxyfile'
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3.0.1
+        with:
+          path: ./Doxygen
+
+  deploy-pages:
+    name: Deploy to GitHub Pages
+    needs: build-docs
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4.0.5
+
+      - name: Print documentation URL
+        run: |
+          echo "✅ Documentation deployed successfully!"
+          echo "📄 View at: ${{ steps.deployment.outputs.page_url }}"
+          echo "## 📚 Documentation Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Documentation has been successfully generated and deployed!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 **View Documentation:** [${{ steps.deployment.outputs.page_url }}](${{ steps.deployment.outputs.page_url }})" >> $GITHUB_STEP_SUMMARY
