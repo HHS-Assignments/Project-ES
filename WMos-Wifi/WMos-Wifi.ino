@@ -1,39 +1,102 @@
 #include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
+#include <WiFiClient.h>
 
 // WiFi credentials
-const char* ssid = "Project-ES";
+const char* ssid     = "Project-ES";
 const char* password = "********";
+
+// Pi-1 server configuration
+const char* serverIP   = "10.0.42.1";
+const int   serverPort = 9000;
+
+// Button configuration: WeMos D1 Mini D2 = GPIO4
+const int BUTTON_PIN = D2;
+
+// Debounce state
+unsigned long lastDebounceTime = 0;
+/* 50 ms debounce: typical mechanical buttons bounce for 10-20 ms;
+ * 50 ms provides a comfortable margin for most push-button hardware. */
+const unsigned long debounceDelay = 50;
+int lastButtonState = HIGH;
+int buttonState     = HIGH;
+
+// Press counter used as Data payload
+int pressCount = 0;
+
+/**
+ * Send a JSON POST request to Pi-1 when the button is pressed.
+ * JSON format: {"Device":"Wmos","Button":"Buttons, servos, temp","Data":<count>}
+ *
+ * @param count  Current button press count used as the Data value.
+ */
+void sendButtonEvent(int count) {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi not connected, cannot send.");
+    return;
+  }
+
+  WiFiClient client;
+  HTTPClient http;
+
+  String url = "http://" + String(serverIP) + ":" + String(serverPort) + "/";
+  http.begin(client, url);
+  http.addHeader("Content-Type", "application/json");
+
+  // Build JSON payload
+  String payload = "{\"Device\":\"Wmos\","
+                   "\"Button\":\"Buttons, servos, temp\","
+                   "\"Data\":" + String(count) + "}";
+
+  Serial.print("Sending JSON: ");
+  Serial.println(payload);
+
+  int httpCode = http.POST(payload);
+  if (httpCode > 0) {
+    Serial.printf("HTTP POST response code: %d\n", httpCode);
+    Serial.print("Response: ");
+    Serial.println(http.getString());
+  } else {
+    Serial.printf("HTTP POST failed, error: %s\n",
+                  http.errorToString(httpCode).c_str());
+  }
+
+  http.end();
+}
 
 void setup() {
   // Initialize serial communication at 9600 baud
   Serial.begin(9600);
   delay(100);
-  
+
+  // Configure button pin with internal pull-up resistor
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+
   Serial.println("\n\n");
   Serial.println("================================");
   Serial.println("WiFi Connection Starting...");
   Serial.println("================================");
-  
+
   // Set WiFi mode to station
   WiFi.mode(WIFI_STA);
-  
+
   // Start WiFi connection
   Serial.print("Connecting to WiFi network: ");
   Serial.println(ssid);
   WiFi.begin(ssid, password);
-  
-  // Wait for WiFi connection with timeout
-  int attempts = 10;
-  int max_attempts = 40; // 20 seconds timeout (40 * 500ms)
-  
+
+  // Wait for WiFi connection with timeout (20 s)
+  int attempts     = 0;
+  int max_attempts = 40;
+
   while (WiFi.status() != WL_CONNECTED && attempts < max_attempts) {
     delay(500);
     Serial.print(".");
     attempts++;
   }
-  
+
   Serial.println();
-  
+
   // Check if connection was successful
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("================================");
@@ -50,11 +113,33 @@ void setup() {
 }
 
 void loop() {
-  // Check WiFi connection status
-  if (WiFi.status() == WL_CONNECTED) {
-    delay(10000); // Check every 10 seconds
-  } else {
+  // Read button state with debounce
+  int reading = digitalRead(BUTTON_PIN);
+
+  if (reading != lastButtonState) {
+    lastDebounceTime = millis();
+  }
+
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (reading != buttonState) {
+      buttonState = reading;
+
+      // Button pressed — LOW because INPUT_PULLUP
+      if (buttonState == LOW) {
+        pressCount++;
+        Serial.println("Button pressed! Sending JSON...");
+        sendButtonEvent(pressCount);
+      }
+    }
+  }
+
+  lastButtonState = reading;
+
+  // Warn on WiFi loss
+  if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi connection lost!");
     delay(5000);
   }
+
+  delay(10);
 }
