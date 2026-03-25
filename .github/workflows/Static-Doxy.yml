@@ -71,12 +71,10 @@ jobs:
       - name: Compile socket programs for both architectures
         run: |
           cd Socket
-          gcc -O2 -o Pi-1s-linux-x86_64 Pi-1s.c cJSON.c -lm
-          gcc -O2 -o Pi-2s-linux-x86_64 Pi-2s.c cJSON.c -lm
-          gcc -O2 -o Pi-2c-linux-x86_64 Pi-2c.c cJSON.c -lm
-          aarch64-linux-gnu-gcc -O2 -o Pi-1s-linux-aarch64 Pi-1s.c cJSON.c -lm
-          aarch64-linux-gnu-gcc -O2 -o Pi-2s-linux-aarch64 Pi-2s.c cJSON.c -lm
-          aarch64-linux-gnu-gcc -O2 -o Pi-2c-linux-aarch64 Pi-2c.c cJSON.c -lm
+          gcc -O2 -o Pi-1-linux-x86_64 Pi-1.c cJSON.c -lm -lpthread
+          gcc -O2 -o Pi-2-linux-x86_64 Pi-2.c cJSON.c -lm -lpthread
+          aarch64-linux-gnu-gcc -O2 -o Pi-1-linux-aarch64 Pi-1.c cJSON.c -lm -lpthread
+          aarch64-linux-gnu-gcc -O2 -o Pi-2-linux-aarch64 Pi-2.c cJSON.c -lm -lpthread
 
       # Step 3b: Run end-to-end socket tests (x86_64 only)
       - name: Run socket end-to-end tests
@@ -89,9 +87,8 @@ jobs:
         with:
           name: socket-binaries-linux-x86_64
           path: |
-            Socket/Pi-1s-linux-x86_64
-            Socket/Pi-2s-linux-x86_64
-            Socket/Pi-2c-linux-x86_64
+            Socket/Pi-1-linux-x86_64
+            Socket/Pi-2-linux-x86_64
           if-no-files-found: error
 
       # Step 4b: Upload linux-aarch64 socket binaries as one artifact
@@ -100,9 +97,8 @@ jobs:
         with:
           name: socket-binaries-linux-aarch64
           path: |
-            Socket/Pi-1s-linux-aarch64
-            Socket/Pi-2s-linux-aarch64
-            Socket/Pi-2c-linux-aarch64
+            Socket/Pi-1-linux-aarch64
+            Socket/Pi-2-linux-aarch64
           if-no-files-found: error
 
       # Step 5: Generate documentation with Doxygen
