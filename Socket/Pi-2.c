@@ -122,18 +122,18 @@ typedef struct {
 /**
  * @brief Handler for the WMos D1 Mini device.
  *
- * Prints the Button category and Data value received from the WMos.
+ * Prints the Sensor name and Data value received from the WMos.
  *
- * @param json  Parsed cJSON object containing Device, Button and Data.
+ * @param json  Parsed cJSON object containing Device, Sensor and Data.
  */
 static void handle_wmos(cJSON *json)
 {
-    cJSON *button = cJSON_GetObjectItemCaseSensitive(json, "Button");
+    cJSON *sensor = cJSON_GetObjectItemCaseSensitive(json, "Sensor");
     cJSON *data   = cJSON_GetObjectItemCaseSensitive(json, "Data");
 
-    printf("  [WMos] Button : %s\n",
-           (button && (button->type & cJSON_String))
-               ? button->valuestring
+    printf("  [WMos] Sensor : %s\n",
+           (sensor && (sensor->type & cJSON_String))
+               ? sensor->valuestring
                : "(unknown)");
 
     if (data && (data->type & cJSON_String))

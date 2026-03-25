@@ -26,14 +26,14 @@ WMos D1 Mini  ──HTTP POST──▶  Pi-1  ◀══full-duplex TCP══▶ 
 ### WMos → Pi 1 (HTTP POST body)
 
 ```json
-{"Device": "Wmos", "Button": "Buttons, servos, temp", "Data": 1}
+{"Device": "Wmos", "Sensor": "ButtonD2", "Data": 1}
 ```
 
-| Field    | Type          | Description                              |
-|----------|---------------|------------------------------------------|
-| Device   | string        | Identifies the sender (`"Wmos"`)         |
-| Button   | string        | Category / label of the input            |
-| Data     | number/string | Payload – button press count for WMos    |
+| Field    | Type          | Description                                       |
+|----------|---------------|---------------------------------------------------|
+| Device   | string        | Identifies the sending device (`"Wmos"`)          |
+| Sensor   | string        | Sensor or output name (e.g. `"ButtonD2"`)         |
+| Data     | number/string | Reading or state (integer press counter for WMos) |
 
 ### Pi 1 ↔ Pi 2 (persistent TCP, newline-delimited JSON)
 
@@ -81,21 +81,22 @@ Replace `<pi2-hostname>` with the hostname or IP of the Pi 2 machine (e.g.
 ### 3. Trigger from WMos
 
 Flash `WMos-Wifi/WMos-Wifi.ino`, connect to the `Project-ES` WiFi, then press
-the button wired to pin **D2**.  The WMos sends:
+the button wired to pin **D2**.  The WMos calls
+`SendJsonToPi("Wmos", "ButtonD2", pressCount)` which sends:
 
 ```
 POST http://10.0.42.1:9000/
 Content-Type: application/json
 
-{"Device":"Wmos","Button":"Buttons, servos, temp","Data":1}
+{"Device":"Wmos","Sensor":"ButtonD2","Data":1}
 ```
 
 Pi 1 parses the request and forwards to Pi 2, which prints:
 
 ```
---- Received from Pi-1 (57 bytes) ---
+--- Received from Pi-1 (46 bytes) ---
   Device: Wmos
-  [WMos] Button : Buttons, servos, temp
+  [WMos] Sensor : ButtonD2
   [WMos] Data   : 1
 -------------------------------------
 ```

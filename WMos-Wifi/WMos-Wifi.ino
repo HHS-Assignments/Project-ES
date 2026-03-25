@@ -1,14 +1,14 @@
 #include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
-#include <WiFiClient.h>
+#include "SendJsonToPi/SendJsonToPi.h"
 
 // WiFi credentials
 const char* ssid     = "Project-ES";
 const char* password = "********";
 
-// Pi-1 server configuration
-const char* serverIP   = "10.0.42.1";
-const int   serverPort = 9000;
+// Pi-1 connection — piHost and piPort come from the SendJsonToPi library
+// (defaults: "10.0.42.1" and 9000).  Override in setup() if needed, e.g.:
+//   piHost = "192.168.1.10";
+//   piPort = 9001;
 
 // Button configuration: WeMos D1 Mini D2 = GPIO4
 const int BUTTON_PIN = D2;
@@ -23,46 +23,6 @@ int buttonState     = HIGH;
 
 // Press counter used as Data payload
 int pressCount = 0;
-
-/**
- * Send a JSON POST request to Pi-1 when the button is pressed.
- * JSON format: {"Device":"Wmos","Button":"Buttons, servos, temp","Data":<count>}
- *
- * @param count  Current button press count used as the Data value.
- */
-void sendButtonEvent(int count) {
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("WiFi not connected, cannot send.");
-    return;
-  }
-
-  WiFiClient client;
-  HTTPClient http;
-
-  String url = "http://" + String(serverIP) + ":" + String(serverPort) + "/";
-  http.begin(client, url);
-  http.addHeader("Content-Type", "application/json");
-
-  // Build JSON payload
-  String payload = "{\"Device\":\"Wmos\","
-                   "\"Button\":\"Buttons, servos, temp\","
-                   "\"Data\":" + String(count) + "}";
-
-  Serial.print("Sending JSON: ");
-  Serial.println(payload);
-
-  int httpCode = http.POST(payload);
-  if (httpCode > 0) {
-    Serial.printf("HTTP POST response code: %d\n", httpCode);
-    Serial.print("Response: ");
-    Serial.println(http.getString());
-  } else {
-    Serial.printf("HTTP POST failed, error: %s\n",
-                  http.errorToString(httpCode).c_str());
-  }
-
-  http.end();
-}
 
 void setup() {
   // Initialize serial communication at 9600 baud
@@ -128,7 +88,7 @@ void loop() {
       if (buttonState == LOW) {
         pressCount++;
         Serial.println("Button pressed! Sending JSON...");
-        sendButtonEvent(pressCount);
+        SendJsonToPi("Wmos", "ButtonD2", pressCount);
       }
     }
   }
