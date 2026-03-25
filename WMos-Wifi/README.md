@@ -59,24 +59,40 @@ sends:
 
 The library is located in `WMos-Wifi/SendJsonToPi/`.
 
+### Files
+
+| File               | Language | Description                          |
+|--------------------|----------|--------------------------------------|
+| `SendJsonToPi.h`   | C/C++    | Public API header (include this)     |
+| `SendJsonToPi.c`   | Pure C   | Implementation (lwIP BSD sockets)    |
+
 ### API
 
-```cpp
-// Integer data (produces a JSON number)
-void SendJsonToPi(const String& device, const String& sensor, int data);
+```c
+/* C callers — use the SendJsonToPi() macro (C11 _Generic dispatch) */
+SendJsonToPi(device, sensor, data);   /* data = const char* or int */
 
-// String data (produces a quoted JSON string)
-void SendJsonToPi(const String& device, const String& sensor, const String& data);
+/* Underlying C functions (called automatically by the macro / C++ overloads) */
+void SendJsonToPi_str(const char *device, const char *sensor, const char *data);
+void SendJsonToPi_int(const char *device, const char *sensor, int data);
 ```
+
+C++ callers (including `.ino` sketches) use inline overloads — the same
+`SendJsonToPi(device, sensor, data)` call works transparently.
 
 ### Connection variables
 
-```cpp
-extern const char* piHost;  // default "10.0.42.1"
-extern int         piPort;  // default 9000
+```c
+extern const char *piHost;  /* default "10.0.42.1" — reassign in setup() */
+extern int         piPort;  /* default 9000         — reassign in setup() */
 ```
 
-Reassign in `setup()` before the first call to override the defaults.
+Override in `setup()` before the first call:
+
+```cpp
+piHost = "192.168.1.10";
+piPort = 9001;
+```
 
 ## How It Works
 
@@ -99,9 +115,9 @@ Reassign in `setup()` before the first call to override the defaults.
 
 ### Required Libraries
 
-- `ESP8266WiFi` (bundled with the ESP8266 board package)
-- `ESP8266HTTPClient` (bundled with the ESP8266 board package)
-- `SendJsonToPi` (local library in `WMos-Wifi/SendJsonToPi/`)
+- `ESP8266WiFi` (bundled with the ESP8266 board package — used by the sketch)
+- `lwIP` BSD socket API (bundled with the ESP8266 board package — used by the C library)
+- `SendJsonToPi` (local library in `WMos-Wifi/SendJsonToPi/`, written in pure C)
 
 ### Serial Monitor
 
@@ -121,7 +137,7 @@ WiFi Connected Successfully!
 IP Address: 10.42.0.xxx
 ================================
 Button pressed! Sending JSON...
+[SendJsonToPi] Connecting to 10.0.42.1:9000
 [SendJsonToPi] Sending: {"Device":"Wmos","Sensor":"ButtonD2","Data":1}
-[SendJsonToPi] Response code: 200
-{"status":"ok","forwarded":true}
+[SendJsonToPi] Response: HTTP/1.1 200 OK ...{"status":"ok","forwarded":true}
 ```

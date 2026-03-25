@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # test_socket.sh — End-to-end tests for the Pi-1 / Pi-2 full-duplex pipeline.
 #
-# The script compiles the binaries, starts Pi-2 and Pi-1 as background
-# processes, sends synthetic HTTP POST requests that mimic the WMos D1 Mini,
-# and verifies that:
+# The script starts Pi-2 and Pi-1 as background processes, sends synthetic
+# HTTP POST requests that mimic the WMos D1 Mini, and verifies that:
 #   - Pi-2 prints the expected dispatched output  (Pi-1 → Pi-2 direction).
 #   - Pi-1 receives acknowledgements from Pi-2    (Pi-2 → Pi-1 direction).
+#
+# Pre-built binaries:
+#   Set PI1_BINARY and PI2_BINARY environment variables to use pre-compiled
+#   binaries (e.g. downloaded from a CI artifact).  When these variables are
+#   not set the script compiles its own test copies from source.
 #
 # Exit codes:
 #   0  All tests passed.
@@ -16,8 +20,22 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SOCKET_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-PI1_BIN="$SOCKET_DIR/Pi-1-test"
-PI2_BIN="$SOCKET_DIR/Pi-2-test"
+# Use pre-built binaries if supplied, otherwise compile locally.
+if [ -n "${PI1_BINARY:-}" ] && [ -x "${PI1_BINARY}" ]; then
+    PI1_BIN="${PI1_BINARY}"
+    COMPILED_PI1=false
+else
+    PI1_BIN="$SOCKET_DIR/Pi-1-test"
+    COMPILED_PI1=true
+fi
+
+if [ -n "${PI2_BINARY:-}" ] && [ -x "${PI2_BINARY}" ]; then
+    PI2_BIN="${PI2_BINARY}"
+    COMPILED_PI2=false
+else
+    PI2_BIN="$SOCKET_DIR/Pi-2-test"
+    COMPILED_PI2=true
+fi
 
 PI1_PORT=19000
 PI2_PORT=19001
@@ -34,21 +52,30 @@ fail() { echo "[FAIL] $*"; FAIL=$((FAIL + 1)); }
 cleanup() {
     [ -n "${PI1_PID:-}" ] && kill "$PI1_PID" 2>/dev/null || true
     [ -n "${PI2_PID:-}" ] && kill "$PI2_PID" 2>/dev/null || true
-    rm -f "$PI1_BIN" "$PI2_BIN" /tmp/pi2_out.txt /tmp/pi1_out.txt
+    # Only delete binaries that we compiled ourselves.
+    [ "$COMPILED_PI1" = true ] && rm -f "$PI1_BIN" || true
+    [ "$COMPILED_PI2" = true ] && rm -f "$PI2_BIN" || true
+    rm -f /tmp/pi2_out.txt /tmp/pi1_out.txt
 }
 trap cleanup EXIT
 
-# ── Build ──────────────────────────────────────────────────────────────────
+# ── Build (only when pre-built binaries were not provided) ─────────────────
 
-log "Compiling Pi-1..."
-gcc -O2 -o "$PI1_BIN" "$SOCKET_DIR/Pi-1.c" "$SOCKET_DIR/cJSON.c" -lm -lpthread || {
-    echo "[FAIL] Compilation of Pi-1 failed"; exit 1
-}
+if [ "$COMPILED_PI1" = true ]; then
+    log "Compiling Pi-1..."
+    gcc -O2 -o "$PI1_BIN" "$SOCKET_DIR/Pi-1.c" "$SOCKET_DIR/cJSON.c" \
+        -lm -lpthread || { echo "[FAIL] Compilation of Pi-1 failed"; exit 1; }
+else
+    log "Using pre-built Pi-1: $PI1_BIN"
+fi
 
-log "Compiling Pi-2..."
-gcc -O2 -o "$PI2_BIN" "$SOCKET_DIR/Pi-2.c" "$SOCKET_DIR/cJSON.c" -lm -lpthread || {
-    echo "[FAIL] Compilation of Pi-2 failed"; exit 1
-}
+if [ "$COMPILED_PI2" = true ]; then
+    log "Compiling Pi-2..."
+    gcc -O2 -o "$PI2_BIN" "$SOCKET_DIR/Pi-2.c" "$SOCKET_DIR/cJSON.c" \
+        -lm -lpthread || { echo "[FAIL] Compilation of Pi-2 failed"; exit 1; }
+else
+    log "Using pre-built Pi-2: $PI2_BIN"
+fi
 
 # ── Start servers ──────────────────────────────────────────────────────────
 
@@ -193,6 +220,28 @@ else
     fail "Pi-1 did not receive any message from Pi-2"
     echo "--- Pi-1 output ---"
     cat /tmp/pi1_out.txt
+fi
+
+# ── Test 7: Concurrent WMos connections (multi-threaded accept) ────────────
+log "Test 7: Concurrent WMos connections handled in parallel"
+
+PREV_LINES=$(wc -l < /tmp/pi2_out.txt)
+
+# Fire three requests simultaneously; each should be processed independently.
+CURL_PIDS=()
+send_post '{"Device":"Wmos","Sensor":"ButtonD2","Data":10}' > /dev/null & CURL_PIDS+=($!)
+send_post '{"Device":"Wmos","Sensor":"ButtonD2","Data":11}' > /dev/null & CURL_PIDS+=($!)
+send_post '{"Device":"Wmos","Sensor":"ButtonD2","Data":12}' > /dev/null & CURL_PIDS+=($!)
+wait "${CURL_PIDS[@]}"  # wait only for the curl jobs, not Pi-1/Pi-2
+
+# Allow processing time.
+sleep 1
+
+NEW_LINES=$(wc -l < /tmp/pi2_out.txt)
+if [ "$NEW_LINES" -gt "$PREV_LINES" ]; then
+    pass "Pi-2 processed concurrent WMos connections"
+else
+    fail "Pi-2 produced no output for concurrent connections"
 fi
 
 # ── Summary ────────────────────────────────────────────────────────────────

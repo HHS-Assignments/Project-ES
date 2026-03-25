@@ -10,10 +10,11 @@ WMos D1 Mini  ──HTTP POST──▶  Pi-1  ◀══full-duplex TCP══▶ 
 
 1. **WMos D1 Mini** (`WMos-Wifi/WMos-Wifi.ino`) — when the button on pin D2 is
    pressed it sends an HTTP POST to Pi 1 on port 9000 with a JSON body.
-2. **Pi 1** (`Pi-1.c`) — listens on port 9000, parses the incoming JSON, and
-   forwards it to Pi 2 over a persistent full-duplex TCP socket.  A background
-   thread simultaneously receives messages (acknowledgements, commands) sent
-   back by Pi 2.
+2. **Pi 1** (`Pi-1.c`) — listens on port 9000 with a **multi-threaded accept
+   loop** (one worker thread per WMos connection), parses the incoming JSON,
+   and forwards it to Pi 2 over a persistent full-duplex TCP socket.  A
+   background thread simultaneously receives messages (acknowledgements,
+   commands) sent back by Pi 2.
 3. **Pi 2** (`Pi-2.c`) — accepts one persistent connection from Pi 1.  A reader
    thread dispatches incoming JSON to the appropriate device handler and sends
    an acknowledgement back to Pi 1.  The main thread can forward stdin commands
