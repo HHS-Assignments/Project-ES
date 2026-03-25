@@ -56,15 +56,26 @@ log "Starting Pi-2 on port $PI2_PORT..."
 "$PI2_BIN" "$PI2_PORT" > /tmp/pi2_out.txt 2>&1 &
 PI2_PID=$!
 
-# Give Pi-2 a moment to bind before Pi-1 connects.
-sleep 0.5
+# Wait until Pi-2's port is in LISTEN state (up to 10 s).
+# Using ss avoids actually connecting to Pi-2's single-accept slot.
+log "Waiting for Pi-2 to be ready..."
+for i in $(seq 1 20); do
+    ss -tlnp 2>/dev/null | grep -q ":${PI2_PORT}" && break
+    sleep 0.5
+done
 
 log "Starting Pi-1 on port $PI1_PORT forwarding to localhost:$PI2_PORT..."
 "$PI1_BIN" "$PI1_PORT" localhost "$PI2_PORT" > /tmp/pi1_out.txt 2>&1 &
 PI1_PID=$!
 
-# Give both processes time to establish the persistent connection.
-sleep 1
+# Wait until Pi-1's WMos port is in LISTEN state.
+# Pi-1 only reaches listen() after successfully connecting to Pi-2,
+# so this also confirms the Pi-1 ↔ Pi-2 connection is up.
+log "Waiting for Pi-1 to be ready..."
+for i in $(seq 1 20); do
+    ss -tlnp 2>/dev/null | grep -q ":${PI1_PORT}" && break
+    sleep 0.5
+done
 
 # ── Test helpers ───────────────────────────────────────────────────────────
 
@@ -96,7 +107,7 @@ wait_for_output() {
 # ── Test 1: WMos button press (numeric Data) ──────────────────────────────
 log "Test 1: WMos button press with numeric Data"
 
-RESP=$(send_post '{"Device":"Wmos","Button":"Buttons, servos, temp","Data":1}')
+RESP=$(send_post '{"Device":"Wmos","Sensor":"ButtonD2","Data":1}')
 
 if echo "$RESP" | grep -q '"forwarded":true'; then
     pass "Pi-1 acknowledged forward"
@@ -111,10 +122,10 @@ else
     cat /tmp/pi2_out.txt
 fi
 
-if wait_for_output /tmp/pi2_out.txt "Buttons, servos, temp" 5; then
-    pass "Pi-2 printed Button category"
+if wait_for_output /tmp/pi2_out.txt "ButtonD2" 5; then
+    pass "Pi-2 printed Sensor name"
 else
-    fail "Pi-2 did not print Button category"
+    fail "Pi-2 did not print Sensor name"
 fi
 
 if wait_for_output /tmp/pi2_out.txt "1" 5; then
@@ -126,7 +137,7 @@ fi
 # ── Test 2: Multiple button presses (Data increments) ─────────────────────
 log "Test 2: Second button press with Data=2"
 
-send_post '{"Device":"Wmos","Button":"Buttons, servos, temp","Data":2}' > /dev/null
+send_post '{"Device":"Wmos","Sensor":"ButtonD2","Data":2}' > /dev/null
 sleep 1
 
 if wait_for_output /tmp/pi2_out.txt "2" 5; then
@@ -149,7 +160,7 @@ fi
 log "Test 4: Unknown device dispatches to fallback handler"
 
 PREV_LINES=$(wc -l < /tmp/pi2_out.txt)
-send_post '{"Device":"UnknownSensor","Button":"test","Data":"hello"}' > /dev/null
+send_post '{"Device":"UnknownSensor","Sensor":"TempSensor","Data":"hello"}' > /dev/null
 sleep 1
 
 NEW_LINES=$(wc -l < /tmp/pi2_out.txt)
@@ -162,7 +173,7 @@ fi
 # ── Test 5: String Data field ──────────────────────────────────────────────
 log "Test 5: WMos with string Data"
 
-send_post '{"Device":"Wmos","Button":"Buttons, servos, temp","Data":"pressed"}' > /dev/null
+send_post '{"Device":"Wmos","Sensor":"ButtonD2","Data":"pressed"}' > /dev/null
 sleep 1
 
 if wait_for_output /tmp/pi2_out.txt "pressed" 5; then

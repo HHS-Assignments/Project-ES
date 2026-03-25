@@ -5,7 +5,7 @@
  * Pi-1 fulfils two roles simultaneously using POSIX threads:
  *
  *  - **HTTP server** (WMos-facing): listens for JSON POST requests sent by
- *    the WMos D1 Mini, parses Device / Button / Data, and forwards the
+ *    the WMos D1 Mini, parses Device / Sensor / Data, and forwards the
  *    compact JSON to Pi-2 over the persistent socket.
  *
  *  - **Full-duplex TCP client** (Pi-2-facing): maintains one persistent
@@ -289,13 +289,13 @@ int main(int argc, char *argv[])
             send_http_response(client, "{\"error\":\"Invalid JSON\"}");
         } else {
             cJSON *device = cJSON_GetObjectItemCaseSensitive(json, "Device");
-            cJSON *button = cJSON_GetObjectItemCaseSensitive(json, "Button");
+            cJSON *sensor = cJSON_GetObjectItemCaseSensitive(json, "Sensor");
             cJSON *data   = cJSON_GetObjectItemCaseSensitive(json, "Data");
 
             if (device && (device->type & cJSON_String))
                 printf("[Pi-1] Device: %s\n", device->valuestring);
-            if (button && (button->type & cJSON_String))
-                printf("[Pi-1] Button: %s\n", button->valuestring);
+            if (sensor && (sensor->type & cJSON_String))
+                printf("[Pi-1] Sensor: %s\n", sensor->valuestring);
             if (data && (data->type & cJSON_String))
                 printf("[Pi-1] Data: %s\n", data->valuestring);
             else if (data && (data->type & cJSON_Number))
