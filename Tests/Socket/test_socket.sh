@@ -18,7 +18,7 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SOCKET_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+SOCKET_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/Socket"
 
 # Use pre-built binaries if supplied, otherwise compile locally.
 if [ -n "${PI1_BINARY:-}" ] && [ -x "${PI1_BINARY}" ]; then

@@ -139,7 +139,7 @@ the `handle_unknown` fallback which dumps all JSON fields.
 ## Automated Tests
 
 ```bash
-bash Socket/tests/test_socket.sh
+bash Tests/Socket/test_socket.sh
 ```
 
 The script compiles the binaries, starts Pi-1 and Pi-2 as background
