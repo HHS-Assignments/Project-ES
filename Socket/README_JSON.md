@@ -1,24 +1,24 @@
-# Socket – JSON Communication between WMos, Pi 1 and Pi 2
+# Socket - JSON Communication between WMos, Pi-B and Pi-A
 
 ## Overview
 
 The socket layer implements a three-node, full-duplex pipeline:
 
 ```
-WMos D1 Mini  ──HTTP POST──▶  Pi-1  ◀══full-duplex TCP══▶  Pi-2
+WMos D1 Mini  --HTTP POST-->  Pi-B  <==full-duplex TCP==>  Pi-A
 ```
 
 1. **WMos D1 Mini** (`WMos-Wifi/WMos-Wifi.ino`) — when the button on pin D2 is
    pressed it sends an HTTP POST to Pi 1 on port 9000 with a JSON body.
-2. **Pi 1** (`Pi-1.c`) — listens on port 9000 with a **multi-threaded accept
+2. **Pi-B** (`Pi-B.c`) — listens on port 9000 with a **multi-threaded accept
    loop** (one worker thread per WMos connection), parses the incoming JSON,
-   and forwards it to Pi 2 over a persistent full-duplex TCP socket.  A
+   and forwards it to Pi-A over a persistent full-duplex TCP socket.  A
    background thread simultaneously receives messages (acknowledgements,
-   commands) sent back by Pi 2.
-3. **Pi 2** (`Pi-2.c`) — accepts one persistent connection from Pi 1.  A reader
+   commands) sent back by Pi-A.
+3. **Pi-A** (`Pi-A.c`) — accepts one persistent connection from Pi-B.  A reader
    thread dispatches incoming JSON to the appropriate device handler and sends
-   an acknowledgement back to Pi 1.  The main thread can forward stdin commands
-   to Pi 1, demonstrating the Pi-2 → Pi-1 direction independently.
+   an acknowledgement back to Pi-B.  The main thread can forward stdin commands
+   to Pi-B, demonstrating the Pi-A -> Pi-B direction independently.
 
 ---
 
@@ -36,14 +36,14 @@ WMos D1 Mini  ──HTTP POST──▶  Pi-1  ◀══full-duplex TCP══▶ 
 | Sensor   | string        | Sensor or output name (e.g. `"ButtonD2"`)         |
 | Data     | number/string | Reading or state (integer press counter for WMos) |
 
-### Pi 1 ↔ Pi 2 (persistent TCP, newline-delimited JSON)
+### Pi-B ↔ Pi-A (persistent TCP, newline-delimited JSON)
 
-Pi 1 forwards the same JSON (serialised without whitespace, followed by `\n`)
-over the persistent socket.  Pi 2 sends acknowledgements back over the same
+Pi-B forwards the same JSON (serialised without whitespace, followed by `\n`)
+over the persistent socket.  Pi-A sends acknowledgements back over the same
 connection using the same framing:
 
 ```json
-{"status":"ack","Device":"Pi2"}
+{"status":"ack","Device":"A"}
 ```
 
 ---
@@ -52,31 +52,31 @@ connection using the same framing:
 
 ```bash
 # x86-64
-gcc -O2 -o Pi-1 Pi-1.c cJSON.c -lm -lpthread
-gcc -O2 -o Pi-2 Pi-2.c cJSON.c -lm -lpthread
+gcc -O2 -o Pi-B Pi-B.c cJSON.c -lm -lpthread
+gcc -O2 -o Pi-A Pi-A.c cJSON.c -lm -lpthread
 
 # ARM64 (Raspberry Pi)
-aarch64-linux-gnu-gcc -O2 -o Pi-1 Pi-1.c cJSON.c -lm -lpthread
-aarch64-linux-gnu-gcc -O2 -o Pi-2 Pi-2.c cJSON.c -lm -lpthread
+aarch64-linux-gnu-gcc -O2 -o Pi-B Pi-B.c cJSON.c -lm -lpthread
+aarch64-linux-gnu-gcc -O2 -o Pi-A Pi-A.c cJSON.c -lm -lpthread
 ```
 
 ---
 
 ## Usage
 
-### 1. Start Pi 2 (terminal 1)
+### 1. Start Pi-A (terminal 1)
 
 ```bash
-./Pi-2 9001
+./Pi-A 9001
 ```
 
-### 2. Start Pi 1 (terminal 2)
+### 2. Start Pi-B (terminal 2)
 
 ```bash
-./Pi-1 9000 <pi2-hostname> 9001
+./Pi-B 9000 <pi-a-hostname> 9001
 ```
 
-Replace `<pi2-hostname>` with the hostname or IP of the Pi 2 machine (e.g.
+Replace `<pi-a-hostname>` with the hostname or IP of the Pi-A machine (e.g.
 `10.0.42.2` or `localhost` for local testing).
 
 ### 3. Trigger from WMos
@@ -96,28 +96,28 @@ Content-Type: application/json
 `WMos-Wifi/secrets.h.example`), and `PI_PORT` defaults to `9000` in the
 current sketch configuration.
 
-Pi 1 parses the request and forwards to Pi 2, which prints:
+Pi-B parses the request and forwards to Pi-A, which prints:
 
 ```
---- Received from Pi-1 (46 bytes) ---
+--- Received from Pi-B (46 bytes) ---
   Device: Wmos
   [WMos] Sensor : ButtonD2
   [WMos] Data   : 1
 -------------------------------------
 ```
 
-Pi 2 then sends an acknowledgement back to Pi 1 over the same socket, and
-Pi 1 prints:
+Pi-A then sends an acknowledgement back to Pi-B over the same socket, and
+Pi-B prints:
 
 ```
-[Pi-1] Received from Pi-2: {"status":"ack","Device":"Pi2"}
+[B] Received from A: {"status":"ack","Device":"A"}
 ```
 
 ---
 
 ## Adding a New Device
 
-1. Implement a handler function in `Pi-2.c` with the `DeviceHandlerFn`
+1. Implement a handler function in `Pi-A.c` with the `DeviceHandlerFn`
    signature:
 
    ```c
@@ -146,7 +146,7 @@ the `handle_unknown` fallback which dumps all JSON fields.
 bash Tests/Socket/test_socket.sh
 ```
 
-The script compiles the binaries, starts Pi-1 and Pi-2 as background
+The script compiles the binaries, starts Pi-B and Pi-A as background
 processes, sends synthetic HTTP POST requests (mimicking the WMos) via
 `curl`, and verifies that both directions of the full-duplex channel work.
 
@@ -159,7 +159,7 @@ Tests covered:
 | 3 | Invalid JSON body → error response              |
 | 4 | Unknown device → fallback handler               |
 | 5 | String Data field                               |
-| 6 | Full-duplex: Pi-2 ACK received by Pi-1          |
+| 6 | Full-duplex: Pi-A ACK received by Pi-B          |
 
 ---
 

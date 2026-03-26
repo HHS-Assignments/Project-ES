@@ -52,11 +52,11 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Make binaries executable
-        run: chmod +x Socket/Pi-1-linux-x86_64 Socket/Pi-2-linux-x86_64
+        run: chmod +x Socket/Pi-B-linux-x86_64 Socket/Pi-A-linux-x86_64
 
       # Run the test suite using the pre-built binaries (no recompilation).
       - name: Run end-to-end socket tests
         env:
-          PI1_BINARY: ${{ github.workspace }}/Socket/Pi-1-linux-x86_64
-          PI2_BINARY: ${{ github.workspace }}/Socket/Pi-2-linux-x86_64
+          PI_B_BINARY: ${{ github.workspace }}/Socket/Pi-B-linux-x86_64
+          PI_A_BINARY: ${{ github.workspace }}/Socket/Pi-A-linux-x86_64
         run: bash Tests/Socket/test_socket.sh

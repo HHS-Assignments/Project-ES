@@ -1,30 +1,30 @@
 /**
- * @file Pi-2.c
- * @brief Full-duplex TCP server (Pi 2).
+ * @file Pi-A.c
+ * @brief Full-duplex TCP server (A).
  *
- * Pi-2 accepts one persistent connection from Pi-1.  Two threads run
+ * A accepts one persistent connection from B.  Two threads run
  * concurrently over the **same** socket, making the channel fully duplex:
  *
- *  - **Reader thread** (Pi-1 → Pi-2 direction): reads newline-terminated JSON
- *    forwarded by Pi-1 (WMos sensor events), dispatches to the appropriate
- *    device handler, and sends an acknowledgement back to Pi-1 over the same
- *    socket (Pi-2 → Pi-1 direction).
+ *  - **Reader thread** (B → A direction): reads newline-terminated JSON
+ *    forwarded by B (WMos sensor events), dispatches to the appropriate
+ *    device handler, and sends an acknowledgement back to B over the same
+ *    socket (A → B direction).
  *
- *  - **Main thread** (Pi-2 → Pi-1 direction): reads lines from stdin and
- *    forwards each non-empty line unchanged to Pi-1, demonstrating that
- *    Pi-2 can independently initiate communication while the reader thread
+ *  - **Main thread** (A → B direction): reads lines from stdin and
+ *    forwards each non-empty line unchanged to B, demonstrating that
+ *    A can independently initiate communication while the reader thread
  *    is active.
  *    (In the test harness stdin is /dev/null, so the main thread exits
  *    immediately and waits for the reader to finish with pthread_join.)
  *
- * Message framing: every JSON message on the Pi-1 ↔ Pi-2 socket is a single
+ * Message framing: every JSON message on the B ↔ A socket is a single
  * line terminated by @c '\\n'.
  *
  * Adding support for a new device requires only:
  *   1. Implementing a handler with the ::DeviceHandlerFn signature.
  *   2. Adding a @c { "DeviceName", handle_xxx } entry to #device_handlers.
  *
- * Usage: ./Pi-2 \<port\>
+ * Usage: ./Pi-A \<port\>
  */
 
 #include <stdio.h>
@@ -36,9 +36,9 @@
 #include <netinet/in.h>
 #include "cJSON.h"
 
-/* ── Shared Pi-1 socket ──────────────────────────────────────────────────── */
+/* ── Shared B socket ─────────────────────────────────────────────────────── */
 
-/** Persistent full-duplex socket to Pi-1. */
+/** Persistent full-duplex socket to B. */
 static int             pi1_fd    = -1;
 /** Protects all writes to @c pi1_fd. */
 static pthread_mutex_t pi1_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -82,7 +82,7 @@ static int read_line(int fd, char *buf, int size)
 }
 
 /**
- * @brief Send a NUL-terminated string followed by @c '\\n' to Pi-1.
+ * @brief Send a NUL-terminated string followed by @c '\\n' to B.
  *
  * Thread-safe: all writes are serialised by @c pi1_mutex.
  *
@@ -95,7 +95,7 @@ static int pi1_send(const char *msg)
     pthread_mutex_lock(&pi1_mutex);
     if (write(pi1_fd, msg, strlen(msg)) < 0 ||
         write(pi1_fd, "\n", 1) < 0) {
-        perror("ERROR writing to Pi-1");
+        perror("ERROR writing to B");
         rc = -1;
     }
     pthread_mutex_unlock(&pi1_mutex);
@@ -203,13 +203,13 @@ static void dispatch(const char *device_name, cJSON *json)
     handle_unknown(json);
 }
 
-/* ── Pi-1 reader thread ──────────────────────────────────────────────────── */
+/* ── B reader thread ─────────────────────────────────────────────────────── */
 
 /**
- * @brief Background thread: reads JSON lines from Pi-1 and dispatches them.
+ * @brief Background thread: reads JSON lines from B and dispatches them.
  *
  * After dispatching each message the thread sends an acknowledgement back to
- * Pi-1 over the same persistent socket, demonstrating the Pi-2 → Pi-1
+ * B over the same persistent socket, demonstrating the A → B
  * direction of the full-duplex channel.
  *
  * @param arg Unused.
@@ -220,18 +220,18 @@ static void *pi1_reader_thread(void *arg)
     char buf[4096];
     (void)arg;
 
-    printf("[Pi-2] Pi-1 reader thread started\n");
+    printf("[A] B reader thread started\n");
     fflush(stdout);
 
     while (1) {
         int n = read_line(pi1_fd, buf, sizeof(buf));
         if (n <= 0) {
-            printf("[Pi-2] Pi-1 disconnected\n");
+            printf("[A] B disconnected\n");
             fflush(stdout);
             break;
         }
 
-        printf("--- Received from Pi-1 (%d bytes) ---\n", n);
+        printf("--- Received from B (%d bytes) ---\n", n);
 
         cJSON *json = cJSON_Parse(buf);
         if (!json) {
@@ -247,8 +247,8 @@ static void *pi1_reader_thread(void *arg)
             dispatch(device_name, json);
             cJSON_Delete(json);
 
-            /* Send acknowledgement back to Pi-1 (Pi-2 → Pi-1 direction). */
-            pi1_send("{\"status\":\"ack\",\"Device\":\"Pi2\"}");
+            /* Send acknowledgement back to B (A → B direction). */
+            pi1_send("{\"status\":\"ack\",\"Device\":\"A\"}");
         }
 
         printf("-------------------------------------\n");
@@ -260,13 +260,13 @@ static void *pi1_reader_thread(void *arg)
 /* ── main ────────────────────────────────────────────────────────────────── */
 
 /**
- * @brief Entry point for Pi-2.
+ * @brief Entry point for A.
  *
- * 1. Binds @p port and accepts one persistent connection from Pi-1.
- * 2. Spawns the Pi-1 reader thread.
- * 3. Reads non-empty lines from stdin and forwards them unchanged to Pi-1
+ * 1. Binds @p port and accepts one persistent connection from B.
+ * 2. Spawns the B reader thread.
+ * 3. Reads non-empty lines from stdin and forwards them unchanged to B
  *    to demonstrate the
- *    Pi-2 → Pi-1 direction independently of the reader thread.
+ *    A → B direction independently of the reader thread.
  *    When stdin reaches EOF (or is /dev/null in tests), the main thread
  *    waits for the reader thread to finish before exiting.
  *
@@ -300,7 +300,7 @@ int main(int argc, char *argv[])
         error("ERROR on binding");
 
     listen(sockfd, 1);
-    printf("[Pi-2] Listening on port %d — waiting for Pi-1...\n", portno);
+    printf("[A] Listening on port %d - waiting for B...\n", portno);
     fflush(stdout);
 
     struct sockaddr_in cli_addr;
@@ -309,18 +309,18 @@ int main(int argc, char *argv[])
     if (pi1_fd < 0)
         error("ERROR on accept");
 
-    printf("[Pi-2] Pi-1 connected (full-duplex)\n");
+    printf("[A] B connected (full-duplex)\n");
     fflush(stdout);
 
-    /* Listening socket no longer needed — only one Pi-1 connection. */
+    /* Listening socket no longer needed - only one B connection. */
     close(sockfd);
 
-    /* ── Start reader thread (Pi-1 → Pi-2 direction + ACK back) ── */
+    /* ── Start reader thread (B -> A direction + ACK back) ── */
     pthread_t reader;
     if (pthread_create(&reader, NULL, pi1_reader_thread, NULL) != 0)
-        error("ERROR creating Pi-1 reader thread");
+        error("ERROR creating B reader thread");
 
-    /* ── Main thread: forward stdin lines to Pi-1 (Pi-2 → Pi-1 direction) ── */
+    /* ── Main thread: forward stdin lines to B (A -> B direction) ── */
     char line[1024];
     while (fgets(line, sizeof(line), stdin)) {
         /* Strip trailing newline. */
@@ -330,11 +330,11 @@ int main(int argc, char *argv[])
         if (strlen(line) == 0)
             continue;
         pi1_send(line);
-        printf("[Pi-2] Sent to Pi-1: %s\n", line);
+        printf("[A] Sent to B: %s\n", line);
         fflush(stdout);
     }
 
-    /* Wait for Pi-1 to disconnect (or process to be killed in tests). */
+    /* Wait for B to disconnect (or process to be killed in tests). */
     pthread_join(reader, NULL);
 
     close(pi1_fd);

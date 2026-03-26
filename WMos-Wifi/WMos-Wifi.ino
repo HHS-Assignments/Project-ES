@@ -2,7 +2,7 @@
  * @file WMos-Wifi.ino
  * @brief WeMos D1 Mini WiFi Button Controller
  * @details Connects a button on WeMos D1 Mini GPIO4 (D2) to WiFi and sends
- *          JSON POST requests to Pi-1 HTTP receiver when button is pressed.
+ *          raw JSON messages over TCP to Pi-1 receiver when button is pressed.
  *          Uses debouncing to handle mechanical button bounce.
  * @author Project-ES
  * @date 2026
@@ -34,12 +34,10 @@
 
 /** @brief JSON payload buffer size (bytes) */
 #define JSON_BUF_SIZE 256
-/** @brief HTTP request buffer size (bytes) */
-#define HTTP_BUF_SIZE 512
 
-/** @brief Pi-1 HTTP receiver hostname (updated to match project network) */
-const char *const piHost = "172.16.0.80";
-/** @brief Pi-1 HTTP receiver port number */
+/** @brief Pi-1 TCP receiver hostname (updated to match project network) */
+const char *const piHost = "10.42.0.1";
+/** @brief Pi-1 TCP receiver port number */
 const int piPort = 9000;
 /** @brief WiFi SSID loaded from local secrets.h */
 const char* const ssid = WIFI_SSID;
@@ -47,42 +45,34 @@ const char* const ssid = WIFI_SSID;
 const char* const password = WIFI_PASSWORD;
 /** @brief Maximum WiFi connection attempts (500ms per attempt) */
 const int max_attempts = WIFI_MAX_ATTEMPTS;
+/** @brief Wmos Device Name */
+const char* const Device_Name = "Wmos-1";
 
 
 /**
- * @brief Sends HTTP POST request with JSON payload to Pi-1 receiver
+ * @brief Sends raw JSON payload to Pi-1 receiver over TCP
  * @param[in] json_payload Pointer to null-terminated JSON string to send
- * @details Constructs HTTP/1.1 POST request with proper headers and sends
- *          to piHost:piPort. Waits up to 1 second for response before closing.
- *          On error, prints debug message to Serial.
- * @return void
+ * @details Opens a TCP connection to piHost:piPort and sends one JSON message
+ *          terminated by '\n'. Waits up to 1 second for optional response data
+ *          before closing. On error, prints debug message to Serial.
+ * @return true when payload was written to socket, false on connection/send failure
  */
-static void post_payload(const char *json_payload) {
+static bool post_payload(const char *json_payload) {
   WiFiClient client;
-  char request[HTTP_BUF_SIZE];
-  int body_len = (int)strlen(json_payload);
-
-  int n = snprintf(request, sizeof(request),
-                   "POST / HTTP/1.1\r\n"
-                   "Host: %s:%d\r\n" 
-                   "Content-Type: application/json\r\n"
-                   "Content-Length: %d\r\n"
-                   "Connection: close\r\n"
-                   "\r\n"
-                   "%s",
-                   piHost, piPort, body_len, json_payload);
-
-  if (n < 0 || n >= (int)sizeof(request)) {
-    Serial.println("[SendJsonToPi] Payload too large");
-    return;
-  }
 
   if (!client.connect(piHost, (uint16_t)piPort)) {
     Serial.println("[SendJsonToPi] Connection failed");
-    return;
+    return false;
   }
 
-  client.write((const uint8_t *)request, (size_t)n);
+  size_t payload_written = client.print(json_payload);
+  size_t newline_written = client.print("\n");
+
+  if (payload_written != strlen(json_payload) || newline_written != 1) {
+    Serial.println("[SendJsonToPi] Write failed");
+    client.stop();
+    return false;
+  }
 
   unsigned long t0 = millis();
   while (client.connected() && (millis() - t0) < 1000) {
@@ -94,46 +84,47 @@ static void post_payload(const char *json_payload) {
   }
 
   client.stop();
+  return true;
 }
 
 /**
- * @brief Sends JSON POST with string data to Pi-1 receiver
+ * @brief Sends JSON with string data to Pi-1 receiver
  * @param[in] device Device identifier string (e.g., "Wmos")
  * @param[in] sensor Sensor/component name (e.g., "ButtonD2")
  * @param[in] data String data value to transmit
- * @details Constructs JSON object with string data field and sends via HTTP POST
- * @return void
+ * @details Constructs JSON object with string data field and sends via TCP
+ * @return true when JSON payload was sent successfully, false otherwise
  */
-void SendJsonToPi_str(const char *device, const char *sensor,
+bool SendJsonToPi_str(const char *device, const char *sensor,
                       const char *data) {
   char json[JSON_BUF_SIZE];
   snprintf(json, sizeof(json),
            "{\"Device\":\"%s\",\"Sensor\":\"%s\",\"Data\":\"%s\"}",
            device, sensor, data);
-  post_payload(json);
+  return post_payload(json);
 }
 
 /**
- * @brief Sends JSON POST with integer data to Pi-1 receiver
+ * @brief Sends JSON with integer data to Pi-1 receiver
  * @param[in] device Device identifier string (e.g., "Wmos")
  * @param[in] sensor Sensor/component name (e.g., "ButtonD2")
  * @param[in] data Integer data value to transmit
- * @details Constructs JSON object with numeric data field and sends via HTTP POST
- * @return void
+ * @details Constructs JSON object with numeric data field and sends via TCP
+ * @return true when JSON payload was sent successfully, false otherwise
  */
-void SendJsonToPi_int(const char *device, const char *sensor, int data) {
+bool SendJsonToPi_int(const char *device, const char *sensor, int data) {
   char json[JSON_BUF_SIZE];
   snprintf(json, sizeof(json),
            "{\"Device\":\"%s\",\"Sensor\":\"%s\",\"Data\":%d}",
            device, sensor, data);
-  post_payload(json);
+  return post_payload(json);
 }
 
 /**
  * @brief Initialize system: Serial, WiFi, button pin
  * @details Sets up serial debugging, WiFi connection using credentials from
  *          secrets.h, configures button pin as INPUT_PULLUP, and prints
- *          connection status and current POST target to Serial.
+ *          connection status and current send target to Serial.
  * @return void
  */
 void setup() {
@@ -178,10 +169,11 @@ void setup() {
     Serial.println("================================");
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP());
-    Serial.print("POST target: ");
+    Serial.print("Send target: ");
     Serial.print(piHost);
     Serial.print(":");
     Serial.println(piPort);
+    Serial.println("Startup complete. Waiting for button events...");
     Serial.println("================================");
   } else {
     Serial.println("================================");
@@ -194,7 +186,7 @@ void setup() {
  * @brief Main loop: read button with debouncing and send JSON on press
  * @details Implements debounce logic to properly handle mechanical button bounce.
  *          On button press (LOW state), increments press counter and sends JSON
- *          POST to Pi-1 HTTP receiver. Uses function-local static variables to
+ *          to Pi-1 TCP receiver. Uses function-local static variables to
  *          persist button debounce state between loop iterations. Monitors WiFi
  *          connection and alerts on loss.
  *          Loop frequency: ~100 Hz (10ms base delay)
@@ -213,6 +205,10 @@ void loop() {
   static int buttonState = HIGH;
   /** @brief Button press counter sent as JSON data */
   static int pressCount = 0;
+  /** @brief Last button count confirmed as sent */
+  static int sentPressCount = 0;
+  /** @brief Timestamp of last send attempt (rate limiter) */
+  static unsigned long lastSendAttemptMs = 0;
 
   // Read button state with debounce algorithm
   int reading = digitalRead(BUTTON_PIN);
@@ -233,13 +229,26 @@ void loop() {
         pressCount++;
         Serial.print("Button pressed! Count=");
         Serial.println(pressCount);
-        Serial.println("Sending JSON POST...");
-        SendJsonToPi_int("Wmos", "ButtonD2", pressCount);
       }
     }
   }
 
   lastButtonState = reading;
+
+  // Send unsent button events in order with throttled retries.
+  if (WiFi.status() == WL_CONNECTED && sentPressCount < pressCount
+      && (millis() - lastSendAttemptMs) >= 1000) {
+    int nextCount = sentPressCount + 1;
+    lastSendAttemptMs = millis();
+    Serial.print("Sending JSON count=");
+    Serial.println(nextCount);
+
+    if (SendJsonToPi_int(Device_Name, "ButtonD2", nextCount)) {
+      sentPressCount = nextCount;
+    } else {
+      Serial.println("[SendJsonToPi] Send failed, will retry later");
+    }
+  }
 
   // Monitor WiFi connection and alert on loss
   if (WiFi.status() != WL_CONNECTED) {
