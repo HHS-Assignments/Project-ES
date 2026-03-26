@@ -113,7 +113,7 @@ int main(void)
 		  }
 	  }
 	  Losgelaten = KnopStatus;
-	  HAL_Delay(21);
+	  HAL_Delay(20);
   }
 
   void DiscoDisco (){
