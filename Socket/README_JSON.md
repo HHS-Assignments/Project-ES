@@ -83,14 +83,18 @@ Replace `<pi2-hostname>` with the hostname or IP of the Pi 2 machine (e.g.
 
 Flash `WMos-Wifi/WMos-Wifi.ino`, connect to the `Project-ES` WiFi, then press
 the button wired to pin **D2**.  The WMos calls
-`SendJsonToPi("Wmos", "ButtonD2", pressCount)` which sends:
+`SendJsonToPi_int("Wmos", "ButtonD2", pressCount)` which sends:
 
 ```
-POST http://10.0.42.1:9000/
+POST http://<PI_HOST>:<PI_PORT>/
 Content-Type: application/json
 
 {"Device":"Wmos","Sensor":"ButtonD2","Data":1}
 ```
+
+`PI_HOST` is configured in `WMos-Wifi/secrets.h` (copied from
+`WMos-Wifi/secrets.h.example`), and `PI_PORT` defaults to `9000` in the
+current sketch configuration.
 
 Pi 1 parses the request and forwards to Pi 2, which prints:
 

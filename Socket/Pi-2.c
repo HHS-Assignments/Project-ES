@@ -11,8 +11,9 @@
  *    socket (Pi-2 → Pi-1 direction).
  *
  *  - **Main thread** (Pi-2 → Pi-1 direction): reads lines from stdin and
- *    forwards them as JSON to Pi-1, demonstrating that Pi-2 can independently
- *    initiate communication while the reader thread is active.
+ *    forwards each non-empty line unchanged to Pi-1, demonstrating that
+ *    Pi-2 can independently initiate communication while the reader thread
+ *    is active.
  *    (In the test harness stdin is /dev/null, so the main thread exits
  *    immediately and waits for the reader to finish with pthread_join.)
  *
@@ -263,7 +264,8 @@ static void *pi1_reader_thread(void *arg)
  *
  * 1. Binds @p port and accepts one persistent connection from Pi-1.
  * 2. Spawns the Pi-1 reader thread.
- * 3. Reads lines from stdin and forwards them to Pi-1 to demonstrate the
+ * 3. Reads non-empty lines from stdin and forwards them unchanged to Pi-1
+ *    to demonstrate the
  *    Pi-2 → Pi-1 direction independently of the reader thread.
  *    When stdin reaches EOF (or is /dev/null in tests), the main thread
  *    waits for the reader thread to finish before exiting.
