@@ -442,3 +442,11 @@ Socket/Pi-2s
 Socket/Pi-1s-test
 Socket/Pi-2s-test
 Socket/Pi-2c-test
+Socket/Pi-A
+Socket/Pi-B
+Socket/Pi-A-test
+Socket/Pi-B-test
+Socket/Pi-A-linux-x86_64
+Socket/Pi-B-linux-x86_64
+Socket/Pi-A-linux-aarch64
+Socket/Pi-B-linux-aarch64

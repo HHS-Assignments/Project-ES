@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# test_socket.sh — End-to-end tests for the Pi-1 / Pi-2 full-duplex pipeline.
+# test_socket.sh — End-to-end tests for the Pi-B / Pi-A full-duplex pipeline.
 #
-# The script starts Pi-2 and Pi-1 as background processes, sends synthetic
+# The script starts Pi-A and Pi-B as background processes, sends synthetic
 # HTTP POST requests that mimic the WMos D1 Mini, and verifies that:
-#   - Pi-2 prints the expected dispatched output  (Pi-1 → Pi-2 direction).
-#   - Pi-1 receives acknowledgements from Pi-2    (Pi-2 → Pi-1 direction).
+#   - Pi-A prints the expected dispatched output  (Pi-B → Pi-A direction).
+#   - Pi-B receives acknowledgements from Pi-A   (Pi-A → Pi-B direction).
 #
 # Pre-built binaries:
-#   Set PI1_BINARY and PI2_BINARY environment variables to use pre-compiled
+#   Set PI_B_BINARY and PI_A_BINARY environment variables to use pre-compiled
 #   binaries (e.g. downloaded from a CI artifact).  When these variables are
 #   not set the script compiles its own test copies from source.
 #
@@ -21,20 +21,35 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SOCKET_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/Socket"
 
 # Use pre-built binaries if supplied, otherwise compile locally.
-if [ -n "${PI1_BINARY:-}" ] && [ -x "${PI1_BINARY}" ]; then
-    PI1_BIN="${PI1_BINARY}"
-    COMPILED_PI1=false
+# Backward compatible env vars are still supported:
+#   PI_B_BINARY preferred over B_BINARY/PI1_BINARY
+#   PI_A_BINARY preferred over A_BINARY/PI2_BINARY
+if [ -n "${PI_B_BINARY:-}" ] && [ -x "${PI_B_BINARY}" ]; then
+    B_BIN="${PI_B_BINARY}"
+    COMPILED_B=false
+elif [ -n "${B_BINARY:-}" ] && [ -x "${B_BINARY}" ]; then
+    B_BIN="${B_BINARY}"
+    COMPILED_B=false
+elif [ -n "${PI1_BINARY:-}" ] && [ -x "${PI1_BINARY}" ]; then
+    B_BIN="${PI1_BINARY}"
+    COMPILED_B=false
 else
-    PI1_BIN="$SOCKET_DIR/Pi-1-test"
-    COMPILED_PI1=true
+    B_BIN="$SOCKET_DIR/Pi-B-test"
+    COMPILED_B=true
 fi
 
-if [ -n "${PI2_BINARY:-}" ] && [ -x "${PI2_BINARY}" ]; then
-    PI2_BIN="${PI2_BINARY}"
-    COMPILED_PI2=false
+if [ -n "${PI_A_BINARY:-}" ] && [ -x "${PI_A_BINARY}" ]; then
+    A_BIN="${PI_A_BINARY}"
+    COMPILED_A=false
+elif [ -n "${A_BINARY:-}" ] && [ -x "${A_BINARY}" ]; then
+    A_BIN="${A_BINARY}"
+    COMPILED_A=false
+elif [ -n "${PI2_BINARY:-}" ] && [ -x "${PI2_BINARY}" ]; then
+    A_BIN="${PI2_BINARY}"
+    COMPILED_A=false
 else
-    PI2_BIN="$SOCKET_DIR/Pi-2-test"
-    COMPILED_PI2=true
+    A_BIN="$SOCKET_DIR/Pi-A-test"
+    COMPILED_A=true
 fi
 
 PI1_PORT=19000
@@ -50,55 +65,55 @@ pass() { echo "[PASS] $*"; PASS=$((PASS + 1)); }
 fail() { echo "[FAIL] $*"; FAIL=$((FAIL + 1)); }
 
 cleanup() {
-    [ -n "${PI1_PID:-}" ] && kill "$PI1_PID" 2>/dev/null || true
-    [ -n "${PI2_PID:-}" ] && kill "$PI2_PID" 2>/dev/null || true
+    [ -n "${B_PID:-}" ] && kill "$B_PID" 2>/dev/null || true
+    [ -n "${A_PID:-}" ] && kill "$A_PID" 2>/dev/null || true
     # Only delete binaries that we compiled ourselves.
-    [ "$COMPILED_PI1" = true ] && rm -f "$PI1_BIN" || true
-    [ "$COMPILED_PI2" = true ] && rm -f "$PI2_BIN" || true
+    [ "$COMPILED_B" = true ] && rm -f "$B_BIN" || true
+    [ "$COMPILED_A" = true ] && rm -f "$A_BIN" || true
     rm -f /tmp/pi2_out.txt /tmp/pi1_out.txt
 }
 trap cleanup EXIT
 
 # ── Build (only when pre-built binaries were not provided) ─────────────────
 
-if [ "$COMPILED_PI1" = true ]; then
-    log "Compiling Pi-1..."
-    gcc -O2 -o "$PI1_BIN" "$SOCKET_DIR/Pi-1.c" "$SOCKET_DIR/cJSON.c" \
-        -lm -lpthread || { echo "[FAIL] Compilation of Pi-1 failed"; exit 1; }
+if [ "$COMPILED_B" = true ]; then
+    log "Compiling Pi-B..."
+    gcc -O2 -o "$B_BIN" "$SOCKET_DIR/Pi-B.c" "$SOCKET_DIR/cJSON.c" \
+        -lm -lpthread || { echo "[FAIL] Compilation of Pi-B failed"; exit 1; }
 else
-    log "Using pre-built Pi-1: $PI1_BIN"
+    log "Using pre-built Pi-B: $B_BIN"
 fi
 
-if [ "$COMPILED_PI2" = true ]; then
-    log "Compiling Pi-2..."
-    gcc -O2 -o "$PI2_BIN" "$SOCKET_DIR/Pi-2.c" "$SOCKET_DIR/cJSON.c" \
-        -lm -lpthread || { echo "[FAIL] Compilation of Pi-2 failed"; exit 1; }
+if [ "$COMPILED_A" = true ]; then
+    log "Compiling Pi-A..."
+    gcc -O2 -o "$A_BIN" "$SOCKET_DIR/Pi-A.c" "$SOCKET_DIR/cJSON.c" \
+        -lm -lpthread || { echo "[FAIL] Compilation of Pi-A failed"; exit 1; }
 else
-    log "Using pre-built Pi-2: $PI2_BIN"
+    log "Using pre-built Pi-A: $A_BIN"
 fi
 
 # ── Start servers ──────────────────────────────────────────────────────────
 
-log "Starting Pi-2 on port $PI2_PORT..."
-"$PI2_BIN" "$PI2_PORT" > /tmp/pi2_out.txt 2>&1 &
-PI2_PID=$!
+log "Starting Pi-A on port $PI2_PORT..."
+"$A_BIN" "$PI2_PORT" > /tmp/pi2_out.txt 2>&1 &
+A_PID=$!
 
-# Wait until Pi-2's port is in LISTEN state (up to 10 s).
-# Using ss avoids actually connecting to Pi-2's single-accept slot.
-log "Waiting for Pi-2 to be ready..."
+# Wait until Pi-A's port is in LISTEN state (up to 10 s).
+# Using ss avoids actually connecting to Pi-A's single-accept slot.
+log "Waiting for Pi-A to be ready..."
 for i in $(seq 1 20); do
     ss -tlnp 2>/dev/null | grep -q ":${PI2_PORT}" && break
     sleep 0.5
 done
 
-log "Starting Pi-1 on port $PI1_PORT forwarding to localhost:$PI2_PORT..."
-"$PI1_BIN" "$PI1_PORT" localhost "$PI2_PORT" > /tmp/pi1_out.txt 2>&1 &
-PI1_PID=$!
+log "Starting Pi-B on port $PI1_PORT forwarding to localhost:$PI2_PORT..."
+"$B_BIN" "$PI1_PORT" localhost "$PI2_PORT" > /tmp/pi1_out.txt 2>&1 &
+B_PID=$!
 
-# Wait until Pi-1's WMos port is in LISTEN state.
-# Pi-1 only reaches listen() after successfully connecting to Pi-2,
-# so this also confirms the Pi-1 ↔ Pi-2 connection is up.
-log "Waiting for Pi-1 to be ready..."
+# Wait until Pi-B's WMos port is in LISTEN state.
+# Pi-B only reaches listen() after successfully connecting to Pi-A,
+# so this also confirms the Pi-B ↔ Pi-A connection is up.
+log "Waiting for Pi-B to be ready..."
 for i in $(seq 1 20); do
     ss -tlnp 2>/dev/null | grep -q ":${PI1_PORT}" && break
     sleep 0.5
@@ -107,7 +122,7 @@ done
 # ── Test helpers ───────────────────────────────────────────────────────────
 
 # send_post <json_body>
-# Sends an HTTP POST to Pi-1 and returns the response body.
+# Sends an HTTP POST to Pi-B and returns the response body.
 send_post() {
     local body="$1"
     curl -s --max-time 5 \
@@ -137,28 +152,28 @@ log "Test 1: WMos button press with numeric Data"
 RESP=$(send_post '{"Device":"Wmos","Sensor":"ButtonD2","Data":1}')
 
 if echo "$RESP" | grep -q '"forwarded":true'; then
-    pass "Pi-1 acknowledged forward"
+    pass "Pi-B acknowledged forward"
 else
-    fail "Pi-1 did not acknowledge forward. Response: $RESP"
+    fail "Pi-B did not acknowledge forward. Response: $RESP"
 fi
 
 if wait_for_output /tmp/pi2_out.txt "Wmos" 5; then
-    pass "Pi-2 printed Device=Wmos"
+    pass "Pi-A printed Device=Wmos"
 else
-    fail "Pi-2 did not print Device=Wmos"
+    fail "Pi-A did not print Device=Wmos"
     cat /tmp/pi2_out.txt
 fi
 
 if wait_for_output /tmp/pi2_out.txt "ButtonD2" 5; then
-    pass "Pi-2 printed Sensor name"
+    pass "Pi-A printed Sensor name"
 else
-    fail "Pi-2 did not print Sensor name"
+    fail "Pi-A did not print Sensor name"
 fi
 
 if wait_for_output /tmp/pi2_out.txt "1" 5; then
-    pass "Pi-2 printed Data value"
+    pass "Pi-A printed Data value"
 else
-    fail "Pi-2 did not print Data value"
+    fail "Pi-A did not print Data value"
 fi
 
 # ── Test 2: Multiple button presses (Data increments) ─────────────────────
@@ -168,9 +183,9 @@ send_post '{"Device":"Wmos","Sensor":"ButtonD2","Data":2}' > /dev/null
 sleep 1
 
 if wait_for_output /tmp/pi2_out.txt "2" 5; then
-    pass "Pi-2 printed incremented Data value"
+    pass "Pi-A printed incremented Data value"
 else
-    fail "Pi-2 did not print incremented Data value"
+    fail "Pi-A did not print incremented Data value"
 fi
 
 # ── Test 3: Invalid JSON is handled gracefully ─────────────────────────────
@@ -178,9 +193,9 @@ log "Test 3: Invalid JSON body"
 
 RESP=$(send_post 'this is not json')
 if echo "$RESP" | grep -qi "error\|invalid"; then
-    pass "Pi-1 returned error for invalid JSON"
+    pass "Pi-B returned error for invalid JSON"
 else
-    fail "Pi-1 did not return error for invalid JSON. Response: $RESP"
+    fail "Pi-B did not return error for invalid JSON. Response: $RESP"
 fi
 
 # ── Test 4: Unknown device falls back to generic handler ──────────────────
@@ -192,9 +207,9 @@ sleep 1
 
 NEW_LINES=$(wc -l < /tmp/pi2_out.txt)
 if [ "$NEW_LINES" -gt "$PREV_LINES" ]; then
-    pass "Pi-2 handled unknown device (produced output)"
+    pass "Pi-A handled unknown device (produced output)"
 else
-    fail "Pi-2 produced no output for unknown device"
+    fail "Pi-A produced no output for unknown device"
 fi
 
 # ── Test 5: String Data field ──────────────────────────────────────────────
@@ -204,21 +219,21 @@ send_post '{"Device":"Wmos","Sensor":"ButtonD2","Data":"pressed"}' > /dev/null
 sleep 1
 
 if wait_for_output /tmp/pi2_out.txt "pressed" 5; then
-    pass "Pi-2 printed string Data value"
+    pass "Pi-A printed string Data value"
 else
-    fail "Pi-2 did not print string Data value"
+    fail "Pi-A did not print string Data value"
 fi
 
-# ── Test 6: Full-duplex — Pi-2 ACK reaches Pi-1 ───────────────────────────
-log "Test 6: Full-duplex — Pi-2 acknowledgement received by Pi-1"
+# ── Test 6: Full-duplex — Pi-A ACK reaches Pi-B ───────────────────────────
+log "Test 6: Full-duplex — Pi-A acknowledgement received by Pi-B"
 
-# Pi-2 sends an ACK for every valid message; at least one should have
-# appeared in Pi-1's output by now (tests 1/2/5 each triggered one).
-if wait_for_output /tmp/pi1_out.txt "Received from Pi-2" 5; then
-    pass "Pi-1 received message from Pi-2 (full-duplex confirmed)"
+# Pi-A sends an ACK for every valid message; at least one should have
+# appeared in Pi-B's output by now (tests 1/2/5 each triggered one).
+if wait_for_output /tmp/pi1_out.txt "Received from A" 5; then
+    pass "Pi-B received message from Pi-A (full-duplex confirmed)"
 else
-    fail "Pi-1 did not receive any message from Pi-2"
-    echo "--- Pi-1 output ---"
+    fail "Pi-B did not receive any message from Pi-A"
+    echo "--- Pi-B output ---"
     cat /tmp/pi1_out.txt
 fi
 
@@ -239,9 +254,9 @@ sleep 1
 
 NEW_LINES=$(wc -l < /tmp/pi2_out.txt)
 if [ "$NEW_LINES" -gt "$PREV_LINES" ]; then
-    pass "Pi-2 processed concurrent WMos connections"
+    pass "Pi-A processed concurrent WMos connections"
 else
-    fail "Pi-2 produced no output for concurrent connections"
+    fail "Pi-A produced no output for concurrent connections"
 fi
 
 # ── Summary ────────────────────────────────────────────────────────────────

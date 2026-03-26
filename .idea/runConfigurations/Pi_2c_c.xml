@@ -1,9 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Pi-2c.c" type="CppFileRunConfiguration" factoryName="CppFileRunConfiguration" singleton="false" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Project-ES" TARGET_NAME="Pi-2c.c" CONFIG_NAME="Pi-2c.c">
-    <option name="compilerOptions" value="$PROJECT_DIR$/Socket/cJSON.c -lm" />
-    <option name="sourceFile" value="$PROJECT_DIR$/Socket/Pi-2c.c" />
-    <method v="2">
-      <option name="com.jetbrains.cidr.cpp.runfile.CppFileBuildBeforeRunTaskProvider$BasicBuildBeforeRunTask" enabled="true" />
-    </method>
-  </configuration>
-</component>
