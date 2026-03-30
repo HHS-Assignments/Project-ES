@@ -1,0 +1,62 @@
+# Test Socket Binaries
+#
+# Downloads the compiled x86_64 binaries produced by the
+# "Compiling Socket Binaries" workflow and runs the end-to-end test
+# suite in Tests/Socket/test_socket.sh.
+#
+# This workflow is triggered automatically when "Compiling Socket Binaries"
+# completes — it only proceeds if the compile job succeeded, so there is no
+# point in running tests against a broken build.
+
+name: Testing Socket Binaries
+
+on:
+  workflow_run:
+    workflows: ["Compiling Socket Binaries"]
+    types:
+      - completed
+
+permissions:
+  # Needed to download artifacts from the triggering workflow run.
+  actions: read
+  contents: read
+
+jobs:
+  test:
+    name: Testing Socket Binaries
+    # Only run when the compile workflow succeeded.
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      # Check out the same commit that was compiled.
+      - name: Checkout code
+        uses: actions/checkout@v4.1.7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Install test dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq curl iproute2
+
+      # Download the x86_64 binaries compiled by the upstream workflow.
+      - name: Download linux-x86_64 socket binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: socket-binaries-linux-x86_64
+          path: Socket/
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Make binaries executable
+        run: chmod +x Socket/Pi-B-linux-x86_64 Socket/Pi-A-linux-x86_64
+
+      # Run the test suite using the pre-built binaries (no recompilation).
+      - name: Run end-to-end socket tests
+        env:
+          PI_B_BINARY: ${{ github.workspace }}/Socket/Pi-B-linux-x86_64
+          PI_A_BINARY: ${{ github.workspace }}/Socket/Pi-A-linux-x86_64
+        run: bash Tests/Socket/test_socket.sh
