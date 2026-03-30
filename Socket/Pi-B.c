@@ -159,9 +159,9 @@ static void print_generic(cJSON *json)
 {
     cJSON *device = cJSON_GetObjectItemCaseSensitive(json, "Device");
     if (device && (device->type & cJSON_String))
-        printf("  Device: %s\n", device->valuestring);
+        printf("  Device : %s\n", device->valuestring);
     else
-        printf("  Device: (unknown)\n");
+        printf("  Device : (unknown)\n");
 
     cJSON *sensor = cJSON_GetObjectItemCaseSensitive(json, "Sensor");
     if (sensor && (sensor->type & cJSON_String))
