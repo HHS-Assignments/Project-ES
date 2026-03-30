@@ -11,10 +11,7 @@
 name: Testing Socket Binaries
 
 on:
-  workflow_run:
-    workflows: ["Compiling Socket Binaries"]
-    types:
-      - completed
+  workflow_dispatch: {}
 
 permissions:
   # Needed to download artifacts from the triggering workflow run.
@@ -35,7 +32,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.1.7
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.ref }}
 
       - name: Install test dependencies
         run: |
