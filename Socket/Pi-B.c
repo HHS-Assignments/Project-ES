@@ -295,25 +295,20 @@ static void *pi2_reader_thread(void *arg)
         if (!json) {
             printf("  Failed to parse JSON: %s\n", buf);
         } else {
-            cJSON *status = cJSON_GetObjectItemCaseSensitive(json, "status");
-            cJSON *device = cJSON_GetObjectItemCaseSensitive(json, "Device");
-            const char *device_name =
-                (device && (device->type & cJSON_String))
-                    ? device->valuestring
-                    : "(unknown)";
+                cJSON *status = cJSON_GetObjectItemCaseSensitive(json, "status");
 
-
-            /* Use generic printer for uniform output (avoid duplicate Device lines) */
-            print_generic(json);
-
-            if (status && (status->type & cJSON_String) &&
-                strcmp(status->valuestring, "ack") == 0) {
-                printf("[B] Received ACK from A\n");
-            } else {
-                printf("[B] Received Data from A\n");
-                /* Send ACK back to A identifying this side as B. */
-                pi2_send("{\"status\":\"ack\",\"Device\":\"B\"}");
-            }
+                /* If this is an ACK, print only the concise ACK line.
+                 * For non-ACK messages, print the full generic block. */
+                if (status && (status->type & cJSON_String) &&
+                    strcmp(status->valuestring, "ack") == 0) {
+                    printf("[B] Received ACK from A\n");
+                } else {
+                    /* Use generic printer for uniform output (avoid duplicate Device lines) */
+                    print_generic(json);
+                    printf("[B] Received Data from A\n");
+                    /* Send ACK back to A identifying this side as B. */
+                    pi2_send("{\"status\":\"ack\",\"Device\":\"B\"}");
+                }
 
             cJSON_Delete(json);
         }
