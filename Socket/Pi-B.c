@@ -33,6 +33,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include "cJSON.h"
+#include <strings.h>
 
 /** Buffer size for incoming HTTP POST requests from the WMos. */
 #define HTTP_BUFFER_SIZE 4096
@@ -94,10 +95,24 @@ static int pi2_send(const char *json_str)
 {
     int rc = 0;
     pthread_mutex_lock(&pi2_mutex);
-    if (write(pi2_fd, json_str, strlen(json_str)) < 0 ||
-        write(pi2_fd, "\n", 1) < 0) {
-        perror("ERROR writing to A");
-        rc = -1;
+    /* Ensure full write of the JSON string and terminating newline. */
+    size_t len = strlen(json_str);
+    size_t written = 0;
+    while (written < len) {
+        ssize_t w = write(pi2_fd, json_str + written, len - written);
+        if (w <= 0) {
+            perror("ERROR writing to A");
+            rc = -1;
+            break;
+        }
+        written += (size_t)w;
+    }
+    if (rc == 0) {
+        ssize_t w = write(pi2_fd, "\n", 1);
+        if (w <= 0) {
+            perror("ERROR writing newline to A");
+            rc = -1;
+        }
     }
     pthread_mutex_unlock(&pi2_mutex);
     return rc;
@@ -154,7 +169,7 @@ static const size_t device_handler_count =
 static void dispatch(const char *device_name, cJSON *json)
 {
     for (size_t i = 0; i < device_handler_count; i++) {
-        if (strcmp(device_handlers[i].device_name, device_name) == 0) {
+        if (strcasecmp(device_handlers[i].device_name, device_name) == 0) {
             device_handlers[i].handler(json);
             return;
         }
@@ -235,23 +250,35 @@ static void *pi2_reader_thread(void *arg)
             fflush(stdout);
             break;
         }
-        printf("[B] Received from A: %s\n", buf);
+        printf("--- Received from A (%d bytes) ---\n", n);
 
-        /* If it's JSON, parse and pretty-print using the same dispatch as Pi-A. */
         cJSON *json = cJSON_Parse(buf);
-        if (json) {
+        if (!json) {
+            printf("  Failed to parse JSON: %s\n", buf);
+        } else {
+            cJSON *status = cJSON_GetObjectItemCaseSensitive(json, "status");
             cJSON *device = cJSON_GetObjectItemCaseSensitive(json, "Device");
             const char *device_name =
                 (device && (device->type & cJSON_String))
                     ? device->valuestring
                     : "(unknown)";
 
-            printf("--- Parsed JSON from A (%d bytes) ---\n", n);
             printf("  Device: %s\n", device_name);
             dispatch(device_name, json);
+
+            if (status && (status->type & cJSON_String) &&
+                strcmp(status->valuestring, "ack") == 0) {
+                printf("[B] Received ACK from A\n");
+            } else {
+                printf("[B] Received Data from A\n");
+                /* Send ACK back to A identifying this side as B. */
+                pi2_send("{\"status\":\"ack\",\"Device\":\"B\"}");
+            }
+
             cJSON_Delete(json);
-            printf("-------------------------------------\n");
         }
+
+        printf("-------------------------------------\n");
         fflush(stdout);
     }
     return NULL;

@@ -35,6 +35,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include "cJSON.h"
+#include <strings.h>
 
 /* ── Shared B socket ─────────────────────────────────────────────────────── */
 
@@ -93,10 +94,24 @@ static int pi1_send(const char *msg)
 {
     int rc = 0;
     pthread_mutex_lock(&pi1_mutex);
-    if (write(pi1_fd, msg, strlen(msg)) < 0 ||
-        write(pi1_fd, "\n", 1) < 0) {
-        perror("ERROR writing to B");
-        rc = -1;
+    /* Write the entire message reliably (handle partial writes). */
+    size_t len = strlen(msg);
+    size_t written = 0;
+    while (written < len) {
+        ssize_t w = write(pi1_fd, msg + written, len - written);
+        if (w <= 0) {
+            perror("ERROR writing to B");
+            rc = -1;
+            break;
+        }
+        written += (size_t)w;
+    }
+    if (rc == 0) {
+        ssize_t w = write(pi1_fd, "\n", 1);
+        if (w <= 0) {
+            perror("ERROR writing newline to B");
+            rc = -1;
+        }
     }
     pthread_mutex_unlock(&pi1_mutex);
     return rc;
@@ -195,7 +210,7 @@ static const size_t device_handler_count =
 static void dispatch(const char *device_name, cJSON *json)
 {
     for (size_t i = 0; i < device_handler_count; i++) {
-        if (strcmp(device_handlers[i].device_name, device_name) == 0) {
+        if (strcasecmp(device_handlers[i].device_name, device_name) == 0) {
             device_handlers[i].handler(json);
             return;
         }
@@ -243,12 +258,19 @@ static void *pi1_reader_thread(void *arg)
                     ? device->valuestring
                     : "(unknown)";
 
-            printf("  Device: %s\n", device_name);
-            dispatch(device_name, json);
-            cJSON_Delete(json);
+                        printf("  Device: %s\n", device_name);
+                        dispatch(device_name, json);
 
-            /* Send acknowledgement back to B (A → B direction). */
-            pi1_send("{\"status\":\"ack\",\"Device\":\"A\"}");
+                        /* Send acknowledgement back to B (A → B direction), but do not
+                         * reply to incoming ACK messages themselves to avoid an
+                         * acknowledgement loop. */
+                        cJSON *status = cJSON_GetObjectItemCaseSensitive(json, "status");
+                        if (!(status && (status->type & cJSON_String) &&
+                                    strcmp(status->valuestring, "ack") == 0)) {
+                                pi1_send("{\"status\":\"ack\",\"Device\":\"A\"}");
+                        }
+
+                        cJSON_Delete(json);
         }
 
         printf("-------------------------------------\n");
