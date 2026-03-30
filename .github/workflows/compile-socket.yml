@@ -16,17 +16,17 @@ on:
       - main
       - dev
     paths:
-      - 'Socket/**.c'
-      - 'Socket/**.h'
-      - '.github/workflows/compile-socket.yml'
+      - 'Socket/**'
+      - 'Tests/**'
+      - '.github/workflows/**'
   pull_request:
     branches:
       - main
       - dev
     paths:
-      - 'Socket/**.c'
-      - 'Socket/**.h'
-      - '.github/workflows/compile-socket.yml'
+      - 'Socket/**'
+      - 'Tests/**'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 jobs:
