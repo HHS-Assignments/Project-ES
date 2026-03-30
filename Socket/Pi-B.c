@@ -120,6 +120,21 @@ static int pi2_send(const char *json_str)
     return rc;
 }
 
+/* Trim leading/trailing whitespace in-place and return pointer to trimmed string. */
+static char *trim(char *s)
+{
+    if (!s) return s;
+    /* trim leading */
+    while (*s && isspace((unsigned char)*s)) s++;
+    /* all spaces */
+    if (*s == '\0') return s;
+    /* trim trailing */
+    char *end = s + strlen(s) - 1;
+    while (end > s && isspace((unsigned char)*end)) end--;
+    *(end + 1) = '\0';
+    return s;
+}
+
 /* ── Device handler definitions (mirror Pi-A for consistent console output) */
 
 typedef void (*DeviceHandlerFn)(cJSON *json);
