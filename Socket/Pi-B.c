@@ -34,6 +34,7 @@
 #include <netdb.h>
 #include "cJSON.h"
 #include <strings.h>
+#include <stdbool.h>
 
 /** Buffer size for incoming HTTP POST requests from the WMos. */
 #define HTTP_BUFFER_SIZE 4096
@@ -129,33 +130,59 @@ typedef struct {
 
 static void handle_wmos(cJSON *json)
 {
-    cJSON *sensor = cJSON_GetObjectItemCaseSensitive(json, "Sensor");
-    cJSON *data   = cJSON_GetObjectItemCaseSensitive(json, "Data");
-
-    printf("  [WMos] Sensor : %s\n",
-           (sensor && (sensor->type & cJSON_String))
-               ? sensor->valuestring
-               : "(unknown)");
-
-    if (data && (data->type & cJSON_String))
-        printf("  [WMos] Data   : %s\n", data->valuestring);
-    else if (data && (data->type & cJSON_Number))
-        printf("  [WMos] Data   : %g\n", data->valuedouble);
-    else
-        printf("  [WMos] Data   : (unknown)\n");
+    (void)json; /* delegated to generic printer */
 }
 
 static void handle_unknown(cJSON *json)
 {
-    printf("  [unknown device] Raw fields:\n");
+    (void)json; /* delegated to generic printer */
+}
+
+/* Generic printer to produce consistent output on both sides. */
+static void print_generic(cJSON *json)
+{
+    cJSON *device = cJSON_GetObjectItemCaseSensitive(json, "Device");
+    if (device && (device->type & cJSON_String))
+        printf("  Device: %s\n", device->valuestring);
+    else
+        printf("  Device: (unknown)\n");
+
+    cJSON *sensor = cJSON_GetObjectItemCaseSensitive(json, "Sensor");
+    if (sensor && (sensor->type & cJSON_String))
+        printf("  Sensor : %s\n", sensor->valuestring);
+
+    cJSON *data = cJSON_GetObjectItemCaseSensitive(json, "Data");
+    if (data) {
+        if (data->type & cJSON_Number)
+            printf("  Data   : %g\n", data->valuedouble);
+        else if (data->type & cJSON_String)
+            printf("  Data   : %s\n", data->valuestring);
+        else
+            printf("  Data   : (unknown)\n");
+    }
+
+    /* Print top-level fields as key = value only when there are extra
+     * fields besides Device/Sensor/Data (e.g. ACK metadata). */
+    bool has_extra = false;
     cJSON *item = json->child;
     while (item) {
-        char *val = cJSON_PrintUnformatted(item);
-        printf("    %s = %s\n",
-               item->string ? item->string : "?",
-               val ? val : "(null)");
-        free(val);
+        if (item->string && strcmp(item->string, "Device") != 0 &&
+            strcmp(item->string, "Sensor") != 0 && strcmp(item->string, "Data") != 0) {
+            has_extra = true;
+            break;
+        }
         item = item->next;
+    }
+    if (has_extra) {
+        item = json->child;
+        while (item) {
+            char *val = cJSON_PrintUnformatted(item);
+            printf("    %s = %s\n",
+                   item->string ? item->string : "?",
+                   val ? val : "(null)");
+            free(val);
+            item = item->next;
+        }
     }
 }
 
@@ -168,13 +195,9 @@ static const size_t device_handler_count =
 
 static void dispatch(const char *device_name, cJSON *json)
 {
-    for (size_t i = 0; i < device_handler_count; i++) {
-        if (strcasecmp(device_handlers[i].device_name, device_name) == 0) {
-            device_handlers[i].handler(json);
-            return;
-        }
-    }
-    handle_unknown(json);
+    /* Ignore device-specific handlers; use generic printer for uniform output. */
+    (void)device_name;
+    print_generic(json);
 }
 
 /* ── HTTP helpers ────────────────────────────────────────────────────────── */

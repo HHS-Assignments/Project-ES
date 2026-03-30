@@ -36,6 +36,7 @@
 #include <netinet/in.h>
 #include "cJSON.h"
 #include <strings.h>
+#include <stdbool.h>
 
 /* ── Shared B socket ─────────────────────────────────────────────────────── */
 
@@ -144,20 +145,8 @@ typedef struct {
  */
 static void handle_wmos(cJSON *json)
 {
-    cJSON *sensor = cJSON_GetObjectItemCaseSensitive(json, "Sensor");
-    cJSON *data   = cJSON_GetObjectItemCaseSensitive(json, "Data");
-
-    printf("  [WMos] Sensor : %s\n",
-           (sensor && (sensor->type & cJSON_String))
-               ? sensor->valuestring
-               : "(unknown)");
-
-    if (data && (data->type & cJSON_String))
-        printf("  [WMos] Data   : %s\n", data->valuestring);
-    else if (data && (data->type & cJSON_Number))
-        printf("  [WMos] Data   : %g\n", data->valuedouble);
-    else
-        printf("  [WMos] Data   : (unknown)\n");
+    /* Keep for compatibility: delegate to generic printer. */
+    (void)json;
 }
 
 /**
@@ -169,15 +158,59 @@ static void handle_wmos(cJSON *json)
  */
 static void handle_unknown(cJSON *json)
 {
-    printf("  [unknown device] Raw fields:\n");
+    /* Keep for compatibility: delegate to generic printer. */
+    (void)json;
+}
+
+/*
+ * Generic pretty printer: prints Device, Sensor, Data (if present), then
+ * lists all top-level fields as `name = value`. This produces identical
+ * formatted blocks on both Pi-A and Pi-B.
+ */
+static void print_generic(cJSON *json)
+{
+    cJSON *device = cJSON_GetObjectItemCaseSensitive(json, "Device");
+    if (device && (device->type & cJSON_String))
+        printf("  Device: %s\n", device->valuestring);
+    else
+        printf("  Device: (unknown)\n");
+
+    cJSON *sensor = cJSON_GetObjectItemCaseSensitive(json, "Sensor");
+    if (sensor && (sensor->type & cJSON_String))
+        printf("  Sensor : %s\n", sensor->valuestring);
+
+    cJSON *data = cJSON_GetObjectItemCaseSensitive(json, "Data");
+    if (data) {
+        if (data->type & cJSON_Number)
+            printf("  Data   : %g\n", data->valuedouble);
+        else if (data->type & cJSON_String)
+            printf("  Data   : %s\n", data->valuestring);
+        else
+            printf("  Data   : (unknown)\n");
+    }
+
+    /* Print top-level fields as key = value only when there are extra
+     * fields besides Device/Sensor/Data (e.g. ACK metadata). */
+    bool has_extra = false;
     cJSON *item = json->child;
     while (item) {
-        char *val = cJSON_PrintUnformatted(item);
-        printf("    %s = %s\n",
-               item->string ? item->string : "?",
-               val ? val : "(null)");
-        free(val);
+        if (item->string && strcmp(item->string, "Device") != 0 &&
+            strcmp(item->string, "Sensor") != 0 && strcmp(item->string, "Data") != 0) {
+            has_extra = true;
+            break;
+        }
         item = item->next;
+    }
+    if (has_extra) {
+        item = json->child;
+        while (item) {
+            char *val = cJSON_PrintUnformatted(item);
+            printf("    %s = %s\n",
+                   item->string ? item->string : "?",
+                   val ? val : "(null)");
+            free(val);
+            item = item->next;
+        }
     }
 }
 
@@ -259,7 +292,8 @@ static void *pi1_reader_thread(void *arg)
                     : "(unknown)";
 
                         printf("  Device: %s\n", device_name);
-                        dispatch(device_name, json);
+                        /* Use generic printer for uniform output */
+                        print_generic(json);
 
                         /* Send acknowledgement back to B (A → B direction), but do not
                          * reply to incoming ACK messages themselves to avoid an
