@@ -37,6 +37,7 @@
 #include "cJSON.h"
 #include <strings.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 /* ── Shared B socket ─────────────────────────────────────────────────────── */
 
@@ -116,6 +117,21 @@ static int pi1_send(const char *msg)
     }
     pthread_mutex_unlock(&pi1_mutex);
     return rc;
+}
+
+/* Trim leading/trailing whitespace in-place and return pointer to trimmed string. */
+static char *trim(char *s)
+{
+    if (!s) return s;
+    /* trim leading */
+    while (*s && isspace((unsigned char)*s)) s++;
+    /* all spaces */
+    if (*s == '\0') return s;
+    /* trim trailing */
+    char *end = s + strlen(s) - 1;
+    while (end > s && isspace((unsigned char)*end)) end--;
+    *(end + 1) = '\0';
+    return s;
 }
 
 /* ── Device handler definitions ──────────────────────────────────────────── */
@@ -291,8 +307,7 @@ static void *pi1_reader_thread(void *arg)
                     ? device->valuestring
                     : "(unknown)";
 
-                        printf("  Device: %s\n", device_name);
-                        /* Use generic printer for uniform output */
+                        /* Use generic printer for uniform output (avoid duplicate Device lines) */
                         print_generic(json);
 
                         /* Send acknowledgement back to B (A → B direction), but do not
@@ -396,6 +411,11 @@ int main(int argc, char *argv[])
             char *sen = strtok(NULL, ",");
             char *dat = strtok(NULL, ",");
             if (dev && sen && dat) {
+                /* Trim whitespace around CSV fields */
+                dev = trim(dev);
+                sen = trim(sen);
+                dat = trim(dat);
+
                 cJSON *obj = cJSON_CreateObject();
                 cJSON_AddStringToObject(obj, "Device", dev);
                 cJSON_AddStringToObject(obj, "Sensor", sen);
