@@ -103,6 +103,65 @@ static int pi2_send(const char *json_str)
     return rc;
 }
 
+/* ── Device handler definitions (mirror Pi-A for consistent console output) */
+
+typedef void (*DeviceHandlerFn)(cJSON *json);
+
+typedef struct {
+    const char *device_name;
+    DeviceHandlerFn handler;
+} DeviceHandler;
+
+static void handle_wmos(cJSON *json)
+{
+    cJSON *sensor = cJSON_GetObjectItemCaseSensitive(json, "Sensor");
+    cJSON *data   = cJSON_GetObjectItemCaseSensitive(json, "Data");
+
+    printf("  [WMos] Sensor : %s\n",
+           (sensor && (sensor->type & cJSON_String))
+               ? sensor->valuestring
+               : "(unknown)");
+
+    if (data && (data->type & cJSON_String))
+        printf("  [WMos] Data   : %s\n", data->valuestring);
+    else if (data && (data->type & cJSON_Number))
+        printf("  [WMos] Data   : %g\n", data->valuedouble);
+    else
+        printf("  [WMos] Data   : (unknown)\n");
+}
+
+static void handle_unknown(cJSON *json)
+{
+    printf("  [unknown device] Raw fields:\n");
+    cJSON *item = json->child;
+    while (item) {
+        char *val = cJSON_PrintUnformatted(item);
+        printf("    %s = %s\n",
+               item->string ? item->string : "?",
+               val ? val : "(null)");
+        free(val);
+        item = item->next;
+    }
+}
+
+static const DeviceHandler device_handlers[] = {
+    { "Wmos", handle_wmos },
+};
+
+static const size_t device_handler_count =
+    sizeof(device_handlers) / sizeof(device_handlers[0]);
+
+static void dispatch(const char *device_name, cJSON *json)
+{
+    for (size_t i = 0; i < device_handler_count; i++) {
+        if (strcmp(device_handlers[i].device_name, device_name) == 0) {
+            device_handlers[i].handler(json);
+            return;
+        }
+    }
+    handle_unknown(json);
+}
+
 /* ── HTTP helpers ────────────────────────────────────────────────────────── */
 
 /**
@@ -177,6 +236,22 @@ static void *pi2_reader_thread(void *arg)
             break;
         }
         printf("[B] Received from A: %s\n", buf);
+
+        /* If it's JSON, parse and pretty-print using the same dispatch as Pi-A. */
+        cJSON *json = cJSON_Parse(buf);
+        if (json) {
+            cJSON *device = cJSON_GetObjectItemCaseSensitive(json, "Device");
+            const char *device_name =
+                (device && (device->type & cJSON_String))
+                    ? device->valuestring
+                    : "(unknown)";
+
+            printf("--- Parsed JSON from A (%d bytes) ---\n", n);
+            printf("  Device: %s\n", device_name);
+            dispatch(device_name, json);
+            cJSON_Delete(json);
+            printf("-------------------------------------\n");
+        }
         fflush(stdout);
     }
     return NULL;
