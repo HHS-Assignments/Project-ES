@@ -35,6 +35,7 @@
 #include "cJSON.h"
 #include <strings.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 /** Buffer size for incoming HTTP POST requests from the WMos. */
 #define HTTP_BUFFER_SIZE 4096
@@ -286,8 +287,9 @@ static void *pi2_reader_thread(void *arg)
                     ? device->valuestring
                     : "(unknown)";
 
-            printf("  Device: %s\n", device_name);
-            dispatch(device_name, json);
+
+            /* Use generic printer for uniform output (avoid duplicate Device lines) */
+            print_generic(json);
 
             if (status && (status->type & cJSON_String) &&
                 strcmp(status->valuestring, "ack") == 0) {
@@ -335,6 +337,11 @@ static void *pi2_stdin_thread(void *arg)
             char *sen = strtok(NULL, ",");
             char *dat = strtok(NULL, ",");
             if (dev && sen && dat) {
+                /* Trim whitespace around CSV fields */
+                dev = trim(dev);
+                sen = trim(sen);
+                dat = trim(dat);
+
                 cJSON *obj = cJSON_CreateObject();
                 cJSON_AddStringToObject(obj, "Device", dev);
                 cJSON_AddStringToObject(obj, "Sensor", sen);
