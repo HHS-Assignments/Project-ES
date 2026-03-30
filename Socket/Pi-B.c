@@ -182,6 +182,69 @@ static void *pi2_reader_thread(void *arg)
     return NULL;
 }
 
+/* ── Stdin sender thread (B -> A direction) ───────────────────────────────── */
+
+/**
+ * @brief Background thread: reads lines from stdin and sends them to A.
+ *
+ * Lines may be typed as CSV: Device,Sensor,Data and will be converted to
+ * compact JSON before sending. Otherwise raw lines are forwarded unchanged.
+ */
+static void *pi2_stdin_thread(void *arg)
+{
+    char line[1024];
+    (void)arg;
+
+    while (fgets(line, sizeof(line), stdin)) {
+        /* Strip trailing newline. */
+        size_t len = strlen(line);
+        if (len > 0 && line[len - 1] == '\n')
+            line[len - 1] = '\0';
+        if (strlen(line) == 0)
+            continue;
+
+        /* Convert comma-separated commands into JSON when appropriate. */
+        char *p = strchr(line, ',');
+        if (p) {
+            char *dev = strtok(line, ",");
+            char *sen = strtok(NULL, ",");
+            char *dat = strtok(NULL, ",");
+            if (dev && sen && dat) {
+                cJSON *obj = cJSON_CreateObject();
+                cJSON_AddStringToObject(obj, "Device", dev);
+                cJSON_AddStringToObject(obj, "Sensor", sen);
+                char *endptr = NULL;
+                double v = strtod(dat, &endptr);
+                if (endptr && *endptr == '\0')
+                    cJSON_AddNumberToObject(obj, "Data", v);
+                else
+                    cJSON_AddStringToObject(obj, "Data", dat);
+
+                char *json_str = cJSON_PrintUnformatted(obj);
+                cJSON_Delete(obj);
+                if (json_str) {
+                    int rc = pi2_send(json_str);
+                    printf("[B] Sent JSON to A: %s\n", json_str);
+                    fflush(stdout);
+                    free(json_str);
+                    if (rc != 0)
+                        fprintf(stderr, "[B] Warning: failed to send to A\n");
+                    continue;
+                }
+            }
+        }
+
+        /* Fallback: forward raw line unchanged (assume already JSON). */
+        if (pi2_send(line) == 0)
+            printf("[B] Sent to A: %s\n", line);
+        else
+            fprintf(stderr, "[B] Warning: failed to send to A\n");
+        fflush(stdout);
+    }
+
+    return NULL;
+}
+
 /* ── Per-WMos-connection thread ──────────────────────────────────────────── */
 
 /**
@@ -317,6 +380,12 @@ int main(int argc, char *argv[])
     if (pthread_create(&reader, NULL, pi2_reader_thread, NULL) != 0)
         error("ERROR creating A reader thread");
     pthread_detach(reader);
+
+    /* Start background thread to read stdin and forward commands to A */
+    pthread_t stdin_thr;
+    if (pthread_create(&stdin_thr, NULL, pi2_stdin_thread, NULL) != 0)
+        error("ERROR creating stdin sender thread");
+    pthread_detach(stdin_thr);
 
     /* ── Bind WMos HTTP listening socket ── */
     int wmos_fd = socket(AF_INET, SOCK_STREAM, 0);
