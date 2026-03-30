@@ -60,18 +60,3 @@ jobs:
           PI_B_BINARY: ${{ github.workspace }}/Socket/Pi-B-linux-x86_64
           PI_A_BINARY: ${{ github.workspace }}/Socket/Pi-A-linux-x86_64
         run: bash Tests/Socket/test_socket.sh
-
-      # Download unified socket binary and run unified test
-      - name: Download unified socket binary (x86_64)
-        uses: actions/download-artifact@v4
-        with:
-          name: socket-binaries-linux-x86_64
-          path: Socket/
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Make unified socket executable
-        run: chmod +x Socket/socket-linux-x86_64
-
-      - name: Run unified socket test
-        run: bash Tests/Socket/test_socket_unified.sh

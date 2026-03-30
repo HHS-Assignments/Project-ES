@@ -52,14 +52,12 @@ jobs:
           cd Socket
           gcc -O2 -Wall -o Pi-B-linux-x86_64 Pi-B.c cJSON.c -lm -lpthread
           gcc -O2 -Wall -o Pi-A-linux-x86_64 Pi-A.c cJSON.c -lm -lpthread
-          gcc -O2 -Wall -o socket-linux-x86_64 socket.c cJSON.c -lm -lpthread
 
       - name: Compile for linux-aarch64 (Raspberry Pi)
         run: |
           cd Socket
           aarch64-linux-gnu-gcc -O2 -Wall -o Pi-B-linux-aarch64 Pi-B.c cJSON.c -lm -lpthread
           aarch64-linux-gnu-gcc -O2 -Wall -o Pi-A-linux-aarch64 Pi-A.c cJSON.c -lm -lpthread
-          aarch64-linux-gnu-gcc -O2 -Wall -o socket-linux-aarch64 socket.c cJSON.c -lm -lpthread
 
       - name: Upload linux-x86_64 artifacts
         uses: actions/upload-artifact@v4.3.6
@@ -68,7 +66,6 @@ jobs:
           path: |
             Socket/Pi-B-linux-x86_64
             Socket/Pi-A-linux-x86_64
-            Socket/socket-linux-x86_64
           if-no-files-found: error
 
       - name: Upload linux-aarch64 artifacts
@@ -78,5 +75,4 @@ jobs:
           path: |
             Socket/Pi-B-linux-aarch64
             Socket/Pi-A-linux-aarch64
-            Socket/socket-linux-aarch64
           if-no-files-found: error
