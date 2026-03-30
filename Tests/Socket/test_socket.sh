@@ -25,7 +25,7 @@ SOCKET_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/Socket"
 #   PI_B_BINARY preferred over B_BINARY/PI1_BINARY
 #   PI_A_BINARY preferred over A_BINARY/PI2_BINARY
 if [ -n "${PI_B_BINARY:-}" ] && [ -x "${PI_B_BINARY}" ]; then
-    B_BIN="${PI_B_BINARY}"
+    B_BIN="${PI_BINARY}"
     COMPILED_B=false
 elif [ -n "${B_BINARY:-}" ] && [ -x "${B_BINARY}" ]; then
     B_BIN="${B_BINARY}"
@@ -34,7 +34,7 @@ elif [ -n "${PI1_BINARY:-}" ] && [ -x "${PI1_BINARY}" ]; then
     B_BIN="${PI1_BINARY}"
     COMPILED_B=false
 else
-    B_BIN="$SOCKET_DIR/Pi-B-test"
+    B_BIN="/tmp/Pi-B-test"
     COMPILED_B=true
 fi
 
@@ -48,7 +48,7 @@ elif [ -n "${PI2_BINARY:-}" ] && [ -x "${PI2_BINARY}" ]; then
     A_BIN="${PI2_BINARY}"
     COMPILED_A=false
 else
-    A_BIN="$SOCKET_DIR/Pi-A-test"
+    A_BIN="/tmp/Pi-A-test"
     COMPILED_A=true
 fi
 
@@ -67,12 +67,23 @@ fail() { echo "[FAIL] $*"; FAIL=$((FAIL + 1)); }
 cleanup() {
     [ -n "${B_PID:-}" ] && kill "$B_PID" 2>/dev/null || true
     [ -n "${A_PID:-}" ] && kill "$A_PID" 2>/dev/null || true
+    [ -n "${TAILA:-}" ] && kill "$TAILA" 2>/dev/null || true
+    [ -n "${TAILB:-}" ] && kill "$TAILB" 2>/dev/null || true
     # Only delete binaries that we compiled ourselves.
     [ "$COMPILED_B" = true ] && rm -f "$B_BIN" || true
     [ "$COMPILED_A" = true ] && rm -f "$A_BIN" || true
     rm -f /tmp/pi2_out.txt /tmp/pi1_out.txt
 }
 trap cleanup EXIT
+
+# Named pipes used to simulate typing into Pi-A and Pi-B stdin.
+PIA_FIFO=/tmp/piA_in
+PIB_FIFO=/tmp/piB_in
+
+cleanup_fifos() {
+    rm -f "$PIA_FIFO" "$PIB_FIFO"
+}
+trap cleanup_fifos EXIT
 
 # ── Build (only when pre-built binaries were not provided) ─────────────────
 
@@ -94,8 +105,16 @@ fi
 
 # ── Start servers ──────────────────────────────────────────────────────────
 
+log "Creating FIFOs for simulated stdin: $PIA_FIFO, $PIB_FIFO"
+rm -f "$PIA_FIFO" "$PIB_FIFO"
+mkfifo "$PIA_FIFO" "$PIB_FIFO"
+tail -f /dev/null > "$PIA_FIFO" &
+TAILA=$!
+tail -f /dev/null > "$PIB_FIFO" &
+TAILB=$!
+
 log "Starting Pi-A on port $PI2_PORT..."
-"$A_BIN" "$PI2_PORT" > /tmp/pi2_out.txt 2>&1 &
+"$A_BIN" "$PI2_PORT" < "$PIA_FIFO" > /tmp/pi2_out.txt 2>&1 &
 A_PID=$!
 
 # Wait until Pi-A's port is in LISTEN state (up to 10 s).
@@ -106,8 +125,8 @@ for i in $(seq 1 20); do
     sleep 0.5
 done
 
-log "Starting Pi-B on port $PI1_PORT forwarding to localhost:$PI2_PORT..."
-"$B_BIN" "$PI1_PORT" localhost "$PI2_PORT" > /tmp/pi1_out.txt 2>&1 &
+log "Starting Pi-B on port $PI1_PORT forwarding to 127.0.0.1:$PI2_PORT..."
+"$B_BIN" "$PI1_PORT" 127.0.0.1 "$PI2_PORT" < "$PIB_FIFO" > /tmp/pi1_out.txt 2>&1 &
 B_PID=$!
 
 # Wait until Pi-B's WMos port is in LISTEN state.
@@ -125,8 +144,8 @@ done
 # Sends an HTTP POST to Pi-B and returns the response body.
 send_post() {
     local body="$1"
-    curl -s --max-time 5 \
-         -X POST "http://localhost:${PI1_PORT}/" \
+        curl -s --max-time 5 \
+            -X POST "http://127.0.0.1:${PI1_PORT}/" \
          -H "Content-Type: application/json" \
          -d "$body" 2>/dev/null || echo ""
 }
@@ -257,6 +276,28 @@ if [ "$NEW_LINES" -gt "$PREV_LINES" ]; then
     pass "Pi-A processed concurrent WMos connections"
 else
     fail "Pi-A produced no output for concurrent connections"
+fi
+
+# ── Test 8: Pi-B typed stdin command forwarded to Pi-A ─────────────────────
+log "Test 8: Pi-B types 'Wmos,FromB,99' -> forwarded to Pi-A"
+printf '%s\n' 'Wmos,FromB,99' > "$PIB_FIFO"
+if wait_for_output /tmp/pi2_out.txt "FromB" 5 && wait_for_output /tmp/pi2_out.txt "99" 5; then
+    pass "Pi-A received and printed command from Pi-B via stdin"
+else
+    fail "Pi-A did not show forwarded stdin command from Pi-B"
+    echo "--- Pi-A output ---"
+    cat /tmp/pi2_out.txt
+fi
+
+# ── Test 9: Pi-A typed stdin command forwarded to Pi-B ─────────────────────
+log "Test 9: Pi-A types 'Wmos,FromA,123' -> forwarded to Pi-B"
+printf '%s\n' 'Wmos,FromA,123' > "$PIA_FIFO"
+if wait_for_output /tmp/pi1_out.txt "FromA" 5 && wait_for_output /tmp/pi1_out.txt "123" 5; then
+    pass "Pi-B received and printed command from Pi-A via stdin"
+else
+    fail "Pi-B did not show forwarded stdin command from Pi-A"
+    echo "--- Pi-B output ---"
+    cat /tmp/pi1_out.txt
 fi
 
 # ── Summary ────────────────────────────────────────────────────────────────

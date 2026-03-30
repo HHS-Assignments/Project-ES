@@ -321,6 +321,8 @@ int main(int argc, char *argv[])
         error("ERROR creating B reader thread");
 
     /* ── Main thread: forward stdin lines to B (A -> B direction) ── */
+    /* ── Main thread: forward stdin lines to B (A -> B direction) ── */
+    /* Lines typed as CSV: Device,Sensor,Data -> converted to compact JSON */
     char line[1024];
     while (fgets(line, sizeof(line), stdin)) {
         /* Strip trailing newline. */
@@ -329,6 +331,39 @@ int main(int argc, char *argv[])
             line[len - 1] = '\0';
         if (strlen(line) == 0)
             continue;
+
+        /* Convert comma-separated commands into JSON when appropriate. */
+        char *p = strchr(line, ',');
+        if (p) {
+            /* Parse up to three CSV fields: Device,Sensor,Data */
+            char *dev = strtok(line, ",");
+            char *sen = strtok(NULL, ",");
+            char *dat = strtok(NULL, ",");
+            if (dev && sen && dat) {
+                cJSON *obj = cJSON_CreateObject();
+                cJSON_AddStringToObject(obj, "Device", dev);
+                cJSON_AddStringToObject(obj, "Sensor", sen);
+                /* Try numeric Data, fall back to string */
+                char *endptr = NULL;
+                double v = strtod(dat, &endptr);
+                if (endptr && *endptr == '\0')
+                    cJSON_AddNumberToObject(obj, "Data", v);
+                else
+                    cJSON_AddStringToObject(obj, "Data", dat);
+
+                char *json_str = cJSON_PrintUnformatted(obj);
+                cJSON_Delete(obj);
+                if (json_str) {
+                    pi1_send(json_str);
+                    printf("[A] Sent JSON to B: %s\n", json_str);
+                    fflush(stdout);
+                    free(json_str);
+                    continue;
+                }
+            }
+        }
+
+        /* Fallback: forward raw line unchanged (assume already JSON). */
         pi1_send(line);
         printf("[A] Sent to B: %s\n", line);
         fflush(stdout);

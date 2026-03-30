@@ -163,6 +163,33 @@ Tests covered:
 
 ---
 
+### Typing commands interactively
+
+Both `Pi-A` and `Pi-B` accept simple comma-separated commands from their
+terminal stdin which are converted to compact JSON and forwarded over the
+full-duplex socket. The format is:
+
+```
+Device,Sensor,Data
+```
+
+Example: typing this line in either Pi's terminal:
+
+```
+Wmos,Button,1
+```
+
+will be forwarded as this JSON message over the socket:
+
+```json
+{"Device":"Wmos","Sensor":"Button","Data":1}
+```
+
+This makes it easy to issue manual test commands from either Pi without
+running an HTTP POST: type the CSV line and press Enter — the other Pi will
+receive and process the generated JSON message.
+
+
 ## Dependencies
 
 - Standard C library (libc)
