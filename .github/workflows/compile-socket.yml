@@ -33,8 +33,6 @@ jobs:
   compile:
     name: Compiling Socket Binaries
     runs-on: ubuntu-latest
-    permissions:
-      workflows: write
     container:
       image: ubuntu:latest
     env:
@@ -78,16 +76,3 @@ jobs:
             Socket/Pi-B-linux-aarch64
             Socket/Pi-A-linux-aarch64
           if-no-files-found: error
-
-      - name: Trigger test workflow
-        if: ${{ always() }}
-        env:
-          REPO: ${{ github.repository }}
-          REF: ${{ github.ref_name }}
-        run: |
-          echo "Triggering test workflow for ${REPO} on ref ${REF}"
-          curl -s -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            https://api.github.com/repos/${REPO}/actions/workflows/test-socket.yml/dispatches \
-            -d "{\"ref\": \"${REF}\"}"
