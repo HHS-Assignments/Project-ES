@@ -233,16 +233,10 @@ int main(void)
 	    float t;
 	    SHT3x_Read(&t);
 
-	    int geheel = (int)t;
-	    int decimaal = (int)((t - geheel) * 100);
-
 	    uint8_t Beweging = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1);
 
 	    char buffer[64];
-	    sprintf(buffer, "Temp: %d.%02d | Beweging: %s\r\n",
-	            geheel,
-	            decimaal,
-	            (Beweging == GPIO_PIN_SET) ? "Ja" : "Nee");
+	    sprintf(buffer, "Temp: %.2f | Beweging: %s\r\n", t, (Beweging == GPIO_PIN_SET) ? "Ja" : "Nee");
 
 	    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 	    HAL_Delay(1000);
