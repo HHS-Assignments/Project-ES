@@ -307,16 +307,18 @@ static void *pi1_reader_thread(void *arg)
                     ? device->valuestring
                     : "(unknown)";
 
-                        /* Use generic printer for uniform output (avoid duplicate Device lines) */
-                        print_generic(json);
-
-                        /* Send acknowledgement back to B (A → B direction), but do not
-                         * reply to incoming ACK messages themselves to avoid an
-                         * acknowledgement loop. */
                         cJSON *status = cJSON_GetObjectItemCaseSensitive(json, "status");
-                        if (!(status && (status->type & cJSON_String) &&
-                                    strcmp(status->valuestring, "ack") == 0)) {
-                                pi1_send("{\"status\":\"ack\",\"Device\":\"A\"}");
+
+                        /* If this is an ACK, print only the concise ACK line.
+                         * For non-ACK messages, print the full generic block and send ACK. */
+                        if (status && (status->type & cJSON_String) &&
+                            strcmp(status->valuestring, "ack") == 0) {
+                            printf("[A] Received ACK from B\n");
+                        } else {
+                            /* Use generic printer for uniform output (avoid duplicate Device lines) */
+                            print_generic(json);
+                            /* Send acknowledgement back to B (A → B direction). */
+                            pi1_send("{\"status\":\"ack\",\"Device\":\"A\"}");
                         }
 
                         cJSON_Delete(json);
