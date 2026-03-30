@@ -25,7 +25,7 @@ SOCKET_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/Socket"
 #   PI_B_BINARY preferred over B_BINARY/PI1_BINARY
 #   PI_A_BINARY preferred over A_BINARY/PI2_BINARY
 if [ -n "${PI_B_BINARY:-}" ] && [ -x "${PI_B_BINARY}" ]; then
-    B_BIN="${PI_BINARY}"
+    B_BIN="${PI_B_BINARY}"
     COMPILED_B=false
 elif [ -n "${B_BINARY:-}" ] && [ -x "${B_BINARY}" ]; then
     B_BIN="${B_BINARY}"
