@@ -65,6 +65,8 @@ void Error_Handler(void);
 #define Motion_Input_GPIO_Port GPIOA
 #define VCP_TX_Pin GPIO_PIN_2
 #define VCP_TX_GPIO_Port GPIOA
+#define Button_Input_Pin GPIO_PIN_11
+#define Button_Input_GPIO_Port GPIOA
 #define SWDIO_Pin GPIO_PIN_13
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14

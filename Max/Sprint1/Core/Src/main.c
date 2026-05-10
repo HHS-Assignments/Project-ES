@@ -100,6 +100,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   Servo_SetAngle(0); // Servo gaat naar begin stand
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -115,8 +116,7 @@ int main(void)
 	      char msg[] = "Deur gaat open:)\r\n";
 	      HAL_UART_Transmit(&huart2, (uint8_t*)msg, sizeof(msg)-1, HAL_MAX_DELAY);
 
-	      //Servo draait
-	      Servo_SetAngle(90);
+	      Servo_SetAngle(180);
 	      HAL_Delay(3000);
 	      Servo_SetAngle(0);
 
@@ -319,6 +319,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(Motion_Input_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : Button_Input_Pin */
+  GPIO_InitStruct.Pin = Button_Input_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(Button_Input_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : LD3_Pin */
   GPIO_InitStruct.Pin = LD3_Pin;
