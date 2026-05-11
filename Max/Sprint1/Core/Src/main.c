@@ -40,6 +40,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+SPI_HandleTypeDef hspi3;
+
 TIM_HandleTypeDef htim1;
 
 UART_HandleTypeDef huart2;
@@ -53,6 +55,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_SPI3_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -63,6 +66,77 @@ void Servo_SetAngle(uint8_t angle, uint32_t channel)
 {
     uint32_t pulse = 500 + ((uint32_t)angle * 2000) / 180;
     __HAL_TIM_SET_COMPARE(&htim1, channel, pulse);
+}
+
+void max7219_send(uint8_t reg, uint8_t data)
+{
+    HAL_GPIO_WritePin(MAX_CS_GPIO_Port, MAX_CS_Pin, GPIO_PIN_RESET);
+
+    uint8_t bytes[2] = {reg, data};
+    HAL_SPI_Transmit(&hspi3, bytes, 2, HAL_MAX_DELAY);
+
+    HAL_GPIO_WritePin(MAX_CS_GPIO_Port, MAX_CS_Pin, GPIO_PIN_SET);
+}
+
+void max7219_init(void)
+{
+    max7219_send(0x0F, 0x00); // Display test uit
+    max7219_send(0x0C, 0x01); // Shutdown uit (display aan)
+    max7219_send(0x0B, 0x07); // Scan limit: 8 rijen
+    max7219_send(0x09, 0x00); // Geen decode mode
+    max7219_send(0x0A, 0x08); // Brightness
+}
+uint8_t leeg_2d[8][8] = {
+    {0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0}
+};
+
+uint8_t uitroepteken_2d[8][8] = {
+    {0,0,0,1,1,0,0,0},
+    {0,0,0,1,1,0,0,0},
+    {0,0,0,1,1,0,0,0},
+    {0,0,0,1,1,0,0,0},
+    {0,0,0,1,1,0,0,0},
+    {0,0,0,0,0,0,0,0},
+    {0,0,0,1,1,0,0,0},
+    {0,0,0,1,1,0,0,0}
+};
+
+uint8_t duimpje_2d[8][8] = {
+    {0,0,0,0,1,0,0,0},
+    {0,0,0,1,1,0,0,0},
+    {0,0,0,1,1,0,0,0},
+    {1,1,1,1,1,1,1,0},
+    {1,1,1,1,1,1,1,0},
+    {1,1,1,1,1,1,1,0},
+    {1,1,1,1,1,1,0,0},
+    {0,0,0,1,1,0,0,0}
+};
+
+uint8_t row_to_byte(uint8_t row[8])
+{
+    uint8_t value = 0;
+    for (int i = 0; i < 8; i++)
+    {
+        value <<= 1;
+        value |= (row[i] & 0x01);
+    }
+    return value;
+}
+
+void max7219_show_2d(uint8_t arr[8][8])
+{
+    for (uint8_t row = 0; row < 8; row++)
+    {
+        uint8_t byte = row_to_byte(arr[row]);
+        max7219_send(row + 1, byte);
+    }
 }
 /* USER CODE END 0 */
 
@@ -97,7 +171,9 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM1_Init();
   MX_USART2_UART_Init();
+  MX_SPI3_Init();
   /* USER CODE BEGIN 2 */
+  max7219_init();
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
 
@@ -117,6 +193,7 @@ int main(void)
 	  if (HAL_GPIO_ReadPin(NoodButton_Input_GPIO_Port, NoodButton_Input_Pin) == GPIO_PIN_RESET) {
 	          if (!noodstand_actief) {
 	              noodstand_actief = 1;
+	              max7219_show_2d(uitroepteken_2d);
 	              char nood[] = "Noodknop ingedrukt, alle deuren gaan Open\r\n";
 	              HAL_UART_Transmit(&huart2, (uint8_t*)nood, sizeof(nood)-1, HAL_MAX_DELAY);
 	              Servo_SetAngle(180, TIM_CHANNEL_1);
@@ -124,6 +201,7 @@ int main(void)
 	          }
 	      } else {
 	          noodstand_actief = 0; // reset als knop losgelaten wordt
+	          max7219_show_2d(leeg_2d);
 	      }
 
 	      // Normale deur logica — alleen als geen noodstand
@@ -159,6 +237,7 @@ int main(void)
   /* USER CODE END 3 */
 }
 }
+
 /**
   * @brief System Clock Configuration
   * @retval None
@@ -217,6 +296,46 @@ void SystemClock_Config(void)
   /** Enable MSI Auto calibration
   */
   HAL_RCCEx_EnableMSIPLLMode();
+}
+
+/**
+  * @brief SPI3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI3_Init(void)
+{
+
+  /* USER CODE BEGIN SPI3_Init 0 */
+
+  /* USER CODE END SPI3_Init 0 */
+
+  /* USER CODE BEGIN SPI3_Init 1 */
+
+  /* USER CODE END SPI3_Init 1 */
+  /* SPI3 parameter configuration*/
+  hspi3.Instance = SPI3;
+  hspi3.Init.Mode = SPI_MODE_MASTER;
+  hspi3.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi3.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi3.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi3.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi3.Init.NSS = SPI_NSS_SOFT;
+  hspi3.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+  hspi3.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi3.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi3.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi3.Init.CRCPolynomial = 7;
+  hspi3.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
+  hspi3.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+  if (HAL_SPI_Init(&hspi3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI3_Init 2 */
+
+  /* USER CODE END SPI3_Init 2 */
+
 }
 
 /**
@@ -346,7 +465,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(MAX_CS_GPIO_Port, MAX_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : Motion_Input_Pin */
   GPIO_InitStruct.Pin = Motion_Input_Pin;
@@ -354,18 +473,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(Motion_Input_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : MAX_CS_Pin */
+  GPIO_InitStruct.Pin = MAX_CS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(MAX_CS_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : NoodButton_Input_Pin Button_Input_Pin */
   GPIO_InitStruct.Pin = NoodButton_Input_Pin|Button_Input_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : LD3_Pin */
-  GPIO_InitStruct.Pin = LD3_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LD3_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
