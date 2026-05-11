@@ -114,22 +114,34 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  if (HAL_GPIO_ReadPin(Motion_Input_GPIO_Port, Motion_Input_Pin) == GPIO_PIN_SET)
+	  if (HAL_GPIO_ReadPin(Motion_Input_GPIO_Port, Motion_Input_Pin) == GPIO_PIN_SET ||
+	      HAL_GPIO_ReadPin(Button_Input_GPIO_Port, Button_Input_Pin) == GPIO_PIN_RESET)
 	  {
-	      char msg[] = "Deur gaat open:)\r\n";
+	      char msg[] = "Deur 1 gaat open\r\n";
 	      HAL_UART_Transmit(&huart2, (uint8_t*)msg, sizeof(msg)-1, HAL_MAX_DELAY);
 
 	      Servo_SetAngle(180, TIM_CHANNEL_1);
-	      Servo_SetAngle(180, TIM_CHANNEL_2); // 2e servo
 	      HAL_Delay(3000);
 	      Servo_SetAngle(0, TIM_CHANNEL_1);
-	      Servo_SetAngle(0, TIM_CHANNEL_2); // 2e servo
 
-	      char msg2[] = "Deur dicht:)\r\n";
+	      char msg2[] = "Deur 1 gaat dicht\r\n";
 	      HAL_UART_Transmit(&huart2, (uint8_t*)msg2, sizeof(msg2)-1, HAL_MAX_DELAY);
 
 	      HAL_Delay(1000);
+
+	      char msg3[] = "Deur 2 gaat open\r\n";
+	      HAL_UART_Transmit(&huart2, (uint8_t*)msg3, sizeof(msg3)-1, HAL_MAX_DELAY);
+
+	      Servo_SetAngle(180, TIM_CHANNEL_2);
+	      HAL_Delay(3000);
+	      Servo_SetAngle(0, TIM_CHANNEL_2); // 2e servo
+
+	      char msg4[] = "Deur 2 gaat dicht\r\n";
+	      HAL_UART_Transmit(&huart2, (uint8_t*)msg4, sizeof(msg4)-1, HAL_MAX_DELAY);
+
+	      HAL_Delay(1000);
 	  }
+
   }
   /* USER CODE END 3 */
 }
