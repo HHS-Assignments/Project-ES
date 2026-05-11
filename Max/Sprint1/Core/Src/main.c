@@ -114,8 +114,10 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  if (HAL_GPIO_ReadPin(NoodButton_Input_GPIO_Port, NoodButton_Input_Pin) == GPIO_PIN_SET){
+
 	  if (HAL_GPIO_ReadPin(Motion_Input_GPIO_Port, Motion_Input_Pin) == GPIO_PIN_SET ||
-	      HAL_GPIO_ReadPin(Button_Input_GPIO_Port, Button_Input_Pin) == GPIO_PIN_RESET)
+		        HAL_GPIO_ReadPin(Button_Input_GPIO_Port, Button_Input_Pin) == GPIO_PIN_RESET)
 	  {
 	      char msg[] = "Deur 1 gaat open\r\n";
 	      HAL_UART_Transmit(&huart2, (uint8_t*)msg, sizeof(msg)-1, HAL_MAX_DELAY);
@@ -134,14 +136,14 @@ int main(void)
 
 	      Servo_SetAngle(180, TIM_CHANNEL_2);
 	      HAL_Delay(3000);
-	      Servo_SetAngle(0, TIM_CHANNEL_2); // 2e servo
+	      Servo_SetAngle(0, TIM_CHANNEL_2);
 
 	      char msg4[] = "Deur 2 gaat dicht\r\n";
 	      HAL_UART_Transmit(&huart2, (uint8_t*)msg4, sizeof(msg4)-1, HAL_MAX_DELAY);
 
 	      HAL_Delay(1000);
 	  }
-
+	  }
   }
   /* USER CODE END 3 */
 }
@@ -341,11 +343,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(Motion_Input_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : Button_Input_Pin */
-  GPIO_InitStruct.Pin = Button_Input_Pin;
+  /*Configure GPIO pins : NoodButton_Input_Pin Button_Input_Pin */
+  GPIO_InitStruct.Pin = NoodButton_Input_Pin|Button_Input_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(Button_Input_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : LD3_Pin */
   GPIO_InitStruct.Pin = LD3_Pin;
