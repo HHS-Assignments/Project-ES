@@ -24,13 +24,13 @@
 ## Noodknop
 | Pin | Nucleo Pin | Opmerking |
 |-----|------------|-----------|
-| Knop | PA (NoodButton_Input_Pin) | Pull-up, actief LOW |
+| Knop | PA10 | Pull-up, actief LOW |
 | GND | GND | |
 
 ## Gewone Knop (Deur openen)
 | Pin | Nucleo Pin | Opmerking |
 |-----|------------|-----------|
-| Knop | PA (Button_Input_Pin) | Pull-up, actief LOW |
+| Knop | PA11 | Pull-up, actief LOW |
 | GND | GND | |
 
 ## MAX7219 LED-matrix
@@ -39,5 +39,5 @@
 | VCC | 5V | |
 | GND | GND | |
 | DIN | PB5 (SPI3 MOSI) | |
-| CLK | PB3 (SPI3 CLK) | |
-| CS/LOAD | MAX_CS_Pin | GPIO output |
+| CLK | PB3 (SPI3 SCK) | |
+| CS/LOAD | PA3 | GPIO output |
