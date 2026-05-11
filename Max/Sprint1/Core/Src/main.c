@@ -108,17 +108,29 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  uint8_t noodstand_actief = 0;
   while (1)
   {
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  if (HAL_GPIO_ReadPin(NoodButton_Input_GPIO_Port, NoodButton_Input_Pin) == GPIO_PIN_SET){
+	  if (HAL_GPIO_ReadPin(NoodButton_Input_GPIO_Port, NoodButton_Input_Pin) == GPIO_PIN_RESET) {
+	          if (!noodstand_actief) {
+	              noodstand_actief = 1;
+	              char nood[] = "Noodknop ingedrukt, alle deuren gaan Open\r\n";
+	              HAL_UART_Transmit(&huart2, (uint8_t*)nood, sizeof(nood)-1, HAL_MAX_DELAY);
+	              Servo_SetAngle(180, TIM_CHANNEL_1);
+	              Servo_SetAngle(180, TIM_CHANNEL_2);
+	          }
+	      } else {
+	          noodstand_actief = 0; // reset als knop losgelaten wordt
+	      }
 
+	      // Normale deur logica — alleen als geen noodstand
+	  if (!noodstand_actief) {
 	  if (HAL_GPIO_ReadPin(Motion_Input_GPIO_Port, Motion_Input_Pin) == GPIO_PIN_SET ||
-		        HAL_GPIO_ReadPin(Button_Input_GPIO_Port, Button_Input_Pin) == GPIO_PIN_RESET)
-	  {
+	      HAL_GPIO_ReadPin(Button_Input_GPIO_Port, Button_Input_Pin) == GPIO_PIN_RESET)
+	          {
 	      char msg[] = "Deur 1 gaat open\r\n";
 	      HAL_UART_Transmit(&huart2, (uint8_t*)msg, sizeof(msg)-1, HAL_MAX_DELAY);
 
@@ -143,11 +155,10 @@ int main(void)
 
 	      HAL_Delay(1000);
 	  }
-	  }
   }
   /* USER CODE END 3 */
 }
-
+}
 /**
   * @brief System Clock Configuration
   * @retval None
