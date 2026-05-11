@@ -1,4 +1,4 @@
-# Bedrading — Bewegingssensor Deur
+# Bedrading Bewegingssensor Deur
 
 ## SG90 Servo 1
 | Draad | Kleur | Nucleo Pin |
