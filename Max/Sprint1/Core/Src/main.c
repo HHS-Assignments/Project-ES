@@ -59,10 +59,10 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void Servo_SetAngle(uint8_t angle)
+void Servo_SetAngle(uint8_t angle, uint32_t channel)
 {
     uint32_t pulse = 500 + ((uint32_t)angle * 2000) / 180;
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, pulse);
+    __HAL_TIM_SET_COMPARE(&htim1, channel, pulse);
 }
 /* USER CODE END 0 */
 
@@ -99,7 +99,10 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-  Servo_SetAngle(0); // Servo gaat naar begin stand
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+
+  Servo_SetAngle(0, TIM_CHANNEL_1);
+  Servo_SetAngle(0, TIM_CHANNEL_2);
 
   /* USER CODE END 2 */
 
@@ -116,9 +119,11 @@ int main(void)
 	      char msg[] = "Deur gaat open:)\r\n";
 	      HAL_UART_Transmit(&huart2, (uint8_t*)msg, sizeof(msg)-1, HAL_MAX_DELAY);
 
-	      Servo_SetAngle(180);
+	      Servo_SetAngle(180, TIM_CHANNEL_1);
+	      Servo_SetAngle(180, TIM_CHANNEL_2); // 2e servo
 	      HAL_Delay(3000);
-	      Servo_SetAngle(0);
+	      Servo_SetAngle(0, TIM_CHANNEL_1);
+	      Servo_SetAngle(0, TIM_CHANNEL_2); // 2e servo
 
 	      char msg2[] = "Deur dicht:)\r\n";
 	      HAL_UART_Transmit(&huart2, (uint8_t*)msg2, sizeof(msg2)-1, HAL_MAX_DELAY);
@@ -234,6 +239,10 @@ static void MX_TIM1_Init(void)
   sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
   sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
   if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
   }
