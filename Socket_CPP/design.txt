@@ -1,0 +1,140 @@
+Socket UML Class Diagram for the C++ Rewrite
+===========================================
+
+Purpose
+-------
+This is a structural UML class diagram for the socket layer rewrite. It focuses on
+class responsibilities and relationships such as inheritance, composition,
+aggregation, association, and dependency.
+
+Main packages
+-------------
+[protocol]
+[transport]
+[dispatch]
+[service]
+
+Class diagram
+-------------
+
+protocol::JsonMessage
+----------------------
+- device: std::string
+- sensor: std::string
+- data: std::string
+- raw: std::string
+----------------------
++ parse(text: std::string): bool
++ serialize(): std::string
++ isValid(): bool
+
+transport::SocketConnection
+---------------------------
+- fd: int
+- host: std::string
+- port: int
+---------------------------
++ connect(host: std::string, port: int): bool
++ sendLine(data: std::string): bool
++ readLine(): std::string
++ close(): void
+
+transport::HttpServer
+---------------------
+- listenPort: int
+- maxConnections: int
+---------------------
++ start(port: int): void
++ acceptConnection(): SocketConnection
++ extractBody(request: std::string): std::string
++ sendResponse(socket: SocketConnection, body: std::string): void
+
+transport::ThreadPoolWorker
+---------------------------
+- workerId: int
+- running: bool
+---------------------------
++ run(): void
++ stop(): void
++ process(request: std::string): void
+
+dispatch::IDeviceHandler
+------------------------
+<<interface>>
+------------------------
++ handle(message: protocol::JsonMessage): void
+
+dispatch::WmosHandler
+---------------------
+- deviceName: std::string
+---------------------
++ handle(message: protocol::JsonMessage): void
+
+dispatch::UnknownHandler
+------------------------
+- fallbackMode: bool
+------------------------
++ handle(message: protocol::JsonMessage): void
+
+dispatch::DeviceDispatcher
+--------------------------
+- handlers: std::map<std::string, IDeviceHandler*>
+--------------------------
++ registerHandler(device: std::string, handler: IDeviceHandler*): void
++ dispatch(message: protocol::JsonMessage): void
++ handleUnknown(message: protocol::JsonMessage): void
+
+service::PiAService
+-------------------
+- peer: transport::SocketConnection
+- dispatcher: dispatch::DeviceDispatcher
+-------------------
++ start(port: int): void
++ acceptPeer(): void
++ processIncoming(message: protocol::JsonMessage): void
++ sendAck(status: std::string): void
+
+service::PiBService
+-------------------
+- wmosServer: transport::HttpServer
+- upstream: transport::SocketConnection
+- dispatcher: dispatch::DeviceDispatcher
+- workers: std::vector<transport::ThreadPoolWorker>
+-------------------
++ start(wmosPort: int, aHost: std::string, aPort: int): void
++ forwardToPiA(message: protocol::JsonMessage): void
++ readFromPiA(): void
++ handleWmosRequest(request: std::string): void
+
+Relationships
+-------------
+- transport::HttpServer *-- transport::ThreadPoolWorker : creates
+- service::PiBService *-- transport::HttpServer : composition
+- service::PiBService *-- transport::SocketConnection : composition
+- service::PiBService *-- dispatch::DeviceDispatcher : composition
+- service::PiBService o-- transport::ThreadPoolWorker : manages
+- service::PiAService *-- transport::SocketConnection : composition
+- service::PiAService *-- dispatch::DeviceDispatcher : composition
+- dispatch::DeviceDispatcher o-- dispatch::IDeviceHandler : registers
+- dispatch::WmosHandler ..|> dispatch::IDeviceHandler : implements
+- dispatch::UnknownHandler ..|> dispatch::IDeviceHandler : implements
+- transport::HttpServer --> protocol::JsonMessage : uses
+- transport::SocketConnection --> protocol::JsonMessage : exchanges
+- service::PiAService --> protocol::JsonMessage : processes
+- service::PiBService --> protocol::JsonMessage : parses and forwards
+
+Design notes
+------------
+- JsonMessage is the shared value object for all socket communication.
+- SocketConnection isolates the TCP details from the service classes.
+- DeviceDispatcher owns the runtime mapping from device name to handler.
+- PiBService is responsible for HTTP ingress and forwarding to Pi-A.
+- PiAService is responsible for peer-side reception and acknowledgement.
+- The interface-based handler model replaces the C function table with polymorphism.
+
+Legend
+------
+- `*--` composition
+- `o--` aggregation
+- `-->` dependency / usage
+- `..|>` interface realization
