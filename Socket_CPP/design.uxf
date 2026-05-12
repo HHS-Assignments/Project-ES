@@ -1,0 +1,73 @@
+<diagram program="umletino" version="15.1"><zoom_level>8</zoom_level><element><id>UMLClass</id><coordinates><x>18</x><y>288</y><w>208</w><h>128</h></coordinates><panel_attributes>JsonMessage
+--
+- device: std::string
+- sensor: std::string
+- data: std::string
+- raw: std::string
+--
++ parse(text: std::string): bool
++ serialize(): std::string
++ isValid(): bool</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>266</x><y>288</y><w>232</w><h>128</h></coordinates><panel_attributes>SocketConnection
+--
+- fd: int
+- host: std::string
+- port: int
+--
++ connect(host: std::string, port: int): bool
++ sendLine(data: std::string): bool
++ readLine(): std::string
++ close(): void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>170</x><y>80</y><w>240</w><h>144</h></coordinates><panel_attributes>HttpServer
+--
+- listenPort: int
+- maxConnections: int
+--
++ start(port: int): void
++ acceptConnection(): SocketConnection
++ extractBody(request: std::string): std::string
++ sendResponse(socket: SocketConnection, body: std::string): void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>810</x><y>288</y><w>208</w><h>128</h></coordinates><panel_attributes>ThreadPoolWorker
+--
+- workerId: int
+- running: bool
+--
++ run(): void
++ stop(): void
++ process(request: std::string): void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1074</x><y>288</y><w>240</w><h>144</h></coordinates><panel_attributes>DeviceDispatcher
+--
+- handlers: std::map&lt;std::string, IDeviceHandler*&gt;
+--
++ registerHandler(device: std::string, handler: IDeviceHandler*): void
++ dispatch(message: JsonMessage): void
++ handleUnknown(message: JsonMessage): void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1370</x><y>288</y><w>216</w><h>112</h></coordinates><panel_attributes>IDeviceHandler
+--
+&lt;&lt;interface&gt;&gt;
+--
++ handle(message: JsonMessage): void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1370</x><y>448</y><w>216</w><h>112</h></coordinates><panel_attributes>WmosHandler
+--
+- deviceName: std::string
+--
++ handle(message: JsonMessage): void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1370</x><y>600</y><w>216</w><h>112</h></coordinates><panel_attributes>UnknownHandler
+--
+- fallbackMode: bool
+--
++ handle(message: JsonMessage): void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>18</x><y>512</y><w>240</w><h>144</h></coordinates><panel_attributes>PiBService
+--
+- wmosServer: HttpServer
+- upstream: SocketConnection
+- dispatcher: DeviceDispatcher
+- workers: std::vector&lt;ThreadPoolWorker&gt;
+--
++ start(wmosPort: int, aHost: std::string, aPort: int): void
++ forwardToPiA(message: JsonMessage): void
++ readFromPiA(): void
++ handleWmosRequest(request: std::string): void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>298</x><y>512</y><w>240</w><h>144</h></coordinates><panel_attributes>PiAService
+--
+- peer: SocketConnection
+- dispatcher: DeviceDispatcher
+--
++ start(port: int): void
++ acceptPeer(): void
++ processIncoming(message: JsonMessage): void
++ sendAck(status: std::string): void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLNote</id><coordinates><x>578</x><y>512</y><w>344</w><h>128</h></coordinates><panel_attributes>Structural UML focus
+--
+This diagram shows the class structure of the socket rewrite.
+It models composition, aggregation, interface realization, and dependency instead of runtime message flow.</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>226</x><y>328</y><w>56</w><h>24</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>10;10;50;10</additional_attributes></element><element><id>Relation</id><coordinates><x>162</x><y>120</y><w>360</w><h>232</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>430;270;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>402</x><y>120</y><w>424</w><h>232</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>10;10;510;270</additional_attributes></element><element><id>Relation</id><coordinates><x>1026</x><y>328</y><w>56</w><h>24</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>10;10;50;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1314</x><y>328</y><w>64</w><h>24</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>10;10;60;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1450</x><y>400</y><w>24</w><h>56</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>10;10;10;50</additional_attributes></element><element><id>Relation</id><coordinates><x>1450</x><y>552</y><w>24</w><h>56</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>10;10;10;50</additional_attributes></element><element><id>Relation</id><coordinates><x>114</x><y>448</y><w>112</w><h>96</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>120;10;10;100</additional_attributes></element><element><id>Relation</id><coordinates><x>378</x><y>448</y><w>88</w><h>96</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>10;10;90;100</additional_attributes></element><element><id>Relation</id><coordinates><x>674</x><y>448</y><w>96</w><h>96</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>10;10;100;100</additional_attributes></element><element><id>Relation</id><coordinates><x>954</x><y>448</y><w>136</w><h>96</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>10;10;150;100</additional_attributes></element><element><id>Relation</id><coordinates><x>1314</x><y>488</y><w>64</w><h>24</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>10;10;60;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1314</x><y>640</y><w>64</w><h>24</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>10;10;60;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1202</x><y>400</y><w>152</w><h>64</h></coordinates><panel_attributes>lt=.</panel_attributes><additional_attributes>10;10;170;60</additional_attributes></element><element><id>Relation</id><coordinates><x>1202</x><y>552</y><w>152</w><h>64</h></coordinates><panel_attributes>lt=.</panel_attributes><additional_attributes>10;10;170;60</additional_attributes></element><element><id>Relation</id><coordinates><x>1122</x><y>400</y><w>96</w><h>56</h></coordinates><panel_attributes>lt=.</panel_attributes><additional_attributes>10;10;100;50</additional_attributes></element><element><id>Relation</id><coordinates><x>1122</x><y>552</y><w>96</w><h>56</h></coordinates><panel_attributes>lt=.</panel_attributes><additional_attributes>10;10;100;50</additional_attributes></element><element><id>Relation</id><coordinates><x>242</x><y>400</y><w>24</w><h>64</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>10;10;10;60</additional_attributes></element><element><id>Relation</id><coordinates><x>162</x><y>192</y><w>392</w><h>272</h></coordinates><panel_attributes>lt=-</panel_attributes><additional_attributes>10;10;470;320</additional_attributes></element></diagram>
