@@ -202,37 +202,37 @@ int main(void)
 		  if (MFRC522_ReadUid(&rfID, uid) == STATUS_OK){
 			  USER_LOG("CARD ID:%02X %02X %02X %02X", uid[0], uid[1], uid[2], uid[3]);
 			  if ((uid[0] == 0x03) && (uid[1] == 0xF5) &&(uid[2] == 0x4C) &&(uid[3] == 0xA6)){
-				  char RFIDmsg[] = "Deur 1 gaat open\r\n";
-				  	      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg, sizeof(RFIDmsg)-1, HAL_MAX_DELAY);
 
-				  	      Servo_SetAngle(180, TIM_CHANNEL_1);
-				  	      HAL_Delay(3000);
-				  	      Servo_SetAngle(0, TIM_CHANNEL_1);
-
-				  	      char RFIDmsg2[] = "Deur 1 gaat dicht\r\n";
-				  	      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg2, sizeof(RFIDmsg2)-1, HAL_MAX_DELAY);
-
-				  	      HAL_Delay(1000);
-
-				  	      char RFIDmsg3[] = "Deur 2 gaat open\r\n";
-				  	      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg3, sizeof(RFIDmsg3)-1, HAL_MAX_DELAY);
-
-				  	      Servo_SetAngle(180, TIM_CHANNEL_2);
-				  	      HAL_Delay(3000);
-				  	      Servo_SetAngle(0, TIM_CHANNEL_2);
-
-				  	      char RFIDmsg4[] = "Deur 2 gaat dicht\r\n";
-				  	      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg4, sizeof(RFIDmsg4)-1, HAL_MAX_DELAY);
-
-				  	      HAL_Delay(1000);
 			  }
+			  else if ((uid[0] == 0xF9) && (uid[1] == 0xA0) && (uid[2] == 0x2D) && (uid[3] == 0x15)){
+			      char RFIDmsg[] = "Deur 1 gaat open\r\n";
+			      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg, sizeof(RFIDmsg)-1, HAL_MAX_DELAY);
 
-			  else if ((uid[0] == 0x73) && (uid[1] == 0x5C) &&(uid[2] == 0xEC) &&(uid[3] == 0x98)){
+			      Servo_SetAngle(180, TIM_CHANNEL_1);
+			      HAL_Delay(3000);
+			      Servo_SetAngle(0, TIM_CHANNEL_1);
 
+			      char RFIDmsg2[] = "Deur 1 gaat dicht\r\n";
+			      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg2, sizeof(RFIDmsg2)-1, HAL_MAX_DELAY);
+
+			      HAL_Delay(1000);
+
+			      char RFIDmsg3[] = "Deur 2 gaat open\r\n";
+			      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg3, sizeof(RFIDmsg3)-1, HAL_MAX_DELAY);
+
+			      Servo_SetAngle(180, TIM_CHANNEL_2);
+			      HAL_Delay(3000);
+			      Servo_SetAngle(0, TIM_CHANNEL_2);
+
+			      char RFIDmsg4[] = "Deur 2 gaat dicht\r\n";
+			      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg4, sizeof(RFIDmsg4)-1, HAL_MAX_DELAY);
+
+			      HAL_Delay(1000);
 			  }
 		  }
 		  waitcardRemoval(&rfID);
 	  }
+  }
 	  //Max
 
 //	  if (HAL_GPIO_ReadPin(NoodButton_Input_GPIO_Port, NoodButton_Input_Pin) == GPIO_PIN_RESET) {
@@ -281,7 +281,7 @@ int main(void)
 //  }
   /* USER CODE END 3 */
 }
-}
+
 /**
   * @brief System Clock Configuration
   * @retval None
