@@ -1,0 +1,2 @@
+/usr/bin/ar qc libsocketlib.a CMakeFiles/socketlib.dir/protocol/JsonMessage.cpp.o CMakeFiles/socketlib.dir/transport/SocketConnection.cpp.o CMakeFiles/socketlib.dir/transport/HttpServer.cpp.o CMakeFiles/socketlib.dir/transport/ThreadPoolWorker.cpp.o CMakeFiles/socketlib.dir/dispatch/WmosHandler.cpp.o CMakeFiles/socketlib.dir/dispatch/UnknownHandler.cpp.o CMakeFiles/socketlib.dir/dispatch/DeviceDispatcher.cpp.o CMakeFiles/socketlib.dir/service/PiAService.cpp.o CMakeFiles/socketlib.dir/service/PiBService.cpp.o
+/usr/bin/ranlib libsocketlib.a

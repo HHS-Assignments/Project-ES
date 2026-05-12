@@ -1,0 +1,9 @@
+/home/admtom/Git/Project-ES/Socket_CPP/build/CMakeFiles/socketlib.dir
+/home/admtom/Git/Project-ES/Socket_CPP/build/CMakeFiles/cjsonlib.dir
+/home/admtom/Git/Project-ES/Socket_CPP/build/CMakeFiles/RPi_A.dir
+/home/admtom/Git/Project-ES/Socket_CPP/build/CMakeFiles/RPi_B.dir
+/home/admtom/Git/Project-ES/Socket_CPP/build/CMakeFiles/example.dir
+/home/admtom/Git/Project-ES/Socket_CPP/build/CMakeFiles/test_basic.dir
+/home/admtom/Git/Project-ES/Socket_CPP/build/CMakeFiles/test.dir
+/home/admtom/Git/Project-ES/Socket_CPP/build/CMakeFiles/edit_cache.dir
+/home/admtom/Git/Project-ES/Socket_CPP/build/CMakeFiles/rebuild_cache.dir
