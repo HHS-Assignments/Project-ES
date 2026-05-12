@@ -67,6 +67,10 @@ void Error_Handler(void);
 #define VCP_TX_GPIO_Port GPIOA
 #define MAX_CS_Pin GPIO_PIN_3
 #define MAX_CS_GPIO_Port GPIOA
+#define CS_Pin GPIO_PIN_4
+#define CS_GPIO_Port GPIOA
+#define RESET_Pin GPIO_PIN_0
+#define RESET_GPIO_Port GPIOB
 #define NoodButton_Input_Pin GPIO_PIN_10
 #define NoodButton_Input_GPIO_Port GPIOA
 #define Button_Input_Pin GPIO_PIN_11
