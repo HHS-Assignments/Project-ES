@@ -263,7 +263,6 @@ int main(void)
 		  }
 		  waitcardRemoval(&rfID);
 	  }
-  }
 	  //Max
 
 //	  if (HAL_GPIO_ReadPin(NoodButton_Input_GPIO_Port, NoodButton_Input_Pin) == GPIO_PIN_RESET) {
@@ -309,7 +308,7 @@ int main(void)
 //
 //	      HAL_Delay(1000);
 //	  }
-//  }
+  }
   /* USER CODE END 3 */
 }
 
