@@ -122,6 +122,27 @@ uint8_t duimpje_2d[8][8] = {
     {1,1,1,1,1,1,0,0},
     {0,0,0,1,1,0,0,0}
 };
+uint8_t vinkje_2d[8][8] = {
+    {0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,1},
+    {0,0,0,0,0,0,1,0},
+    {0,0,0,0,0,1,0,0},
+    {1,0,0,0,1,0,0,0},
+    {0,1,0,1,0,0,0,0},
+    {0,0,1,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0}
+};
+
+uint8_t kruisje_2d[8][8] = {
+    {0,0,0,0,0,0,0,0},
+    {1,0,0,0,0,0,0,1},
+    {0,1,0,0,0,0,1,0},
+    {0,0,1,0,0,1,0,0},
+    {0,0,0,1,1,0,0,0},
+    {0,0,1,0,0,1,0,0},
+    {0,1,0,0,0,0,1,0},
+    {1,0,0,0,0,0,0,1}
+};
 
 uint8_t row_to_byte(uint8_t row[8])
 {
@@ -202,9 +223,18 @@ int main(void)
 		  if (MFRC522_ReadUid(&rfID, uid) == STATUS_OK){
 			  USER_LOG("CARD ID:%02X %02X %02X %02X", uid[0], uid[1], uid[2], uid[3]);
 			  if ((uid[0] == 0x03) && (uid[1] == 0xF5) &&(uid[2] == 0x4C) &&(uid[3] == 0xA6)){
+		            max7219_show_2d(kruisje_2d);
+
+		            char RFIDmsg_fout[] = "Toegang geweigerd\r\n";
+		            HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg_fout, sizeof(RFIDmsg_fout)-1, HAL_MAX_DELAY);
+
+		            HAL_Delay(2000);
+		            max7219_show_2d(leeg_2d);
 
 			  }
 			  else if ((uid[0] == 0xF9) && (uid[1] == 0xA0) && (uid[2] == 0x2D) && (uid[3] == 0x15)){
+				  max7219_show_2d(vinkje_2d);
+
 			      char RFIDmsg[] = "Deur 1 gaat open\r\n";
 			      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg, sizeof(RFIDmsg)-1, HAL_MAX_DELAY);
 
@@ -227,6 +257,7 @@ int main(void)
 			      char RFIDmsg4[] = "Deur 2 gaat dicht\r\n";
 			      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg4, sizeof(RFIDmsg4)-1, HAL_MAX_DELAY);
 
+			      max7219_show_2d(leeg_2d);
 			      HAL_Delay(1000);
 			  }
 		  }
