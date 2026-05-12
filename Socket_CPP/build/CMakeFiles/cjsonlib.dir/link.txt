@@ -1,0 +1,2 @@
+/usr/bin/ar qc libcjsonlib.a "CMakeFiles/cjsonlib.dir/home/admtom/Git/Project-ES/Socket_C/cJSON.c.o"
+/usr/bin/ranlib libcjsonlib.a

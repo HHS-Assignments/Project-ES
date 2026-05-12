@@ -1,0 +1,452 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="15.0">
+  <zoom_level>10</zoom_level>
+  
+  <!-- ==================== PROTOCOL LAYER ==================== -->
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>50</x>
+      <y>20</y>
+      <w>240</w>
+      <h>160</h>
+    </coordinates>
+    <panel_attributes>protocol::JsonMessage
+--
+- device_: std::string
+- sensor_: std::string
+- data_: std::string
+- raw_: std::string
+--
++ JsonMessage()
++ parse(text: const std::string&): bool
++ serialize(): std::string
++ isValid(): bool
++ setDevice(device: const std::string&): void
++ getDevice(): std::string
++ setSensor(sensor: const std::string&): void
++ getSensor(): std::string
++ setData(data: const std::string&): void
++ getData(): std::string</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <!-- ==================== TRANSPORT LAYER ==================== -->
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>380</x>
+      <y>20</y>
+      <w>280</w>
+      <h>180</h>
+    </coordinates>
+    <panel_attributes>transport::SocketConnection
+--
+- fd_: int
+- host_: std::string
+- port_: int
+--
++ SocketConnection()
++ ~SocketConnection()
++ connect(host: const std::string&, port: int): bool
++ sendLine(data: const std::string&): bool
++ readLine(): std::string
++ close(): void
++ getFd(): int
++ getHost(): std::string
++ getPort(): int
++ isConnected(): bool</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>750</x>
+      <y>20</y>
+      <w>280</w>
+      <h>180</h>
+    </coordinates>
+    <panel_attributes>transport::HttpServer
+--
+- listenPort_: int
+- maxConnections_: int
+- listenFd_: int
+--
++ HttpServer()
++ ~HttpServer()
++ start(port: int): void
++ acceptConnection(): SocketConnection
++ extractBody(request: const std::string&): std::string
++ sendResponse(conn: SocketConnection, body: const std::string&): void
++ getListenPort(): int
++ getMaxConnections(): int</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1100</x>
+      <y>20</y>
+      <w>250</w>
+      <h>140</h>
+    </coordinates>
+    <panel_attributes>transport::ThreadPoolWorker
+--
+- workerId_: int
+- running_: bool
+- thread_: std::thread
+--
++ ThreadPoolWorker(workerId: int = 0)
++ ~ThreadPoolWorker()
++ run(): void
++ stop(): void
++ process(request: const std::string&): void
++ getWorkerId(): int
++ isRunning(): bool</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <!-- ==================== DISPATCH LAYER ==================== -->
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>380</x>
+      <y>280</y>
+      <w>280</w>
+      <h>100</h>
+    </coordinates>
+    <panel_attributes>&lt;&lt;interface&gt;&gt;
+dispatch::IDeviceHandler
+--
++ virtual ~IDeviceHandler() = default
++ handle(message: const JsonMessage&): void*
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>200</x>
+      <y>440</y>
+      <w>240</w>
+      <h>120</h>
+    </coordinates>
+    <panel_attributes>dispatch::WmosHandler
+--
+- deviceName_: std::string
+--
++ WmosHandler(deviceName: const std::string& = "wmos")
++ handle(message: const JsonMessage&): void
++ getDeviceName(): std::string</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>520</x>
+      <y>440</y>
+      <w>240</w>
+      <h>120</h>
+    </coordinates>
+    <panel_attributes>dispatch::UnknownHandler
+--
+- fallbackMode_: bool
+--
++ UnknownHandler(fallbackMode: bool = true)
++ handle(message: const JsonMessage&): void
++ isFallbackMode(): bool</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>840</x>
+      <y>440</y>
+      <w>240</w>
+      <h>120</h>
+    </coordinates>
+    <panel_attributes>dispatch::LoggingHandler
+(implemented in RPi_A.cpp)
+--
+- device_name_: std::string
+--
++ LoggingHandler(device: const std::string&)
++ handle(message: const JsonMessage&): void
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>380</x>
+      <y>640</y>
+      <w>340</w>
+      <h>180</h>
+    </coordinates>
+    <panel_attributes>dispatch::DeviceDispatcher
+--
+- handlers_: std::map&lt;std::string, IDeviceHandler*&gt;
+--
++ DeviceDispatcher()
++ ~DeviceDispatcher()
++ registerHandler(device: const std::string&, 
+    handler: IDeviceHandler*): void
++ dispatch(message: const JsonMessage&): void
++ handleUnknown(message: const JsonMessage&): void
++ getHandlerCount(): size_t</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <!-- ==================== SERVICE LAYER ==================== -->
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>50</x>
+      <y>640</y>
+      <w>280</w>
+      <h>180</h>
+    </coordinates>
+    <panel_attributes>service::PiAService
+--
+- peer_: unique_ptr&lt;SocketConnection&gt;
+- dispatcher_: unique_ptr&lt;DeviceDispatcher&gt;
+--
++ PiAService()
++ start(port: int): void
++ acceptPeer(): void
++ processIncoming(message: const JsonMessage&): void
++ sendAck(status: const std::string&): void
++ getDispatcher(): DeviceDispatcher*</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>800</x>
+      <y>640</y>
+      <w>380</w>
+      <h>200</h>
+    </coordinates>
+    <panel_attributes>service::PiBService
+--
+- wmosServer_: unique_ptr&lt;HttpServer&gt;
+- upstream_: unique_ptr&lt;SocketConnection&gt;
+- dispatcher_: unique_ptr&lt;DeviceDispatcher&gt;
+- workers_: vector&lt;unique_ptr&lt;ThreadPoolWorker&gt;&gt;
+--
++ PiBService()
++ start(wmosPort: int, aHost: const std::string&, aPort: int): void
++ forwardToPiA(message: const JsonMessage&): void
++ readFromPiA(): void
++ handleWmosRequest(request: const std::string&): void
++ getHttpServer(): HttpServer*
++ getDispatcher(): DeviceDispatcher*</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <!-- ==================== RELATIONSHIPS ==================== -->
+  
+  <!-- JsonMessage dependency -->
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>280</x>
+      <y>100</y>
+      <w>120</w>
+      <h>40</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;&lt;-
+exchanges</panel_attributes>
+    <additional_attributes>10;20;100;20</additional_attributes>
+  </element>
+
+  <!-- SocketConnection to HttpServer -->
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>650</x>
+      <y>80</y>
+      <w>120</w>
+      <h>40</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;&lt;&lt;-
+uses</panel_attributes>
+    <additional_attributes>10;20;100;20</additional_attributes>
+  </element>
+
+  <!-- IDeviceHandler realization -->
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>320</x>
+      <y>330</y>
+      <w>100</w>
+      <h>130</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;.
+realizes</panel_attributes>
+    <additional_attributes>10;110;10;10</additional_attributes>
+  </element>
+
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>520</x>
+      <y>370</y>
+      <w>50</w>
+      <h>90</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>10;70;10;10</additional_attributes>
+  </element>
+
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>850</x>
+      <y>370</y>
+      <w>100</w>
+      <h>90</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;.
+realizes</panel_attributes>
+    <additional_attributes>10;70;10;10</additional_attributes>
+  </element>
+
+  <!-- DeviceDispatcher aggregates handlers -->
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>550</x>
+      <y>550</y>
+      <w>50</w>
+      <h>110</h>
+    </coordinates>
+    <panel_attributes>lt=o-
+0..*</panel_attributes>
+    <additional_attributes>10;100;10;10</additional_attributes>
+  </element>
+
+  <!-- PiAService composition with SocketConnection -->
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>190</x>
+      <y>640</y>
+      <w>250</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>lt=*-
+peer: 1</panel_attributes>
+    <additional_attributes>10;20;230;20</additional_attributes>
+  </element>
+
+  <!-- PiAService composition with DeviceDispatcher -->
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>330</x>
+      <y>640</y>
+      <w>70</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>lt=*-
+dispatcher: 1</panel_attributes>
+    <additional_attributes>10;20;50;20</additional_attributes>
+  </element>
+
+  <!-- PiBService composition with HttpServer -->
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>990</x>
+      <y>190</y>
+      <w>60</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>lt=*-
+wmosServer: 1</panel_attributes>
+    <additional_attributes>10;50;10;10</additional_attributes>
+  </element>
+
+  <!-- PiBService composition with upstream SocketConnection -->
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>650</x>
+      <y>180</y>
+      <w>200</w>
+      <h>80</h>
+    </coordinates>
+    <panel_attributes>lt=o-
+upstream: 0..1</panel_attributes>
+    <additional_attributes>10;60;180;20</additional_attributes>
+  </element>
+
+  <!-- PiBService composition with DeviceDispatcher -->
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>720</x>
+      <y>700</y>
+      <w>100</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>lt=*-
+dispatcher: 1</panel_attributes>
+    <additional_attributes>100;20;10;20</additional_attributes>
+  </element>
+
+  <!-- PiBService aggregates ThreadPoolWorker -->
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1150</x>
+      <y>160</y>
+      <w>50</w>
+      <h>100</h>
+    </coordinates>
+    <panel_attributes>lt=o-
+1..*</panel_attributes>
+    <additional_attributes>10;80;10;10</additional_attributes>
+  </element>
+
+  <!-- Legend -->
+  <element>
+    <id>UMLNote</id>
+    <coordinates>
+      <x>1220</x>
+      <y>640</y>
+      <w>280</w>
+      <h>200</h>
+    </coordinates>
+    <panel_attributes>UML Legend
+--
+*-- : Composition
+     (strong ownership)
+     
+o-- : Aggregation
+     (weak ownership)
+     
+&lt;&lt;. : Interface Realization
+     (implements)
+     
+&lt;&lt;&lt;&lt;- : Dependency
+         (uses/exchanges)
+
+Multiplicity:
+1    : exactly one
+0..1 : zero or one
+*    : zero or many
+1..* : one or many</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+</diagram>

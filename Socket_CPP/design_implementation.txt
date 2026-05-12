@@ -1,0 +1,423 @@
+Socket C++ Implementation - UML Class Diagram
+==============================================
+
+This document describes the UML class diagram for the Socket C++ implementation,
+based on actual code analysis of the PoC (Proof of Concept) for RPi_A and RPi_B.
+
+PURPOSE
+-------
+Formal class-diagram representation following UML rules showing the actual
+implemented classes, their attributes, methods, and relationships.
+
+NOTATION USED
+-------------
++ : public
+- : private
+* : composition (strong ownership)
+o : aggregation (weak/optional ownership)
+<<interface>> : abstract interface
+<<.  : interface realization (implements)
+<<<<- : dependency (uses/exchanges)
+
+================================================================================
+PROTOCOL LAYER
+================================================================================
+
+protocol::JsonMessage
+---------------------
+Represents a JSON message exchanged between Pi-A and Pi-B.
+Encapsulates device name, sensor type, and data payload.
+
+Attributes:
+- device_: std::string         (device identifier)
+- sensor_: std::string         (sensor type)
+- data_: std::string           (measurement value)
+- raw_: std::string            (raw unparsed input)
+
+Operations:
++ JsonMessage()
++ ~JsonMessage() = default
++ parse(text: const std::string&): bool
+  → Parses JSON or key-value format, extracts fields
++ serialize(): std::string
+  → Outputs message as JSON {"device":"...", "sensor":"...", "data":"..."}
++ isValid(): bool
+  → Checks if device, sensor, data are non-empty
++ setDevice(device: const std::string&): void
++ getDevice(): std::string
++ setSensor(sensor: const std::string&): void
++ getSensor(): std::string
++ setData(data: const std::string&): void
++ getData(): std::string
++ setRaw(raw: const std::string&): void
++ getRaw(): std::string
+
+================================================================================
+TRANSPORT LAYER
+================================================================================
+
+transport::SocketConnection
+---------------------------
+Wraps BSD socket operations for TCP communication.
+Provides send/receive operations with line buffering.
+
+Attributes:
+- fd_: int                      (file descriptor, -1 if closed)
+- host_: std::string            (remote hostname/IP)
+- port_: int                    (remote port)
+
+Operations:
++ SocketConnection()
++ ~SocketConnection()
++ connect(host: const std::string&, port: int): bool
+  → Establishes TCP connection to host:port
++ sendLine(data: const std::string&): bool
+  → Sends data with newline appended
++ readLine(): std::string
+  → Reads one line (blocking), removes trailing newline
++ close(): void
+  → Closes socket file descriptor
++ getFd(): int
++ getHost(): std::string
++ getPort(): int
++ isConnected(): bool
+  → Returns fd_ >= 0
+
+transport::HttpServer
+---------------------
+Simple HTTP server for receiving WMos device requests.
+Designed for PoC (not production-grade).
+
+Attributes:
+- listenPort_: int              (listening port)
+- maxConnections_: int          (backlog size, default 10)
+- listenFd_: int                (listening socket file descriptor)
+
+Operations:
++ HttpServer()
++ ~HttpServer()
++ start(port: int): void
+  → Creates socket, binds to port, calls listen()
+  → Does not block; run in thread
++ acceptConnection(): SocketConnection
+  → Accept one client, return as SocketConnection object
++ extractBody(request: const std::string&): std::string
+  → Parses HTTP request, splits by \r\n\r\n or \n\n
+  → Returns body portion
++ sendResponse(conn: SocketConnection, body: const std::string&): void
+  → Sends HTTP/1.1 200 OK with body as JSON
++ getListenPort(): int
++ getMaxConnections(): int
+
+transport::ThreadPoolWorker
+---------------------------
+Worker thread that processes requests from HTTP server.
+
+Attributes:
+- workerId_: int                (unique worker identifier)
+- running_: bool                (thread control flag)
+- thread_: std::thread          (std::thread object)
+
+Operations:
++ ThreadPoolWorker(workerId: int = 0)
++ ~ThreadPoolWorker()
++ run(): void
+  → Main thread loop; blocks until stop() is called
++ stop(): void
+  → Signals run() to exit, joins thread
++ process(request: const std::string&): void
+  → Virtual; processes a request (placeholder)
++ getWorkerId(): int
++ isRunning(): bool
+
+================================================================================
+DISPATCH LAYER
+================================================================================
+
+<<interface>>
+dispatch::IDeviceHandler
+------------------------
+Abstract interface for device-specific message handlers.
+
+Operations:
++ virtual ~IDeviceHandler() = default
++ handle(message: const JsonMessage&): void* = 0
+  → Pure virtual; dispatch logic for each device type
+
+dispatch::WmosHandler : public IDeviceHandler
+----------------------------------------------
+Handler for WMos WiFi-based device messages.
+
+Attributes:
+- deviceName_: std::string      (e.g., "wmos", "wmos_device_1")
+
+Operations:
++ WmosHandler(deviceName: const std::string& = "wmos")
++ ~WmosHandler() override = default
++ handle(message: const JsonMessage&): void override
+  → Logs message with [WmosHandler] prefix
++ getDeviceName(): std::string
+
+dispatch::UnknownHandler : public IDeviceHandler
+-------------------------------------------------
+Fallback handler for unknown device types.
+
+Attributes:
+- fallbackMode_: bool           (true to enable fallback, default true)
+
+Operations:
++ UnknownHandler(fallbackMode: bool = true)
++ ~UnknownHandler() override = default
++ handle(message: const JsonMessage&): void override
+  → Logs message with [UnknownHandler] prefix
++ isFallbackMode(): bool
+
+dispatch::LoggingHandler : public IDeviceHandler
+-------------------------------------------------
+Custom handler implemented in RPi_A.cpp.
+Logs all messages to console output.
+
+Attributes:
+- device_name_: std::string     (device name for logging)
+
+Operations:
++ LoggingHandler(device: const std::string&)
++ handle(message: const JsonMessage&): void override
+  → Outputs "[LoggingHandler] Device: ... Sensor: ... Data: ..."
+
+dispatch::DeviceDispatcher
+--------------------------
+Central dispatcher that routes messages to handlers.
+Maintains registry of handlers keyed by device name.
+
+Attributes:
+- handlers_: std::map<std::string, IDeviceHandler*>
+  → Maps device name → handler pointer
+  → Does not own handlers (raw pointers)
+
+Operations:
++ DeviceDispatcher()
++ ~DeviceDispatcher()
+  → Clears handlers map (does not delete handlers)
++ registerHandler(device: const std::string&, handler: IDeviceHandler*): void
+  → Adds/updates handler for device in map
++ dispatch(message: const JsonMessage&): void
+  → Looks up message.device() in map
+  → If found, calls handler->handle(message)
+  → Otherwise, calls handleUnknown(message)
++ handleUnknown(message: const JsonMessage&): void
+  → Fallback behavior (logs unknown device)
++ getHandlerCount(): size_t
+  → Returns handlers_.size()
+
+Relationships:
+- o-- IDeviceHandler (0..* aggregation)
+  → DeviceDispatcher does NOT own handlers
+  → Handlers are created/owned elsewhere (e.g., in RPi_A or RPi_B)
+
+================================================================================
+SERVICE LAYER
+================================================================================
+
+service::PiAService
+-------------------
+Service for Pi-A (receiver/dispatcher side).
+Listens for TCP connections from Pi-B, receives JSON messages, dispatches them.
+
+Attributes:
+- peer_: unique_ptr<transport::SocketConnection>
+  → Composition; one peer connection to Pi-B
+- dispatcher_: unique_ptr<dispatch::DeviceDispatcher>
+  → Composition; one dispatcher for routing messages
+
+Operations:
++ PiAService()
+  → Creates empty dispatcher_ and peer_
++ ~PiAService() = default
+  → Unique_ptr auto-cleanup
++ start(port: int): void
+  → Placeholder; would create listening socket on port
++ acceptPeer(): void
+  → Placeholder; would accept incoming connection from Pi-B
++ processIncoming(message: const JsonMessage&): void
+  → Calls dispatcher_->dispatch(message)
++ sendAck(status: const std::string&): void
+  → Placeholder; sends ACK back via peer_ connection
++ getDispatcher(): DeviceDispatcher*
+  → Returns dispatcher_.get()
+
+Relationships:
+- *-- SocketConnection (peer: 1, composition)
+  → PiAService owns exactly one peer connection
+- *-- DeviceDispatcher (dispatcher: 1, composition)
+  → PiAService owns exactly one dispatcher
+
+service::PiBService
+-------------------
+Service for Pi-B (forwarder/HTTP gateway side).
+Runs HTTP server for WMos devices and forwards to Pi-A via persistent TCP.
+
+Attributes:
+- wmosServer_: unique_ptr<transport::HttpServer>
+  → Composition; one HTTP server for receiving WMos requests
+- upstream_: unique_ptr<transport::SocketConnection>
+  → Aggregation (optional); persistent TCP to Pi-A (0..1)
+- dispatcher_: unique_ptr<dispatch::DeviceDispatcher>
+  → Composition; one dispatcher for routing messages
+- workers_: vector<unique_ptr<transport::ThreadPoolWorker>>
+  → Aggregation; collection of worker threads (0..*)
+
+Operations:
++ PiBService()
+  → Creates empty wmosServer_, upstream_, dispatcher_, empty workers_ vector
++ ~PiBService() = default
+  → Unique_ptr auto-cleanup
++ start(wmosPort: int, aHost: const std::string&, aPort: int): void
+  → Starts HTTP server on wmosPort
+  → Connects upstream_ to Pi-A at aHost:aPort
+  → Spawns worker threads
++ forwardToPiA(message: const JsonMessage&): void
+  → Serializes message to JSON
+  → Sends via upstream_->sendLine()
++ readFromPiA(): void
+  → Placeholder; reads ACK from upstream_ connection
++ handleWmosRequest(request: const std::string&): void
+  → Placeholder; parses HTTP body, creates JsonMessage, calls forwardToPiA()
++ getHttpServer(): HttpServer*
+  → Returns wmosServer_.get()
++ getDispatcher(): DeviceDispatcher*
+  → Returns dispatcher_.get()
+
+Relationships:
+- *-- HttpServer (wmosServer: 1, composition)
+  → PiBService owns exactly one HTTP server
+- o-- SocketConnection (upstream: 0..1, aggregation)
+  → Optional persistent connection to Pi-A
+  → Weak ownership (could be nullptr)
+- *-- DeviceDispatcher (dispatcher: 1, composition)
+  → PiBService owns exactly one dispatcher
+- o-- ThreadPoolWorker (workers: 1..*, aggregation)
+  → PiBService manages collection of workers
+
+================================================================================
+MESSAGE FLOW (Implementation)
+================================================================================
+
+HTTP Client → RPi_B → TCP → RPi_A → Handlers → ACK
+
+1. HTTP client sends POST to RPi_B:8080/data
+   Body: {"device":"wmos_device_1","sensor":"temperature","data":"22.5"}
+
+2. RPi_B HTTP server thread receives request
+   → Extracts body using extractBody()
+   → Creates JsonMessage and calls parse(body)
+   → JsonMessage::parse() extracts device, sensor, data fields
+   → Sends via upstream_.sendLine() to RPi_A
+
+3. RPi_A TCP server thread receives JSON message
+   → Creates JsonMessage and calls parse(message_line)
+   → JsonMessage::parse() extracts fields
+   → Calls dispatcher_->dispatch(msg)
+   → DeviceDispatcher looks up msg.getDevice() in handlers_ map
+   → Calls handler->handle(msg)
+   → WmosHandler or LoggingHandler processes message
+
+4. RPi_A sends ACK back via TCP
+   → Constructs JSON: {"status":"OK","device":"..."}
+   → Sends via socket
+
+5. RPi_B receives ACK and sends HTTP 200 response
+   → Returns HTTP/1.1 200 OK with ACK as body
+
+================================================================================
+DESIGN PRINCIPLES REFLECTED
+================================================================================
+
+1. Separation of Concerns
+   - Protocol: Message abstraction and serialization
+   - Transport: Socket and HTTP abstraction
+   - Dispatch: Message routing and handler interface
+   - Service: High-level orchestration
+
+2. Interface-Based Polymorphism
+   - IDeviceHandler interface allows multiple handler implementations
+   - WmosHandler, UnknownHandler, LoggingHandler all implement interface
+
+3. Composition Over Inheritance
+   - Services own their components via unique_ptr
+   - Dispatcher aggregates handlers via map of pointers
+
+4. RAII (Resource Acquisition Is Initialization)
+   - unique_ptr automatic cleanup
+   - SocketConnection destructor closes fd_
+   - DeviceDispatcher destructor clears map
+
+5. Thread Safety
+   - HTTPServer spawns thread per client
+   - RPi_A spawns thread per TCP client
+   - Mutex protection on global g_upstream in RPi_B
+
+================================================================================
+IMPLEMENTATION vs. DESIGN NOTES
+================================================================================
+
+Design (design.uxf):
+- Abstract service classes (PiAService, PiBService)
+- Detailed class hierarchy with full UML semantics
+
+Implementation (design_implementation.uxf):
+- Concrete PoC implementations in RPi_A.cpp, RPi_B.cpp
+- LoggingHandler added as custom handler in RPi_A
+- Actual multiplicity and ownership patterns
+- Thread-per-client model instead of thread pool
+
+Key Differences:
+1. PiAService and PiBService are NOT full implementations
+   → Main logic in RPi_A main() and RPi_B main()
+   → Handled via free functions and raw TCP/HTTP
+2. HttpServer basic implementation (not production)
+3. DeviceDispatcher fully implemented and used
+4. JsonMessage fully implemented with JSON parsing
+5. Thread model: thread-per-client (future: thread pool)
+
+================================================================================
+CLASS RELATIONSHIPS SUMMARY
+================================================================================
+
+Composition (*--):
+├─ PiBService *-- HttpServer
+├─ PiBService *-- DeviceDispatcher
+├─ PiAService *-- SocketConnection (peer)
+└─ PiAService *-- DeviceDispatcher
+
+Aggregation (o--):
+├─ PiBService o-- SocketConnection (upstream, optional)
+├─ PiBService o-- ThreadPoolWorker (workers, collection)
+└─ DeviceDispatcher o-- IDeviceHandler (handlers, registry)
+
+Realization (<<.):
+├─ WmosHandler <<. IDeviceHandler
+├─ UnknownHandler <<. IDeviceHandler
+└─ LoggingHandler <<. IDeviceHandler
+
+Dependency (<<<<-):
+├─ SocketConnection <<<<- JsonMessage (exchanges)
+├─ HttpServer <<<<- JsonMessage (parses)
+├─ DeviceDispatcher <<<<- JsonMessage (dispatches)
+├─ PiBService <<<<- JsonMessage (forwards)
+└─ PiAService <<<<- JsonMessage (receives)
+
+================================================================================
+TESTING & VALIDATION
+================================================================================
+
+See test_poc.sh for integration tests:
+✅ Test 1: WMos device message → WmosHandler
+✅ Test 2: Temperature sensor → LoggingHandler
+✅ Test 3: Motion detector → LoggingHandler
+✅ Test 4: Key-value format → WmosHandler
+
+All tests pass with HTTP 200 OK responses and JSON ACKs.
+
+================================================================================
+EOF
