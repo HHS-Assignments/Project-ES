@@ -208,15 +208,17 @@ int main(void)
   Servo_SetAngle(0, TIM_CHANNEL_2);
 
   MFRC522_Init(&rfID);
+  uint8_t noodstand_actief = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  uint8_t noodstand_actief = 0;
   while (1)
   {
-	      // --- Noodknop check ---
-	      if (HAL_GPIO_ReadPin(NoodButton_Input_GPIO_Port, NoodButton_Input_Pin) == GPIO_PIN_RESET) {
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
+	  if (HAL_GPIO_ReadPin(NoodButton_Input_GPIO_Port, NoodButton_Input_Pin) == GPIO_PIN_RESET) {
 	          if (!noodstand_actief) {
 	              noodstand_actief = 1;
 	              max7219_show_2d(uitroepteken_2d);
@@ -343,7 +345,7 @@ int main(void)
 	              HAL_Delay(1000);
 	          }
 	      }
-	  }
+  }
   /* USER CODE END 3 */
 }
 
