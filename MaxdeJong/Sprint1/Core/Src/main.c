@@ -236,7 +236,6 @@ int main(void)
 	          }
 	      }
 
-	      // --- RFID check ---
 	      if (MFRC522_RequestA(&rfID, atqa) == STATUS_OK) {
 	          if (MFRC522_ReadUid(&rfID, uid) == STATUS_OK) {
 	              USER_LOG("CARD ID:%02X %02X %02X %02X", uid[0], uid[1], uid[2], uid[3]);
@@ -283,7 +282,6 @@ int main(void)
 	          waitcardRemoval(&rfID);
 	      }
 
-	      // --- Beweging en knop (alleen als geen noodstand) ---
 	      if (!noodstand_actief) {
 	          if (HAL_GPIO_ReadPin(Motion_Input_GPIO_Port, Motion_Input_Pin) == GPIO_PIN_SET) {
 
