@@ -49,6 +49,7 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 uint8_t uid[4];
+extern uint8_t atqa[];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -214,102 +215,135 @@ int main(void)
   uint8_t noodstand_actief = 0;
   while (1)
   {
-    /* USER CODE END WHILE */
+	      // --- Noodknop check ---
+	      if (HAL_GPIO_ReadPin(NoodButton_Input_GPIO_Port, NoodButton_Input_Pin) == GPIO_PIN_RESET) {
+	          if (!noodstand_actief) {
+	              noodstand_actief = 1;
+	              max7219_show_2d(uitroepteken_2d);
+	              char nood[] = "Noodknop ingedrukt, alle deuren gaan Open\r\n";
+	              HAL_UART_Transmit(&huart2, (uint8_t*)nood, sizeof(nood)-1, HAL_MAX_DELAY);
+	              Servo_SetAngle(180, TIM_CHANNEL_1);
+	              Servo_SetAngle(180, TIM_CHANNEL_2);
+	          }
+	      } else {
+	          if (noodstand_actief) {
+	              noodstand_actief = 0;
+	              Servo_SetAngle(0, TIM_CHANNEL_1);
+	              Servo_SetAngle(0, TIM_CHANNEL_2);
+	              max7219_show_2d(leeg_2d);
+	          }
+	      }
 
-    /* USER CODE BEGIN 3 */
-	  //Kai
+	      // --- RFID check ---
+	      if (MFRC522_RequestA(&rfID, atqa) == STATUS_OK) {
+	          if (MFRC522_ReadUid(&rfID, uid) == STATUS_OK) {
+	              USER_LOG("CARD ID:%02X %02X %02X %02X", uid[0], uid[1], uid[2], uid[3]);
 
-	  if (waitcardDetect(&rfID) == STATUS_OK){
-		  if (MFRC522_ReadUid(&rfID, uid) == STATUS_OK){
-			  USER_LOG("CARD ID:%02X %02X %02X %02X", uid[0], uid[1], uid[2], uid[3]);
-			  if ((uid[0] == 0xF9) && (uid[1] == 0xA0) && (uid[2] == 0x2D) && (uid[3] == 0x15)){
-				  max7219_show_2d(vinkje_2d);
+	              if (!noodstand_actief) {
+	                  if ((uid[0] == 0xF9) && (uid[1] == 0xA0) && (uid[2] == 0x2D) && (uid[3] == 0x15)) {
+	                      max7219_show_2d(vinkje_2d);
 
-			      char RFIDmsg[] = "Deur 1 gaat open\r\n";
-			      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg, sizeof(RFIDmsg)-1, HAL_MAX_DELAY);
+	                      char RFIDmsg[] = "Deur 1 gaat open\r\n";
+	                      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg, sizeof(RFIDmsg)-1, HAL_MAX_DELAY);
 
-			      Servo_SetAngle(180, TIM_CHANNEL_1);
-			      HAL_Delay(3000);
-			      Servo_SetAngle(0, TIM_CHANNEL_1);
+	                      Servo_SetAngle(180, TIM_CHANNEL_1);
+	                      HAL_Delay(3000);
+	                      Servo_SetAngle(0, TIM_CHANNEL_1);
 
-			      char RFIDmsg2[] = "Deur 1 gaat dicht\r\n";
-			      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg2, sizeof(RFIDmsg2)-1, HAL_MAX_DELAY);
+	                      char RFIDmsg2[] = "Deur 1 gaat dicht\r\n";
+	                      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg2, sizeof(RFIDmsg2)-1, HAL_MAX_DELAY);
 
-			      HAL_Delay(1000);
+	                      HAL_Delay(1000);
 
-			      char RFIDmsg3[] = "Deur 2 gaat open\r\n";
-			      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg3, sizeof(RFIDmsg3)-1, HAL_MAX_DELAY);
+	                      char RFIDmsg3[] = "Deur 2 gaat open\r\n";
+	                      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg3, sizeof(RFIDmsg3)-1, HAL_MAX_DELAY);
 
-			      Servo_SetAngle(180, TIM_CHANNEL_2);
-			      HAL_Delay(3000);
-			      Servo_SetAngle(0, TIM_CHANNEL_2);
+	                      Servo_SetAngle(180, TIM_CHANNEL_2);
+	                      HAL_Delay(3000);
+	                      Servo_SetAngle(0, TIM_CHANNEL_2);
 
-			      char RFIDmsg4[] = "Deur 2 gaat dicht\r\n";
-			      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg4, sizeof(RFIDmsg4)-1, HAL_MAX_DELAY);
+	                      char RFIDmsg4[] = "Deur 2 gaat dicht\r\n";
+	                      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg4, sizeof(RFIDmsg4)-1, HAL_MAX_DELAY);
 
-			      max7219_show_2d(leeg_2d);
-			      HAL_Delay(1000);
-			  }
-			  else{
-			            max7219_show_2d(kruisje_2d);
+	                      max7219_show_2d(leeg_2d);
+	                      HAL_Delay(1000);
+	                  } else {
+	                      max7219_show_2d(kruisje_2d);
 
-			            char RFIDmsg_fout[] = "Toegang geweigerd\r\n";
-			            HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg_fout, sizeof(RFIDmsg_fout)-1, HAL_MAX_DELAY);
+	                      char RFIDmsg_fout[] = "Toegang geweigerd\r\n";
+	                      HAL_UART_Transmit(&huart2, (uint8_t*)RFIDmsg_fout, sizeof(RFIDmsg_fout)-1, HAL_MAX_DELAY);
 
-			            HAL_Delay(2000);
-			            max7219_show_2d(leeg_2d);
+	                      HAL_Delay(2000);
+	                      max7219_show_2d(leeg_2d);
+	                  }
+	              }
+	          }
+	          waitcardRemoval(&rfID);
+	      }
 
-				  }
-			  }
+	      // --- Beweging en knop (alleen als geen noodstand) ---
+	      if (!noodstand_actief) {
+	          if (HAL_GPIO_ReadPin(Motion_Input_GPIO_Port, Motion_Input_Pin) == GPIO_PIN_SET) {
 
-		  waitcardRemoval(&rfID);
+	              char Beweging[] = "Beweging gedetecteerd\r\n";
+	              HAL_UART_Transmit(&huart2, (uint8_t*)Beweging, sizeof(Beweging)-1, HAL_MAX_DELAY);
+
+	              char msg3[] = "Deur 2 gaat open\r\n";
+	              HAL_UART_Transmit(&huart2, (uint8_t*)msg3, sizeof(msg3)-1, HAL_MAX_DELAY);
+
+	              Servo_SetAngle(180, TIM_CHANNEL_2);
+	              HAL_Delay(3000);
+	              Servo_SetAngle(0, TIM_CHANNEL_2);
+
+	              char msg4[] = "Deur 2 gaat dicht\r\n";
+	              HAL_UART_Transmit(&huart2, (uint8_t*)msg4, sizeof(msg4)-1, HAL_MAX_DELAY);
+
+	              HAL_Delay(1000);
+
+	              char msg[] = "Deur 1 gaat open\r\n";
+	              HAL_UART_Transmit(&huart2, (uint8_t*)msg, sizeof(msg)-1, HAL_MAX_DELAY);
+
+	              Servo_SetAngle(180, TIM_CHANNEL_1);
+	              HAL_Delay(3000);
+	              Servo_SetAngle(0, TIM_CHANNEL_1);
+
+	              char msg2[] = "Deur 1 gaat dicht\r\n";
+	              HAL_UART_Transmit(&huart2, (uint8_t*)msg2, sizeof(msg2)-1, HAL_MAX_DELAY);
+
+	              HAL_Delay(1000);
+	          }
+
+	          if (HAL_GPIO_ReadPin(Button_Input_GPIO_Port, Button_Input_Pin) == GPIO_PIN_RESET) {
+
+	              char Knop[] = "Knop Ingedrukt\r\n";
+	              HAL_UART_Transmit(&huart2, (uint8_t*)Knop, sizeof(Knop)-1, HAL_MAX_DELAY);
+
+	              char msg[] = "Deur 1 gaat open\r\n";
+	              HAL_UART_Transmit(&huart2, (uint8_t*)msg, sizeof(msg)-1, HAL_MAX_DELAY);
+
+	              Servo_SetAngle(180, TIM_CHANNEL_1);
+	              HAL_Delay(3000);
+	              Servo_SetAngle(0, TIM_CHANNEL_1);
+
+	              char msg2[] = "Deur 1 gaat dicht\r\n";
+	              HAL_UART_Transmit(&huart2, (uint8_t*)msg2, sizeof(msg2)-1, HAL_MAX_DELAY);
+
+	              HAL_Delay(1000);
+
+	              char msg3[] = "Deur 2 gaat open\r\n";
+	              HAL_UART_Transmit(&huart2, (uint8_t*)msg3, sizeof(msg3)-1, HAL_MAX_DELAY);
+
+	              Servo_SetAngle(180, TIM_CHANNEL_2);
+	              HAL_Delay(3000);
+	              Servo_SetAngle(0, TIM_CHANNEL_2);
+
+	              char msg4[] = "Deur 2 gaat dicht\r\n";
+	              HAL_UART_Transmit(&huart2, (uint8_t*)msg4, sizeof(msg4)-1, HAL_MAX_DELAY);
+
+	              HAL_Delay(1000);
+	          }
+	      }
 	  }
-	  //Max
-
-//	  if (HAL_GPIO_ReadPin(NoodButton_Input_GPIO_Port, NoodButton_Input_Pin) == GPIO_PIN_RESET) {
-//	          if (!noodstand_actief) {
-//	              noodstand_actief = 1;
-//	              max7219_show_2d(uitroepteken_2d);
-//	              char nood[] = "Noodknop ingedrukt, alle deuren gaan Open\r\n";
-//	              HAL_UART_Transmit(&huart2, (uint8_t*)nood, sizeof(nood)-1, HAL_MAX_DELAY);
-//	              Servo_SetAngle(180, TIM_CHANNEL_1);
-//	              Servo_SetAngle(180, TIM_CHANNEL_2);
-//	          }
-//	      } else {
-//	          noodstand_actief = 0; // reset als knop losgelaten wordt
-//	          max7219_show_2d(leeg_2d);
-//	      }
-//
-//	      // Normale deur logica — alleen als geen noodstand
-//	  if (!noodstand_actief) {
-//	  if (HAL_GPIO_ReadPin(Motion_Input_GPIO_Port, Motion_Input_Pin) == GPIO_PIN_SET ||
-//	      HAL_GPIO_ReadPin(Button_Input_GPIO_Port, Button_Input_Pin) == GPIO_PIN_RESET)
-//	          {
-//	      char msg[] = "Deur 1 gaat open\r\n";
-//	      HAL_UART_Transmit(&huart2, (uint8_t*)msg, sizeof(msg)-1, HAL_MAX_DELAY);
-//
-//	      Servo_SetAngle(180, TIM_CHANNEL_1);
-//	      HAL_Delay(3000);
-//	      Servo_SetAngle(0, TIM_CHANNEL_1);
-//
-//	      char msg2[] = "Deur 1 gaat dicht\r\n";
-//	      HAL_UART_Transmit(&huart2, (uint8_t*)msg2, sizeof(msg2)-1, HAL_MAX_DELAY);
-//
-//	      HAL_Delay(1000);
-//
-//	      char msg3[] = "Deur 2 gaat open\r\n";
-//	      HAL_UART_Transmit(&huart2, (uint8_t*)msg3, sizeof(msg3)-1, HAL_MAX_DELAY);
-//
-//	      Servo_SetAngle(180, TIM_CHANNEL_2);
-//	      HAL_Delay(3000);
-//	      Servo_SetAngle(0, TIM_CHANNEL_2);
-//
-//	      char msg4[] = "Deur 2 gaat dicht\r\n";
-//	      HAL_UART_Transmit(&huart2, (uint8_t*)msg4, sizeof(msg4)-1, HAL_MAX_DELAY);
-//
-//	      HAL_Delay(1000);
-//	  }
-  }
   /* USER CODE END 3 */
 }
 
