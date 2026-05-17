@@ -67,8 +67,6 @@ void Error_Handler(void);
 #define Button_Input_GPIO_Port GPIOA
 #define RGB_Blauw_Pin GPIO_PIN_9
 #define RGB_Blauw_GPIO_Port GPIOA
-#define RGB_Groen_Pin GPIO_PIN_10
-#define RGB_Groen_GPIO_Port GPIOA
 #define RGB_Rood_Pin GPIO_PIN_11
 #define RGB_Rood_GPIO_Port GPIOA
 

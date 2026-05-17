@@ -127,6 +127,7 @@ int main(void)
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   __HAL_TIM_MOE_ENABLE(&htim1);
 
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -178,9 +179,7 @@ int main(void)
 	       HAL_GPIO_WritePin(RGB_Blauw_GPIO_Port, RGB_Blauw_Pin, GPIO_PIN_SET);
 	       HAL_Delay(1000);
 	       HAL_GPIO_WritePin(RGB_Blauw_GPIO_Port, RGB_Blauw_Pin, GPIO_PIN_RESET);
-	       HAL_GPIO_WritePin(RGB_Groen_GPIO_Port, RGB_Groen_Pin, GPIO_PIN_SET);
-	       HAL_Delay(1000);
-	       HAL_GPIO_WritePin(RGB_Groen_GPIO_Port, RGB_Groen_Pin, GPIO_PIN_RESET);
+
 	       HAL_GPIO_WritePin(RGB_Rood_GPIO_Port, RGB_Rood_Pin, GPIO_PIN_SET);
 	       HAL_Delay(1000);
 	       HAL_GPIO_WritePin(RGB_Rood_GPIO_Port, RGB_Rood_Pin, GPIO_PIN_RESET);
@@ -411,7 +410,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, RGB_Blauw_Pin|RGB_Groen_Pin|RGB_Rood_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, RGB_Blauw_Pin|RGB_Rood_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : Motion_Input_Pin */
   GPIO_InitStruct.Pin = Motion_Input_Pin;
@@ -425,8 +424,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(Button_Input_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : RGB_Blauw_Pin RGB_Groen_Pin RGB_Rood_Pin */
-  GPIO_InitStruct.Pin = RGB_Blauw_Pin|RGB_Groen_Pin|RGB_Rood_Pin;
+  /*Configure GPIO pins : RGB_Blauw_Pin RGB_Rood_Pin */
+  GPIO_InitStruct.Pin = RGB_Blauw_Pin|RGB_Rood_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
