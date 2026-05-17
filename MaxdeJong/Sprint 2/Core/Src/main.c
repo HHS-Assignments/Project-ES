@@ -164,52 +164,27 @@ int main(void)
 	  {
 	      Buzzer_Nood();
 	  }
-//	  uint8_t huidige_knop = HAL_GPIO_ReadPin(Button_Input_GPIO_Port, Button_Input_Pin);
-//
-//	  if (huidige_knop == GPIO_PIN_RESET && vorige_knop == GPIO_PIN_SET)
-//	  {
-//	      HAL_Delay(50);
-//	      huidige_knop = HAL_GPIO_ReadPin(Button_Input_GPIO_Port, Button_Input_Pin);
-//	      if (huidige_knop == GPIO_PIN_RESET) // nog steeds ingedrukt na debounce
-//	      {
-//	          if (buzzer_aan == 0)
-//	          {
-//	              buzzer_aan = 1;
-//	          }
-//	          else
-//	          {
-//	              buzzer_aan = 0;
-//	              HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
-//	          }
-//	      }
-//	  }
-//	  vorige_knop = huidige_knop;
-//
-//	   if (buzzer_aan == 1)
-//	   {
-//	       Buzzer_Nood();
-//	   }
-//
-//	   if (HAL_GPIO_ReadPin(Motion_Input_GPIO_Port, Motion_Input_Pin) == GPIO_PIN_SET)
-//	   {
-//	       char Beweging[] = "Beweging gedetecteerd\r\n";
-//	       HAL_UART_Transmit(&huart2, (uint8_t*)Beweging, sizeof(Beweging)-1, HAL_MAX_DELAY);
-//
-//	       Servo_SetAngle(180);
-//	       HAL_Delay(3000);
-//	       Servo_SetAngle(0);
-//	       HAL_Delay(1000);
-//
-//	       HAL_GPIO_WritePin(RGB_Blauw_GPIO_Port, RGB_Blauw_Pin, GPIO_PIN_SET);
-//	       HAL_Delay(1000);
-//	       HAL_GPIO_WritePin(RGB_Blauw_GPIO_Port, RGB_Blauw_Pin, GPIO_PIN_RESET);
-//	       HAL_GPIO_WritePin(RGB_Groen_GPIO_Port, RGB_Groen_Pin, GPIO_PIN_SET);
-//	       HAL_Delay(1000);
-//	       HAL_GPIO_WritePin(RGB_Groen_GPIO_Port, RGB_Groen_Pin, GPIO_PIN_RESET);
-//	       HAL_GPIO_WritePin(RGB_Rood_GPIO_Port, RGB_Rood_Pin, GPIO_PIN_SET);
-//	       HAL_Delay(1000);
-//	       HAL_GPIO_WritePin(RGB_Rood_GPIO_Port, RGB_Rood_Pin, GPIO_PIN_RESET);
-//	   }
+
+	   if (HAL_GPIO_ReadPin(Motion_Input_GPIO_Port, Motion_Input_Pin) == GPIO_PIN_SET)
+	   {
+	       char Beweging[] = "Beweging gedetecteerd\r\n";
+	       HAL_UART_Transmit(&huart2, (uint8_t*)Beweging, sizeof(Beweging)-1, HAL_MAX_DELAY);
+
+	       Servo_SetAngle(180);
+	       HAL_Delay(3000);
+	       Servo_SetAngle(0);
+	       HAL_Delay(1000);
+
+	       HAL_GPIO_WritePin(RGB_Blauw_GPIO_Port, RGB_Blauw_Pin, GPIO_PIN_SET);
+	       HAL_Delay(1000);
+	       HAL_GPIO_WritePin(RGB_Blauw_GPIO_Port, RGB_Blauw_Pin, GPIO_PIN_RESET);
+	       HAL_GPIO_WritePin(RGB_Groen_GPIO_Port, RGB_Groen_Pin, GPIO_PIN_SET);
+	       HAL_Delay(1000);
+	       HAL_GPIO_WritePin(RGB_Groen_GPIO_Port, RGB_Groen_Pin, GPIO_PIN_RESET);
+	       HAL_GPIO_WritePin(RGB_Rood_GPIO_Port, RGB_Rood_Pin, GPIO_PIN_SET);
+	       HAL_Delay(1000);
+	       HAL_GPIO_WritePin(RGB_Rood_GPIO_Port, RGB_Rood_Pin, GPIO_PIN_RESET);
+	   }
 
 
   }
