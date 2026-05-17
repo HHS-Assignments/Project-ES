@@ -59,8 +59,12 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define Buzzer_Pin_Pin GPIO_PIN_0
+#define Buzzer_Pin_GPIO_Port GPIOA
 #define Motion_Input_Pin GPIO_PIN_1
 #define Motion_Input_GPIO_Port GPIOA
+#define Button_Input_Pin GPIO_PIN_4
+#define Button_Input_GPIO_Port GPIOA
 #define RGB_Blauw_Pin GPIO_PIN_9
 #define RGB_Blauw_GPIO_Port GPIOA
 #define RGB_Groen_Pin GPIO_PIN_10
