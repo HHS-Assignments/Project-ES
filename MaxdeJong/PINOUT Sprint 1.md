@@ -15,22 +15,22 @@
 | Massa | Bruin/Zwart | GND |
 
 ## PIR Sensor
-| PIR Pin | Nucleo Pin |
-|---------|------------|
-| VCC | 3.3V |
-| GND | GND |
-| OUT | PA1 |
+| PIR Pin | Nucleo Pin | Opmerking |
+|---------|------------|-----------|
+| VCC | 3.3V | |
+| GND | GND | |
+| OUT | PA1 (Motion_Input) | Geen pull, actief HIGH |
 
 ## Noodknop
 | Pin | Nucleo Pin | Opmerking |
 |-----|------------|-----------|
-| Knop | PA10 | Pull-up, actief LOW |
+| Knop | PA10 (NoodButton_Input) | Pull-up, actief LOW |
 | GND | GND | |
 
 ## Gewone Knop (Deur openen)
 | Pin | Nucleo Pin | Opmerking |
 |-----|------------|-----------|
-| Knop | PA11 | Pull-up, actief LOW |
+| Knop | PA11 (Button_Input) | Pull-up, actief LOW |
 | GND | GND | |
 
 ## MAX7219 LED-matrix
@@ -40,4 +40,15 @@
 | GND | GND | |
 | DIN | PB5 (SPI3 MOSI) | |
 | CLK | PB3 (SPI3 SCK) | |
-| CS/LOAD | PA3 | GPIO output |
+| CS/LOAD | PA3 (MAX_CS) | GPIO output |
+
+## MFRC522 RFID-lezer
+| MFRC522 Pin | Nucleo Pin | Opmerking |
+|-------------|------------|-----------|
+| VCC | 3.3V | **Niet 5V!** |
+| GND | GND | |
+| MOSI | PA7 (SPI1 MOSI) | |
+| MISO | PA6 (SPI1 MISO) | |
+| SCK | PA5 (SPI1 SCK) | |
+| SDA/CS | PA4 (CS) | GPIO output |
+| RST | PB0 (RESET) | GPIO output |
