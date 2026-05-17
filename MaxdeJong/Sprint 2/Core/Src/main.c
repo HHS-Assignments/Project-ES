@@ -41,11 +41,13 @@
 
 /* Private variables ---------------------------------------------------------*/
 TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+uint8_t buzzer_aan = 0;
+uint8_t vorige_knop = GPIO_PIN_SET;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -53,6 +55,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -63,6 +66,25 @@ void Servo_SetAngle(uint8_t angle)
 {
     uint32_t pulse = 500 + ((uint32_t)angle * 2000) / 180;
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, pulse);
+}
+
+void Buzzer_Nood(void)
+{
+	 // Hoge toon (1000 Hz)
+	    __HAL_TIM_SET_AUTORELOAD(&htim2, 999);
+	    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 500);
+	    __HAL_TIM_SET_COUNTER(&htim2, 0); // reset teller
+	    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+	    HAL_Delay(300);
+	    HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
+
+	    // Lage toon (500 Hz)
+	    __HAL_TIM_SET_AUTORELOAD(&htim2, 1999);
+	    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 1000);
+	    __HAL_TIM_SET_COUNTER(&htim2, 0); // reset teller
+	    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+	    HAL_Delay(300);
+	    HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
 }
 /* USER CODE END 0 */
 
@@ -97,9 +119,14 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM1_Init();
   MX_USART2_UART_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   __HAL_TIM_MOE_ENABLE(&htim1);
+
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  __HAL_TIM_MOE_ENABLE(&htim1);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -109,26 +136,81 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  if (HAL_GPIO_ReadPin(Motion_Input_GPIO_Port, Motion_Input_Pin) == GPIO_PIN_SET) {
 
-		  char Beweging[] = "Beweging gedetecteerd\r\n";
-		  HAL_UART_Transmit(&huart2, (uint8_t*)Beweging, sizeof(Beweging)-1, HAL_MAX_DELAY);
+	  uint8_t huidige_knop = HAL_GPIO_ReadPin(Button_Input_GPIO_Port, Button_Input_Pin);
 
-		    Servo_SetAngle(180);
-		    HAL_Delay(3000);
-		    Servo_SetAngle(0);
-		    HAL_Delay(1000);
+	  if (huidige_knop == GPIO_PIN_RESET && vorige_knop == GPIO_PIN_SET)
+	  {
+	      // Wacht tot knop losgelaten is
+	      while (HAL_GPIO_ReadPin(Button_Input_GPIO_Port, Button_Input_Pin) == GPIO_PIN_RESET);
+	      HAL_Delay(50); // debounce
 
-			HAL_GPIO_WritePin(RGB_Blauw_GPIO_Port, RGB_Blauw_Pin, GPIO_PIN_SET);
-			HAL_Delay(1000);
-			HAL_GPIO_WritePin(RGB_Blauw_GPIO_Port, RGB_Blauw_Pin, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(RGB_Groen_GPIO_Port, RGB_Groen_Pin, GPIO_PIN_SET);
-			HAL_Delay(1000);
-			HAL_GPIO_WritePin(RGB_Groen_GPIO_Port, RGB_Groen_Pin, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(RGB_Rood_GPIO_Port, RGB_Rood_Pin, GPIO_PIN_SET);
-			HAL_Delay(1000);
-			HAL_GPIO_WritePin(RGB_Rood_GPIO_Port, RGB_Rood_Pin, GPIO_PIN_RESET);
+	      buzzer_aan = !buzzer_aan;
+	      if (buzzer_aan)
+	      {
+	          char aan[] = "Buzzer aan\r\n";
+	          HAL_UART_Transmit(&huart2, (uint8_t*)aan, sizeof(aan)-1, HAL_MAX_DELAY);
+	      }
+	      else
+	      {
+	          HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
+	          char uit[] = "Buzzer uit\r\n";
+	          HAL_UART_Transmit(&huart2, (uint8_t*)uit, sizeof(uit)-1, HAL_MAX_DELAY);
+	      }
 	  }
+	  vorige_knop = huidige_knop;
+
+	  if (buzzer_aan)
+	  {
+	      Buzzer_Nood();
+	  }
+//	  uint8_t huidige_knop = HAL_GPIO_ReadPin(Button_Input_GPIO_Port, Button_Input_Pin);
+//
+//	  if (huidige_knop == GPIO_PIN_RESET && vorige_knop == GPIO_PIN_SET)
+//	  {
+//	      HAL_Delay(50);
+//	      huidige_knop = HAL_GPIO_ReadPin(Button_Input_GPIO_Port, Button_Input_Pin);
+//	      if (huidige_knop == GPIO_PIN_RESET) // nog steeds ingedrukt na debounce
+//	      {
+//	          if (buzzer_aan == 0)
+//	          {
+//	              buzzer_aan = 1;
+//	          }
+//	          else
+//	          {
+//	              buzzer_aan = 0;
+//	              HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
+//	          }
+//	      }
+//	  }
+//	  vorige_knop = huidige_knop;
+//
+//	   if (buzzer_aan == 1)
+//	   {
+//	       Buzzer_Nood();
+//	   }
+//
+//	   if (HAL_GPIO_ReadPin(Motion_Input_GPIO_Port, Motion_Input_Pin) == GPIO_PIN_SET)
+//	   {
+//	       char Beweging[] = "Beweging gedetecteerd\r\n";
+//	       HAL_UART_Transmit(&huart2, (uint8_t*)Beweging, sizeof(Beweging)-1, HAL_MAX_DELAY);
+//
+//	       Servo_SetAngle(180);
+//	       HAL_Delay(3000);
+//	       Servo_SetAngle(0);
+//	       HAL_Delay(1000);
+//
+//	       HAL_GPIO_WritePin(RGB_Blauw_GPIO_Port, RGB_Blauw_Pin, GPIO_PIN_SET);
+//	       HAL_Delay(1000);
+//	       HAL_GPIO_WritePin(RGB_Blauw_GPIO_Port, RGB_Blauw_Pin, GPIO_PIN_RESET);
+//	       HAL_GPIO_WritePin(RGB_Groen_GPIO_Port, RGB_Groen_Pin, GPIO_PIN_SET);
+//	       HAL_Delay(1000);
+//	       HAL_GPIO_WritePin(RGB_Groen_GPIO_Port, RGB_Groen_Pin, GPIO_PIN_RESET);
+//	       HAL_GPIO_WritePin(RGB_Rood_GPIO_Port, RGB_Rood_Pin, GPIO_PIN_SET);
+//	       HAL_Delay(1000);
+//	       HAL_GPIO_WritePin(RGB_Rood_GPIO_Port, RGB_Rood_Pin, GPIO_PIN_RESET);
+//	   }
+
 
   }
   /* USER CODE END 3 */
@@ -255,6 +337,55 @@ static void MX_TIM1_Init(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 79;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 999;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 500;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+  HAL_TIM_MspPostInit(&htim2);
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -270,7 +401,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 9600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -312,6 +443,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(Motion_Input_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : Button_Input_Pin */
+  GPIO_InitStruct.Pin = Button_Input_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(Button_Input_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : RGB_Blauw_Pin RGB_Groen_Pin RGB_Rood_Pin */
   GPIO_InitStruct.Pin = RGB_Blauw_Pin|RGB_Groen_Pin|RGB_Rood_Pin;
