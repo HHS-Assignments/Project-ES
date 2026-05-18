@@ -61,10 +61,24 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void SetVibration(uint16_t percent)  // 0-100
+void SetVibration(uint16_t percent)
 {
     if (percent > 100) percent = 100;
-    uint16_t pulse = (percent * 1000) / 100;
+
+    uint16_t pulse;
+
+    if (percent == 0)
+    {
+        pulse = 0;
+    }
+    else
+    {
+
+        uint16_t MIN_PULSE = 500;
+        uint16_t MAX_PULSE = 1000;
+        pulse = MIN_PULSE + ((percent * (MAX_PULSE - MIN_PULSE)) / 100);
+    }
+
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, pulse);
 }
 
@@ -246,7 +260,7 @@ static void MX_TIM1_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 500;
+  sConfigOC.Pulse = 1000;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
