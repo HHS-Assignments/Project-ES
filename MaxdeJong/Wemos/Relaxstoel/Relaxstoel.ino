@@ -7,10 +7,10 @@ void setup() {
 }
 
 void loop() {
-    motor.setSpeed(75);  
-    delay(2500);
-    motor.setSpeed(100); 
+    motor.setSpeed(10);  
     delay(2500);
     motor.setSpeed(50);
+    delay(2500);
+    motor.setSpeed(100);
     delay(2500);
 }
