@@ -222,16 +222,16 @@ int main(void)
 	          if (!noodstand_actief) {
 	              noodstand_actief = 1;
 	              max7219_show_2d(uitroepteken_2d);
-	              char nood[] = "Noodknop ingedrukt, alle deuren gaan Open\r\n";
+	              char nood[] = "Noodknop ingedrukt, alle deuren gaan Dicht\r\n";
 	              HAL_UART_Transmit(&huart2, (uint8_t*)nood, sizeof(nood)-1, HAL_MAX_DELAY);
-	              Servo_SetAngle(180, TIM_CHANNEL_1);
-	              Servo_SetAngle(180, TIM_CHANNEL_2);
+	              Servo_SetAngle(0, TIM_CHANNEL_1);
+	              Servo_SetAngle(0, TIM_CHANNEL_2);
 	          }
 	      } else {
 	          if (noodstand_actief) {
 	              noodstand_actief = 0;
-	              Servo_SetAngle(0, TIM_CHANNEL_1);
-	              Servo_SetAngle(0, TIM_CHANNEL_2);
+	              Servo_SetAngle(180, TIM_CHANNEL_1);
+	              Servo_SetAngle(180, TIM_CHANNEL_2);
 	              max7219_show_2d(leeg_2d);
 	          }
 	      }
