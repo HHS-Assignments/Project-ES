@@ -87,10 +87,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   /* USER CODE BEGIN 2 */
-  HAL_GPIO_WritePin(GPIOA, RoodRFID_Output_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOA, GroenRFID_Output_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOA, Geel_Output1_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOA, Geel_Output2_Pin, GPIO_PIN_SET);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -98,7 +95,10 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+	  HAL_GPIO_WritePin(GPIOA, RoodRFID_Output_Pin, GPIO_PIN_SET);
+	  HAL_GPIO_WritePin(GPIOA, GroenRFID_Output_Pin, GPIO_PIN_SET);
+	  HAL_GPIO_WritePin(GPIOA, Geel_Output1_Pin, GPIO_PIN_SET);
+	  HAL_GPIO_WritePin(GPIOA, Geel_Output2_Pin, GPIO_PIN_SET);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
