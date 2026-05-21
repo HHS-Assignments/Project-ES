@@ -21,3 +21,4 @@ void Motor::setSpeed(uint8_t pct) {
 
     analogWrite(_pin, pulse);
 }
+
