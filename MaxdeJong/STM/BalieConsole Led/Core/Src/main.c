@@ -95,11 +95,13 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+	 if(1){
 	  HAL_GPIO_WritePin(GPIOA, RoodRFID_Output_Pin, GPIO_PIN_SET);
 	  HAL_GPIO_WritePin(GPIOA, GroenRFID_Output_Pin, GPIO_PIN_SET);
 	  HAL_GPIO_WritePin(GPIOA, Geel_Output1_Pin, GPIO_PIN_SET);
 	  HAL_GPIO_WritePin(GPIOA, Geel_Output2_Pin, GPIO_PIN_SET);
-    /* USER CODE BEGIN 3 */
+	 }
+	  /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
