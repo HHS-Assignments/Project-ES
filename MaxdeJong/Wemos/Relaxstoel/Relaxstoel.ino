@@ -2,15 +2,58 @@
 
 Motor motor(D2);
 
+const uint8_t START_BTN = D5;
+const uint8_t ESTOP_BTN = D6;
+
+bool running = false;
+
+void runStep(uint8_t speed, unsigned long ms) {
+    motor.setSpeed(speed);
+    unsigned long start = millis();
+    while (millis() - start < ms) {
+        if (digitalRead(ESTOP_BTN) == LOW) {
+            motor.setSpeed(0);
+            running = false;
+            while (digitalRead(ESTOP_BTN) == LOW) delay(10);
+            return;
+        }
+        delay(50);
+    }
+}
+
 void setup() {
     motor.begin();
+    pinMode(START_BTN, INPUT_PULLUP);
+    pinMode(ESTOP_BTN, INPUT_PULLUP);
 }
 
 void loop() {
-    motor.setSpeed(10);  
-    delay(2500);
-    motor.setSpeed(50);
-    delay(2500);
-    motor.setSpeed(100);
-    delay(2500);
+    if (digitalRead(ESTOP_BTN) == LOW) {
+        running = false;
+        motor.setSpeed(0);
+        while (digitalRead(ESTOP_BTN) == LOW) delay(10);
+        return;
+    }
+
+    if (digitalRead(START_BTN) == LOW && !running) {
+        delay(50);
+        if (digitalRead(START_BTN) == LOW) {
+            running = true;
+            while (digitalRead(START_BTN) == LOW) delay(10);
+        }
+    }
+
+    if (!running) return;
+
+    runStep(10,  2500);
+    if (!running) return;
+
+    runStep(50,  2500);
+    if (!running) return;
+
+    runStep(100, 2500);
+    if (!running) return;
+
+    motor.setSpeed(0);
+    running = false;
 }
