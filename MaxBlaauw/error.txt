@@ -1,0 +1,93 @@
+2026-05-25 14:13:06.154 [info] [main] Log level: Info
+2026-05-25 14:13:06.154 [info] [main] Validating found git in: "C:\Program Files\Git\cmd\git.exe"
+2026-05-25 14:13:06.226 [info] [main] Using git "2.53.0.windows.3" from "C:\Program Files\Git\cmd\git.exe"
+2026-05-25 14:13:06.226 [info] [Model][doInitialScan] Initial repository scan started
+2026-05-25 14:13:06.320 [info] > git rev-parse --show-toplevel [73ms]
+2026-05-25 14:13:06.320 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-05-25 14:13:14.803 [info] > git rev-parse --show-toplevel [8477ms]
+2026-05-25 14:13:14.803 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-05-25 14:13:14.809 [info] [Model][doInitialScan] Initial repository scan completed - repositories (0), closed repositories (0), parent repositories (0), unsafe repositories (0)
+2026-05-25 14:13:18.115 [info] > git rev-parse --show-toplevel [798ms]
+2026-05-25 14:13:18.115 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-05-25 14:13:30.319 [info] [main] Log level: Info
+2026-05-25 14:13:30.319 [info] [main] Validating found git in: "C:\Program Files\Git\cmd\git.exe"
+2026-05-25 14:13:30.319 [info] [main] Using git "2.53.0.windows.3" from "C:\Program Files\Git\cmd\git.exe"
+2026-05-25 14:13:30.319 [info] [Model][doInitialScan] Initial repository scan started
+2026-05-25 14:13:30.329 [info] > git rev-parse --show-toplevel [108ms]
+2026-05-25 14:13:30.696 [info] > git rev-parse --git-dir --git-common-dir --show-superproject-working-tree [282ms]
+2026-05-25 14:13:43.119 [info] [Model][openRepository] Opened repository (path): c:\Users\MaxBlaauw\Project-ES
+2026-05-25 14:13:43.119 [info] [Model][openRepository] Opened repository (real path): c:\Users\MaxBlaauw\Project-ES
+2026-05-25 14:13:43.119 [info] [Model][openRepository] Opened repository (kind): repository
+2026-05-25 14:13:43.583 [info] > git config --get --local core.virtualfilesystem [443ms]
+2026-05-25 14:13:43.583 [warning] [Git][config] git config failed: Failed to execute git
+2026-05-25 14:13:43.786 [info] > git rev-parse --show-toplevel [246ms]
+2026-05-25 14:13:43.787 [info] > git config --get commit.template [253ms]
+2026-05-25 14:13:44.387 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/main refs/remotes/main [522ms]
+2026-05-25 14:13:44.387 [info] > git rev-parse --show-toplevel [565ms]
+2026-05-25 14:13:44.656 [info] > git rev-parse --show-toplevel [156ms]
+2026-05-25 14:13:45.239 [info] > git status -z -uall [525ms]
+2026-05-25 14:13:45.260 [info] > git rev-parse --show-toplevel [531ms]
+2026-05-25 14:13:45.260 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [539ms]
+2026-05-25 14:13:45.431 [info] > git config --get commit.template [114ms]
+2026-05-25 14:13:45.431 [info] > git rev-parse --show-toplevel [131ms]
+2026-05-25 14:13:45.431 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/main refs/remotes/main [154ms]
+2026-05-25 14:13:45.521 [info] > git config --get --local branch.main.vscode-merge-base [83ms]
+2026-05-25 14:13:45.691 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/main refs/remotes/main [210ms]
+2026-05-25 14:13:45.691 [info] > git rev-parse --show-toplevel [222ms]
+2026-05-25 14:13:45.751 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/origin/main refs/remotes/origin/main [222ms]
+2026-05-25 14:13:45.885 [info] > git merge-base refs/heads/main refs/remotes/origin/main [125ms]
+2026-05-25 14:13:45.896 [info] > git rev-parse --show-toplevel [150ms]
+2026-05-25 14:13:46.019 [info] > git diff --raw --numstat --diff-filter=ADMR -z --find-renames=50% 009d5519d9e388ef5081b22fabde8847e434c3d9...refs/remotes/origin/main -- [124ms]
+2026-05-25 14:13:46.028 [info] > git rev-parse --show-toplevel [94ms]
+2026-05-25 14:13:46.028 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [105ms]
+2026-05-25 14:13:46.292 [info] > git status -z -uall [375ms]
+2026-05-25 14:13:46.378 [info] > git log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z --shortstat --diff-merges=first-parent -n50 --skip=0 --topo-order --decorate=full --stdin [519ms]
+2026-05-25 14:13:46.435 [info] > git rev-parse --show-toplevel [156ms]
+2026-05-25 14:13:46.443 [info] > git check-ignore -v -z --stdin [153ms]
+2026-05-25 14:13:46.460 [info] > git fetch [1175ms]
+2026-05-25 14:13:46.460 [info] From https://github.com/HHS-Assignments/Project-ES
+   009d551..2b60722  main               -> origin/main
+ * [new branch]      NoodKnop-Interrupt -> origin/NoodKnop-Interrupt
+2026-05-25 14:13:46.540 [info] > git rev-parse --show-toplevel [98ms]
+2026-05-25 14:13:46.548 [info] > git config --get commit.template [79ms]
+2026-05-25 14:13:46.574 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/main refs/remotes/main [87ms]
+2026-05-25 14:13:46.628 [info] > git rev-parse --show-toplevel [81ms]
+2026-05-25 14:13:46.690 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [83ms]
+2026-05-25 14:13:46.709 [info] > git rev-parse --show-toplevel [77ms]
+2026-05-25 14:13:46.734 [info] > git status -z -uall [133ms]
+2026-05-25 14:13:46.881 [info] > git merge-base refs/heads/main refs/remotes/origin/main [134ms]
+2026-05-25 14:13:46.888 [info] > git rev-parse --show-toplevel [173ms]
+2026-05-25 14:13:47.057 [info] > git rev-parse --show-toplevel [85ms]
+2026-05-25 14:13:47.059 [info] [Model][doInitialScan] Initial repository scan completed - repositories (1), closed repositories (0), parent repositories (0), unsafe repositories (0)
+2026-05-25 14:13:47.155 [info] > git config --local -l [87ms]
+2026-05-25 14:13:47.209 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/main refs/remotes/main [115ms]
+2026-05-25 14:13:47.209 [info] > git config --get commit.template [128ms]
+2026-05-25 14:13:47.328 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [103ms]
+2026-05-25 14:13:47.348 [info] > git status -z -uall [129ms]
+2026-05-25 14:13:47.479 [info] > git merge-base refs/heads/main refs/remotes/origin/main [122ms]
+2026-05-25 14:13:47.572 [info] > git merge-base main origin/main [100ms]
+2026-05-25 14:13:47.807 [info] > git config --local -l [161ms]
+2026-05-25 14:13:47.827 [info] > git config --local -l [195ms]
+2026-05-25 14:13:47.828 [info] > git config --local -l [210ms]
+2026-05-25 14:13:47.829 [info] > git config --local -l [204ms]
+2026-05-25 14:13:47.829 [info] > git config --local -l [216ms]
+2026-05-25 14:13:47.876 [info] > git diff --raw --numstat --diff-filter=ADMR -z --find-renames=50% 009d5519d9e388ef5081b22fabde8847e434c3d9...refs/remotes/origin/main -- [988ms]
+2026-05-25 14:13:48.427 [info] > git diff --raw --numstat --diff-filter=ADMR -z --find-renames=50% 009d5519d9e388ef5081b22fabde8847e434c3d9...refs/remotes/origin/main -- [941ms]
+2026-05-25 14:13:51.831 [info] > git log --oneline --cherry main...main@{upstream} -- [107ms]
+2026-05-25 14:13:52.647 [info] > git pull --tags origin main [808ms]
+2026-05-25 14:13:52.647 [info] From https://github.com/HHS-Assignments/Project-ES
+ * branch            main       -> FETCH_HEAD
+error: Your local changes to the following files would be overwritten by merge:
+	Kai/KaiServoTesting/.settings/language.settings.xml
+	Max/Sprint1/.settings/language.settings.xml
+	MicroController-1/.settings/language.settings.xml
+	MicroController-2/.settings/language.settings.xml
+	MicroController-3/.settings/language.settings.xml
+	Microcontroller-4-external/.settings/language.settings.xml
+	Totale code/PES/.settings/language.settings.xml
+Please commit your changes or stash them before you merge.
+Aborting
+2026-05-25 14:13:52.739 [info] > git config --get commit.template [84ms]
+2026-05-25 14:13:52.750 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/main refs/remotes/main [91ms]
+2026-05-25 14:13:52.838 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [75ms]
+2026-05-25 14:13:52.871 [info] > git status -z -uall [114ms]
