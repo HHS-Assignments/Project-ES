@@ -103,6 +103,9 @@ int main(void)
   MFRC522_Init(&rfID);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+  TIM1->CCR1 = 73;
+  TIM1->CCR2 = 73;
+  HAL_Delay(20);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -110,27 +113,10 @@ int main(void)
 	while (1) {
 		if (MFRC522_RequestA(&rfID, atqa) == STATUS_OK) {
 			if (MFRC522_ReadUid(&rfID, uid) == STATUS_OK) {
+				USER_LOG("CARD ID:%02X %02X %02X %02X", uid[0], uid[1], uid[2], uid[3]);
 				  if ((uid[0] == 0x03) && (uid[1] == 0xF5) &&(uid[2] == 0x4C) &&(uid[3] == 0xA6)){
-					  HAL_GPIO_WritePin(GPIOB, Rood_Pin, GPIO_PIN_SET);
-					  for(int pos = 73; pos <= 110; pos++)
-					  {
-					      TIM1->CCR1 = pos;
-					      TIM1->CCR2 = pos;
-					      HAL_Delay(20);
-					  }
-					  HAL_GPIO_WritePin(GPIOB, Rood_Pin, GPIO_PIN_RESET);
-					  HAL_Delay(1000);
-					  for(int pos = 110; pos >= 73; pos--)
-					  {
-					      TIM1->CCR1 = pos;
-					      TIM1->CCR2 = pos;
-					      HAL_Delay(20);
-					  }
-				  }
-
-				  else if ((uid[0] == 0x73) && (uid[1] == 0x5C) &&(uid[2] == 0xEC) &&(uid[3] == 0x98)){
 					  HAL_GPIO_WritePin(GPIOA, Blauw_Pin, GPIO_PIN_SET);
-					  for(int pos = 73; pos >= 110; pos--)
+					  for(int pos = 73; pos <= 110; pos++)
 					  {
 					      TIM1->CCR1 = pos;
 					      TIM1->CCR2 = pos;
@@ -144,6 +130,11 @@ int main(void)
 					      TIM1->CCR2 = pos;
 					      HAL_Delay(20);
 					  }
+				  }
+				  else {
+					  HAL_GPIO_WritePin(GPIOB, Rood_Pin, GPIO_PIN_SET);
+					  HAL_Delay(1000);
+					  HAL_GPIO_WritePin(GPIOB, Rood_Pin, GPIO_PIN_RESET);
 				  }
 			}
 		}
