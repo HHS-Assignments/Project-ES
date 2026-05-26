@@ -106,7 +106,7 @@ int main(void)
 	        HAL_Delay(5000);
 	        HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_RESET);
 	    }
-	  /* USER CODE END WHILE */
+    /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
