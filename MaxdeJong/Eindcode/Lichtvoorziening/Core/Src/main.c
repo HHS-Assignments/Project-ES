@@ -91,7 +91,8 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  char test[] = "STM32 gestart!\r\n";
+  HAL_UART_Transmit(&huart2, (uint8_t*)test, strlen(test), 1000);
   /* USER CODE END 2 */
 
   /* Infinite loop */
