@@ -100,13 +100,24 @@ int main(void)
   char Beweging [] = "Beweging gedetecteerd, Verlichting gaat aan! \r\n";
   while (1)
   {
-	    if (HAL_GPIO_ReadPin(GPIOB, Motion_Input_Pin))
-	    {
-	        HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_SET);
-	        HAL_UART_Transmit(&huart2, (uint8_t*)Beweging, strlen(Beweging), strlen(Beweging));
-	        HAL_Delay(5000);
-	        HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_RESET);
-	    }
+//	    if (HAL_GPIO_ReadPin(GPIOB, Motion_Input_Pin))
+//	    {
+//	        HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_SET);
+//	        HAL_UART_Transmit(&huart2, (uint8_t*)Beweging, strlen(Beweging), strlen(Beweging));
+//	        HAL_Delay(5000);
+//	        HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_RESET);
+//	    }
+	  if(HAL_GPIO_ReadPin(GPIOA, Button_Input_Pin) == GPIO_PIN_RESET){
+		  HAL_UART_Transmit(&huart2, (uint8_t*)Beweging, strlen(Beweging), strlen(Beweging));
+		  HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_SET);
+		  //HAL_GPIO_WritePin(GPIOA, RGB_Blauw_Pin, GPIO_PIN_SET);
+		  //HAL_GPIO_WritePin(GPIOA,RGB__Rood_Pin, GPIO_PIN_SET);
+		  HAL_Delay(5000);
+		  //HAL_GPIO_WritePin(GPIOA, RGB__Rood_Pin, GPIO_PIN_RESET);
+		  //HAL_GPIO_WritePin(GPIOA, RGB_Blauw_Pin, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_RESET);
+		  HAL_Delay(100);
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -231,6 +242,12 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : Button_Input_Pin */
+  GPIO_InitStruct.Pin = Button_Input_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(Button_Input_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : RGB__Rood_Pin RGB_Blauw_Pin RGB_Groen_Pin */
   GPIO_InitStruct.Pin = RGB__Rood_Pin|RGB_Blauw_Pin|RGB_Groen_Pin;
