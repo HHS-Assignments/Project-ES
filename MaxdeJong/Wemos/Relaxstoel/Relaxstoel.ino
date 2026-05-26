@@ -1,10 +1,8 @@
 #include "Relaxstoel.h"
 
 Motor motor(D2);
-
-const uint8_t START_BTN = D5;
+const uint8_t START_BTN = D7;
 const uint8_t ESTOP_BTN = D6;
-
 bool running = false;
 
 void runStep(uint8_t speed, unsigned long ms) {
@@ -34,7 +32,6 @@ void loop() {
         while (digitalRead(ESTOP_BTN) == LOW) delay(10);
         return;
     }
-
     if (digitalRead(START_BTN) == LOW && !running) {
         delay(50);
         if (digitalRead(START_BTN) == LOW) {
@@ -42,18 +39,11 @@ void loop() {
             while (digitalRead(START_BTN) == LOW) delay(10);
         }
     }
-
     if (!running) return;
-
     runStep(10,  2500);
     if (!running) return;
-
     runStep(50,  2500);
     if (!running) return;
-
     runStep(100, 2500);
     if (!running) return;
-
-    motor.setSpeed(0);
-    running = false;
 }
