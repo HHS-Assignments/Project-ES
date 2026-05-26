@@ -133,8 +133,7 @@ void max7219_show_2d(uint8_t arr[8][8]) {
 
 void KaiDeurAutomatiseringBuitenBinnen() {
 	char RFIDmsg[] = "Deur 1 gaat open\r\n";
-	HAL_UART_Transmit(&huart2, (uint8_t*) RFIDmsg, sizeof(RFIDmsg) - 1,
-	HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart2, (uint8_t*) RFIDmsg, sizeof(RFIDmsg) - 1, HAL_MAX_DELAY);
 
 	for (int pos = 73; pos <= 110; pos++) {
 		TIM1->CCR1 = pos;
@@ -143,8 +142,7 @@ void KaiDeurAutomatiseringBuitenBinnen() {
 
 	HAL_Delay(3000);
 	char RFIDmsg1[] = "Deur 1 gaat dicht\r\n";
-	HAL_UART_Transmit(&huart2, (uint8_t*) RFIDmsg1, sizeof(RFIDmsg1) - 1,
-	HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart2, (uint8_t*) RFIDmsg1, sizeof(RFIDmsg1) - 1, HAL_MAX_DELAY);
 
 	for (int pos = 110; pos >= 73; pos--) {
 		TIM1->CCR1 = pos;
@@ -152,8 +150,7 @@ void KaiDeurAutomatiseringBuitenBinnen() {
 	}
 
 	char RFIDmsg2[] = "Deur 2 gaat open\r\n";
-	HAL_UART_Transmit(&huart2, (uint8_t*) RFIDmsg2, sizeof(RFIDmsg2) - 1,
-	HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart2, (uint8_t*) RFIDmsg2, sizeof(RFIDmsg2) - 1, HAL_MAX_DELAY);
 
 	for (int pos = 73; pos <= 110; pos++) {
 		TIM1->CCR2 = pos;
@@ -162,8 +159,7 @@ void KaiDeurAutomatiseringBuitenBinnen() {
 
 	HAL_Delay(3000);
 	char RFIDmsg3[] = "Deur 2 gaat dicht\r\n";
-	HAL_UART_Transmit(&huart2, (uint8_t*) RFIDmsg3, sizeof(RFIDmsg3) - 1,
-	HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart2, (uint8_t*) RFIDmsg3, sizeof(RFIDmsg3) - 1, HAL_MAX_DELAY);
 
 	for (int pos = 110; pos >= 73; pos--) {
 		TIM1->CCR2 = pos;
@@ -174,8 +170,7 @@ void KaiDeurAutomatiseringBuitenBinnen() {
 
 void KaiDeurAutomatiseringBinnenBuiten() {
 	char RFIDmsg2[] = "Deur 2 gaat open\r\n";
-	HAL_UART_Transmit(&huart2, (uint8_t*) RFIDmsg2, sizeof(RFIDmsg2) - 1,
-	HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart2, (uint8_t*) RFIDmsg2, sizeof(RFIDmsg2) - 1, HAL_MAX_DELAY);
 
 	for (int pos = 73; pos <= 110; pos++) {
 		TIM1->CCR2 = pos;
@@ -184,8 +179,7 @@ void KaiDeurAutomatiseringBinnenBuiten() {
 
 	HAL_Delay(3000);
 	char RFIDmsg3[] = "Deur 2 gaat dicht\r\n";
-	HAL_UART_Transmit(&huart2, (uint8_t*) RFIDmsg3, sizeof(RFIDmsg3) - 1,
-	HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart2, (uint8_t*) RFIDmsg3, sizeof(RFIDmsg3) - 1, HAL_MAX_DELAY);
 
 	for (int pos = 110; pos >= 73; pos--) {
 		TIM1->CCR2 = pos;
@@ -193,8 +187,7 @@ void KaiDeurAutomatiseringBinnenBuiten() {
 	}
 
 	char RFIDmsg[] = "Deur 1 gaat open\r\n";
-	HAL_UART_Transmit(&huart2, (uint8_t*) RFIDmsg, sizeof(RFIDmsg) - 1,
-	HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart2, (uint8_t*) RFIDmsg, sizeof(RFIDmsg) - 1, HAL_MAX_DELAY);
 
 	for (int pos = 73; pos <= 110; pos++) {
 		TIM1->CCR1 = pos;
@@ -203,8 +196,7 @@ void KaiDeurAutomatiseringBinnenBuiten() {
 
 	HAL_Delay(3000);
 	char RFIDmsg1[] = "Deur 1 gaat dicht\r\n";
-	HAL_UART_Transmit(&huart2, (uint8_t*) RFIDmsg1, sizeof(RFIDmsg1) - 1,
-	HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart2, (uint8_t*) RFIDmsg1, sizeof(RFIDmsg1) - 1, HAL_MAX_DELAY);
 
 	for (int pos = 110; pos >= 73; pos--) {
 		TIM1->CCR1 = pos;
@@ -611,14 +603,14 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		if (HAL_GPIO_ReadPin(NoodButton_Input_GPIO_Port, NoodButton_Input_Pin)
 				== GPIO_PIN_RESET) {
 // noodknop logica
-			if (!noodstand_actief) {
+			if (state == STATE_NORMAL) {
 				state = STATE_EMERGENCY;
 				max7219_show_2d(uitroepteken_2d);
 				char nood[] = "Noodknop ingedrukt, alle deuren gaan Dicht\r\n";
 				HAL_UART_Transmit(&huart2, (uint8_t*) nood, sizeof(nood) - 1,
 				HAL_MAX_DELAY);
 			}
-			if (noodstand_actief) {
+			if (state == STATE_EMERGENCY) {
 				state = STATE_NORMAL;
 				max7219_show_2d(leeg_2d);
 			}
