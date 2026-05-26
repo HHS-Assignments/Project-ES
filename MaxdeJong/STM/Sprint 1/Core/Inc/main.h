@@ -73,6 +73,7 @@ void Error_Handler(void);
 #define RESET_GPIO_Port GPIOB
 #define NoodButton_Input_Pin GPIO_PIN_10
 #define NoodButton_Input_GPIO_Port GPIOA
+#define NoodButton_Input_EXTI_IRQn EXTI15_10_IRQn
 #define Button_Input_Pin GPIO_PIN_11
 #define Button_Input_GPIO_Port GPIOA
 #define SWDIO_Pin GPIO_PIN_13
