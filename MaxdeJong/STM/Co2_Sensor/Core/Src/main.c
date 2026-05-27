@@ -63,7 +63,7 @@ static void MX_USART2_UART_Init(void);
 void SGP30_Init(void) {
     uint8_t cmd[2] = {0x20, 0x03};
     HAL_I2C_Master_Transmit(&hi2c1, 0x58 << 1, cmd, 2, HAL_MAX_DELAY);
-    //or the first 15s after the “sgp30_iaq_init” command the sensor isin an initialization phase during which a “sgp30_measure_iaq” command returns fixed values of 400 ppm CO2eq and 0 ppb TVOC.
+    //for the first 15s after the “sgp30_iaq_init” command the sensor isin an initialization phase during which a “sgp30_measure_iaq” command returns fixed values of 400 ppm CO2eq and 0 ppb TVOC.
     HAL_Delay(15000);
 }
 
