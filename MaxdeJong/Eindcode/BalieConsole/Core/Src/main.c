@@ -56,7 +56,54 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void UART_Print(const char* str)
+{
+  while (*str)
+  {
+    HAL_UART_Transmit(&huart2, (uint8_t*)str, 1, HAL_MAX_DELAY);
+    str++;
+  }
+}
 
+void Check_Buttons(void)
+{
+
+	  if (HAL_GPIO_ReadPin(GPIOA, Rood_L_Pin) == GPIO_PIN_RESET)
+	  {
+	    UART_Print("Er is geklikt op: Rood Links\r\n");
+	    HAL_Delay(300);
+	  }
+	  if (HAL_GPIO_ReadPin(GPIOA, Rood_R_Pin) == GPIO_PIN_RESET)
+	  {
+		UART_Print("Er is geklikt op: Rood Rechts\r\n");
+		HAL_Delay(300);
+	  }
+
+	  if (HAL_GPIO_ReadPin(GPIOA, Wit_L_Pin) == GPIO_PIN_RESET)
+	  {
+		UART_Print("Er is geklikt op: Wit Links\r\n");
+		HAL_Delay(300);
+	  }
+
+	  if (HAL_GPIO_ReadPin(GPIOA, Wit_R_Pin) == GPIO_PIN_RESET)
+	  {
+		UART_Print("Er is geklikt op: Wit Rechts\r\n");
+		HAL_Delay(300);
+	  }
+
+	  if (HAL_GPIO_ReadPin(GPIOA, Blauw_L_Pin) == GPIO_PIN_RESET)
+	  {
+		UART_Print("Er is geklikt op: Blauw Links\r\n");
+		HAL_Delay(300);
+	  }
+
+	  if (HAL_GPIO_ReadPin(GPIOA, Blauw_R_Pin) == GPIO_PIN_RESET)
+	  {
+		UART_Print("Er is geklikt op: Blauw Rechts\r\n");
+		HAL_Delay(300);
+	  }
+
+}
 /* USER CODE END 0 */
 
 /**
@@ -90,13 +137,14 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  UART_Print("Systeem gestart\r\n");
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  Check_Buttons();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -180,7 +228,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 9600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -219,12 +267,12 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : Rood_R_Pin Wit_L_Pin Wit_R_Pin PA5
-                           Rood_L_Pin */
-  GPIO_InitStruct.Pin = Rood_R_Pin|Wit_L_Pin|Wit_R_Pin|GPIO_PIN_5
-                          |Rood_L_Pin;
+  /*Configure GPIO pins : Rood_R_Pin Wit_L_Pin Wit_R_Pin Blauw_L_Pin
+                           Blauw_R_Pin Rood_L_Pin */
+  GPIO_InitStruct.Pin = Rood_R_Pin|Wit_L_Pin|Wit_R_Pin|Blauw_L_Pin
+                          |Blauw_R_Pin|Rood_L_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : LD3_Pin */

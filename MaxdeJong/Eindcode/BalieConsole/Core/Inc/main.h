@@ -67,7 +67,11 @@ void Error_Handler(void);
 #define Wit_L_GPIO_Port GPIOA
 #define Wit_R_Pin GPIO_PIN_4
 #define Wit_R_GPIO_Port GPIOA
-#define Rood_L_Pin GPIO_PIN_8
+#define Blauw_L_Pin GPIO_PIN_5
+#define Blauw_L_GPIO_Port GPIOA
+#define Blauw_R_Pin GPIO_PIN_6
+#define Blauw_R_GPIO_Port GPIOA
+#define Rood_L_Pin GPIO_PIN_7
 #define Rood_L_GPIO_Port GPIOA
 #define SWDIO_Pin GPIO_PIN_13
 #define SWDIO_GPIO_Port GPIOA
