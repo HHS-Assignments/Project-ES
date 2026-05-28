@@ -12,9 +12,9 @@ Als baliemedewerkster wil ik dat het systeem mij automatisch waarschuwt wanneer 
 
 ## Feedback:
 
-##  Luchtverlichting:
+##  Noodverlichting:
 - eerste minst fel laatste felst
-- snelheid langzemer (misschien instelbaar)
+- snelheid langzamer 
 - in de avond minder fel
 
 ## Luchtsluis
