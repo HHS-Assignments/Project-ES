@@ -76,6 +76,7 @@ void Check_Buttons(void)
 	if (HAL_GPIO_ReadPin(GPIOA, AlleDeurenOpen_Pin) == GPIO_PIN_RESET)
 	{
 		UART_Print("Alle Deuren gaan open\r\n");
+		UART_Print("\r\n");
 		HAL_Delay(300);
 	}
 
@@ -83,6 +84,7 @@ void Check_Buttons(void)
 	if (HAL_GPIO_ReadPin(GPIOA, Noodknop_Input_Pin) == GPIO_PIN_RESET)
 	{
 		UART_Print("Noodknop ingedrukt!\r\n");
+		UART_Print("\r\n");
 		HAL_Delay(300);
 	}
 
@@ -90,6 +92,7 @@ void Check_Buttons(void)
 	if (HAL_GPIO_ReadPin(GPIOA, DeurCyclus_Pin ) == GPIO_PIN_RESET)
 	{
 		UART_Print("Deurcyclus wordt gestart\r\n");
+		UART_Print("\r\n");
 		HAL_Delay(300);
 	}
 
@@ -97,6 +100,7 @@ void Check_Buttons(void)
 	if (HAL_GPIO_ReadPin(GPIOA, SwitchRelaxstoelStatus_Pin) == GPIO_PIN_RESET)
 	{
 		UART_Print("Status Relaxstoel veranderd\r\n");
+		UART_Print("\r\n");
 		HAL_Delay(300);
 	}
 }
@@ -333,7 +337,8 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, CO2OverGrens_Pin|NoodknopLed_Pin|LD3_Pin|RelaxstoelStatus_Pin
+                          |TemperatuurOverGrens_Pin|Dag_Nacht_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : Noodknop_Input_Pin DeurCyclus_Pin SwitchRelaxstoelStatus_Pin AlleDeurenOpen_Pin */
   GPIO_InitStruct.Pin = Noodknop_Input_Pin|DeurCyclus_Pin|SwitchRelaxstoelStatus_Pin|AlleDeurenOpen_Pin;
@@ -341,12 +346,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : LD3_Pin */
-  GPIO_InitStruct.Pin = LD3_Pin;
+  /*Configure GPIO pins : CO2OverGrens_Pin NoodknopLed_Pin LD3_Pin RelaxstoelStatus_Pin
+                           TemperatuurOverGrens_Pin Dag_Nacht_Pin */
+  GPIO_InitStruct.Pin = CO2OverGrens_Pin|NoodknopLed_Pin|LD3_Pin|RelaxstoelStatus_Pin
+                          |TemperatuurOverGrens_Pin|Dag_Nacht_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LD3_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
