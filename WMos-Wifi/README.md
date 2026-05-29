@@ -2,8 +2,9 @@
 
 ## Overview
 
-This sketch connects the WeMos D1 Mini to WiFi and sends a JSON HTTP POST to
-Pi-1 whenever the button is pressed.
+This sketch connects the WeMos D1 Mini to WiFi, sends a JSON message to Pi-1
+whenever the button is pressed, and listens on a TCP port for inbound commands
+from Pi-1.
 
 All JSON/HTTP sender logic is implemented directly inside `WMos-Wifi.ino`
 (no separate SendJsonToPi library files are required).
@@ -40,6 +41,7 @@ Network and hardware constants are defined in `WMos-Wifi.ino`:
 
 - `piHost` (default `172.16.0.80`)
 - `piPort` (default `9000`)
+- `wemosReceivePort` (default `9001`)
 - `BUTTON_PIN` (default `2`, WeMos D2, declared locally in `setup()` and `loop()`)
 - `debounceDelay` (default `50 ms`, declared in `loop()`)
 
@@ -52,6 +54,9 @@ On each button press, the sketch sends:
 ```json
 {"Device":"Wmos","Sensor":"ButtonD2","Data":<press_count>}
 ```
+
+Inbound messages are read as one line of text per TCP connection. The sketch
+prints each message to Serial and replies with `ACK`.
 
 ## Serial output
 

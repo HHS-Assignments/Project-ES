@@ -3,6 +3,8 @@
  * @brief WeMos D1 Mini WiFi Button Controller
  * @details Connects a button on WeMos D1 Mini GPIO4 (D2) to WiFi and sends
  *          raw JSON messages over TCP to Pi-1 receiver when button is pressed.
+ *          Also listens for inbound TCP commands on a separate port so Pi-1
+ *          can send data back to the WeMos.
  *          Uses debouncing to handle mechanical button bounce.
  * @author Project-ES
  * @date 2026
@@ -34,11 +36,15 @@
 
 /** @brief JSON payload buffer size (bytes) */
 #define JSON_BUF_SIZE 256
+/** @brief Incoming command buffer size (bytes) */
+#define INCOMING_BUF_SIZE 256
 
 /** @brief Pi-1 TCP receiver hostname (updated to match project network) */
 const char *const piHost = "10.42.0.1";
 /** @brief Pi-1 TCP receiver port number */
 const int piPort = 9000;
+/** @brief TCP port where the WeMos listens for inbound commands */
+const int wemosReceivePort = 9001;
 /** @brief WiFi SSID loaded from local secrets.h */
 const char* const ssid = WIFI_SSID;
 /** @brief WiFi password loaded from local secrets.h */
@@ -47,6 +53,75 @@ const char* const password = WIFI_PASSWORD;
 const int max_attempts = WIFI_MAX_ATTEMPTS;
 /** @brief Wmos Device Name */
 const char* const Device_Name = "Wmos-1";
+
+/** @brief TCP server used to receive commands from Pi-1 */
+WiFiServer receiveServer(wemosReceivePort);
+
+
+/**
+ * @brief Reads a single line from an inbound TCP client
+ * @param[in,out] client Connected TCP client
+ * @param[out] buffer Destination buffer for the received line
+ * @param[in] bufferSize Size of the destination buffer
+ * @return true when at least one byte was received, false otherwise
+ */
+static bool read_client_line(WiFiClient &client, char *buffer, size_t bufferSize) {
+  size_t length = 0;
+  unsigned long timeoutStart = millis();
+
+  while (client.connected() && (millis() - timeoutStart) < 1000) {
+    while (client.available()) {
+      char c = static_cast<char>(client.read());
+
+      if (c == '\r') {
+        continue;
+      }
+
+      if (c == '\n') {
+        buffer[length] = '\0';
+        return length > 0;
+      }
+
+      if (length + 1 < bufferSize) {
+        buffer[length++] = c;
+      }
+
+      timeoutStart = millis();
+    }
+
+    delay(1);
+  }
+
+  buffer[length] = '\0';
+  return length > 0;
+}
+
+
+/**
+ * @brief Handles one inbound TCP command if a client connects
+ * @return true when a client was processed, false if no client was waiting
+ */
+static bool handle_incoming_command() {
+  WiFiClient client = receiveServer.available();
+  if (!client) {
+    return false;
+  }
+
+  char incoming[INCOMING_BUF_SIZE];
+  Serial.println("[ReceiveFromPi] Client connected");
+
+  bool gotMessage = read_client_line(client, incoming, sizeof(incoming));
+  if (gotMessage) {
+    Serial.print("[ReceiveFromPi] Message: ");
+    Serial.println(incoming);
+    client.println("ACK");
+  } else {
+    Serial.println("[ReceiveFromPi] Empty message received");
+  }
+
+  client.stop();
+  return true;
+}
 
 
 /**
@@ -173,6 +248,9 @@ void setup() {
     Serial.print(piHost);
     Serial.print(":");
     Serial.println(piPort);
+    Serial.print("Receive port: ");
+    Serial.println(wemosReceivePort);
+    receiveServer.begin();
     Serial.println("Startup complete. Waiting for button events...");
     Serial.println("================================");
   } else {
@@ -209,6 +287,9 @@ void loop() {
   static int sentPressCount = 0;
   /** @brief Timestamp of last send attempt (rate limiter) */
   static unsigned long lastSendAttemptMs = 0;
+
+  // Handle inbound commands before other work so Pi requests stay responsive.
+  handle_incoming_command();
 
   // Read button state with debounce algorithm
   int reading = digitalRead(BUTTON_PIN);

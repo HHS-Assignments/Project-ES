@@ -50,6 +50,7 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 uint8_t uid[4];
 extern uint8_t atqa[];
+qvolatile uint8_t noodstand_actief = 0;  // Global variable for emergency status
 
 typedef enum {
 	STATE_NORMAL, STATE_EMERGENCY
