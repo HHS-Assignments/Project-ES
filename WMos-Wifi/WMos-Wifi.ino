@@ -59,19 +59,19 @@ WiFiServer receiveServer(wemosReceivePort);
 
 
 /**
- * @brief Reads a single line from an inbound TCP client
- * @param[in,out] client Connected TCP client
+ * @brief Reads one inbound line from a connected TCP client
+ * @param[in,out] client Pointer to the connected TCP client
  * @param[out] buffer Destination buffer for the received line
  * @param[in] bufferSize Size of the destination buffer
- * @return true when at least one byte was received, false otherwise
+ * @return true when a non-empty line was received, false otherwise
  */
-static bool read_client_line(WiFiClient &client, char *buffer, size_t bufferSize) {
+static bool read_client_line(WiFiClient *client, char *buffer, size_t bufferSize) {
   size_t length = 0;
   unsigned long timeoutStart = millis();
 
-  while (client.connected() && (millis() - timeoutStart) < 1000) {
-    while (client.available()) {
-      char c = static_cast<char>(client.read());
+  while (client->connected() && (millis() - timeoutStart) < 1000) {
+    while (client->available()) {
+      char c = static_cast<char>(client->read());
 
       if (c == '\r') {
         continue;
@@ -102,24 +102,26 @@ static bool read_client_line(WiFiClient &client, char *buffer, size_t bufferSize
  * @return true when a client was processed, false if no client was waiting
  */
 static bool handle_incoming_command() {
-  WiFiClient client = receiveServer.available();
-  if (!client) {
+  WiFiClient clientObject = receiveServer.available();
+  if (!clientObject) {
     return false;
   }
 
-  char incoming[INCOMING_BUF_SIZE];
-  Serial.println("[ReceiveFromPi] Client connected");
+  WiFiClient *client = &clientObject;
 
-  bool gotMessage = read_client_line(client, incoming, sizeof(incoming));
-  if (gotMessage) {
-    Serial.print("[ReceiveFromPi] Message: ");
+  char incoming[INCOMING_BUF_SIZE];
+
+  Serial.println(F("[ReceiveFromPi] Client connected"));
+
+  if (read_client_line(client, incoming, sizeof(incoming))) {
+    Serial.print(F("[ReceiveFromPi] Message: "));
     Serial.println(incoming);
-    client.println("ACK");
+    client->println(F("ACK"));
   } else {
-    Serial.println("[ReceiveFromPi] Empty message received");
+    Serial.println(F("[ReceiveFromPi] Empty message received"));
   }
 
-  client.stop();
+  client->stop();
   return true;
 }
 
@@ -160,23 +162,6 @@ static bool post_payload(const char *json_payload) {
 
   client.stop();
   return true;
-}
-
-/**
- * @brief Sends JSON with string data to Pi-1 receiver
- * @param[in] device Device identifier string (e.g., "Wmos")
- * @param[in] sensor Sensor/component name (e.g., "ButtonD2")
- * @param[in] data String data value to transmit
- * @details Constructs JSON object with string data field and sends via TCP
- * @return true when JSON payload was sent successfully, false otherwise
- */
-bool SendJsonToPi_str(const char *device, const char *sensor,
-                      const char *data) {
-  char json[JSON_BUF_SIZE];
-  snprintf(json, sizeof(json),
-           "{\"Device\":\"%s\",\"Sensor\":\"%s\",\"Data\":\"%s\"}",
-           device, sensor, data);
-  return post_payload(json);
 }
 
 /**
@@ -222,7 +207,7 @@ void setup() {
   WiFi.mode(WIFI_STA);
 
   // Start WiFi connection
-  Serial.print("Connecting to WiFi network: ");
+  Serial.print(F("Connecting to WiFi network: "));
   Serial.println(ssid);
   WiFi.begin(ssid, password);
 
@@ -240,22 +225,22 @@ void setup() {
   // Check if connection was successful
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("================================");
-    Serial.println("WiFi Connected Successfully!");
+    Serial.println(F("WiFi Connected Successfully!"));
     Serial.println("================================");
-    Serial.print("IP Address: ");
+    Serial.print(F("IP Address: "));
     Serial.println(WiFi.localIP());
-    Serial.print("Send target: ");
+    Serial.print(F("Send target: "));
     Serial.print(piHost);
-    Serial.print(":");
+    Serial.print(F(":"));
     Serial.println(piPort);
-    Serial.print("Receive port: ");
+    Serial.print(F("Receive port: "));
     Serial.println(wemosReceivePort);
     receiveServer.begin();
-    Serial.println("Startup complete. Waiting for button events...");
+    Serial.println(F("Startup complete. Waiting for button events..."));
     Serial.println("================================");
   } else {
     Serial.println("================================");
-    Serial.println("Failed to connect to WiFi!");
+    Serial.println(F("Failed to connect to WiFi!"));
     Serial.println("================================");
   }
 }
@@ -308,7 +293,7 @@ void loop() {
       // Button pressed: state LOW (INPUT_PULLUP logic)
       if (buttonState == LOW) {
         pressCount++;
-        Serial.print("Button pressed! Count=");
+        Serial.print(F("Button pressed! Count="));
         Serial.println(pressCount);
       }
     }
@@ -321,19 +306,19 @@ void loop() {
       && (millis() - lastSendAttemptMs) >= 1000) {
     int nextCount = sentPressCount + 1;
     lastSendAttemptMs = millis();
-    Serial.print("Sending JSON count=");
+    Serial.print(F("Sending JSON count="));
     Serial.println(nextCount);
 
     if (SendJsonToPi_int(Device_Name, "ButtonD2", nextCount)) {
       sentPressCount = nextCount;
     } else {
-      Serial.println("[SendJsonToPi] Send failed, will retry later");
+      Serial.println(F("[SendJsonToPi] Send failed, will retry later"));
     }
   }
 
   // Monitor WiFi connection and alert on loss
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("WiFi connection lost!");
+    Serial.println(F("WiFi connection lost!"));
     delay(5000);
   }
 
