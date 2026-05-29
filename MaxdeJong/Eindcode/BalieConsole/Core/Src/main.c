@@ -60,6 +60,13 @@ static void MX_TIM1_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+void WritePin(GPIO_TypeDef* GPIO, uint16_t pin) {
+    HAL_GPIO_WritePin(GPIO, pin, GPIO_PIN_SET);
+}
+
+void ResetPin(GPIO_TypeDef* GPIO, uint16_t pin) {
+    HAL_GPIO_WritePin(GPIO, pin, GPIO_PIN_RESET);
+}
 
 void UART_Print(const char* str)
 {
@@ -81,13 +88,31 @@ void Check_Buttons(void)
 	}
 
 	//Rood_R
-	if (HAL_GPIO_ReadPin(GPIOA, Noodknop_Input_Pin) == GPIO_PIN_RESET)
+	static GPIO_PinState lastNoodknopState = GPIO_PIN_SET;
+	static uint8_t noodstandActief = 0;
+	GPIO_PinState currentNoodknopState = HAL_GPIO_ReadPin(GPIOA, Noodknop_Input_Pin);
+
+	if (currentNoodknopState == GPIO_PIN_RESET && lastNoodknopState == GPIO_PIN_SET)
 	{
-		UART_Print("Noodknop ingedrukt!\r\n");
-		UART_Print("\r\n");
-		HAL_Delay(300);
+	    if (noodstandActief == 0)
+	    {
+	        UART_Print("Noodknop ingedrukt!\r\n");
+	        UART_Print("\r\n");
+	        WritePin(GPIOB, NoodknopLed_Pin);
+	        noodstandActief = 1;
+	        HAL_Delay(300);
+	    }
+	    else
+	    {
+	        UART_Print("Noodstand uit!\r\n");
+	        UART_Print("\r\n");
+	        ResetPin(GPIOB, NoodknopLed_Pin);
+	        noodstandActief = 0;
+	        HAL_Delay(300);
+	    }
 	}
 
+	lastNoodknopState = currentNoodknopState;
 	//Wit_L
 	if (HAL_GPIO_ReadPin(GPIOA, DeurCyclus_Pin ) == GPIO_PIN_RESET)
 	{
@@ -138,7 +163,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-  UART_Print("Systeem gestart\r\n");
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -146,6 +171,21 @@ int main(void)
   while (1)
   {
 	  Check_Buttons();
+	  if(1){
+		  //WritePin(GPIOB, Dag_Nacht_Pin);
+	  }
+
+	  if(1){
+		  //WritePin(GPIOB, TemperatuurOverGrens_Pin);
+	  }
+
+	  if(1){
+		  //WritePin(GPIOB, RelaxstoelStatus_Pin);
+	  }
+
+	  if(1){
+		  //WritePin(GPIOB, CO2OverGrens_Pin);
+	  }
 
     /* USER CODE END WHILE */
 
