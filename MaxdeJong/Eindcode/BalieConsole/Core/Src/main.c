@@ -73,44 +73,30 @@ void UART_Print(const char* str)
 void Check_Buttons(void)
 {
 	//Rood_L
-	if (HAL_GPIO_ReadPin(GPIOA, Rood_L_Pin) == GPIO_PIN_RESET)
+	if (HAL_GPIO_ReadPin(GPIOA, AlleDeurenOpen_Pin) == GPIO_PIN_RESET)
 	{
-		UART_Print("Er is geklikt op: Rood Links\r\n");
+		UART_Print("Alle Deuren gaan open\r\n");
 		HAL_Delay(300);
 	}
 
 	//Rood_R
-	if (HAL_GPIO_ReadPin(GPIOA, Rood_R_Pin) == GPIO_PIN_RESET)
+	if (HAL_GPIO_ReadPin(GPIOA, Noodknop_Input_Pin) == GPIO_PIN_RESET)
 	{
-		UART_Print("Er is geklikt op: Rood Rechts\r\n");
+		UART_Print("Noodknop ingedrukt!\r\n");
 		HAL_Delay(300);
 	}
 
 	//Wit_L
-	if (HAL_GPIO_ReadPin(GPIOA, Wit_L_Pin) == GPIO_PIN_RESET)
+	if (HAL_GPIO_ReadPin(GPIOA, DeurCyclus_Pin ) == GPIO_PIN_RESET)
 	{
-		UART_Print("Er is geklikt op: Wit Links\r\n");
+		UART_Print("Deurcyclus wordt gestart\r\n");
 		HAL_Delay(300);
 	}
 
 	//Wit_R
-	if (HAL_GPIO_ReadPin(GPIOA, Wit_R_Pin) == GPIO_PIN_RESET)
+	if (HAL_GPIO_ReadPin(GPIOA, SwitchRelaxstoelStatus_Pin) == GPIO_PIN_RESET)
 	{
-		UART_Print("Er is geklikt op: Wit Rechts\r\n");
-		HAL_Delay(300);
-	}
-
-	//Blauw_L
-	if (HAL_GPIO_ReadPin(GPIOA, Blauw_L_Pin) == GPIO_PIN_RESET)
-	{
-		UART_Print("Er is geklikt op: Blauw Links\r\n");
-		HAL_Delay(300);
-	}
-
-	//Blauw_R
-	if (HAL_GPIO_ReadPin(GPIOA, Blauw_R_Pin) == GPIO_PIN_RESET)
-	{
-		UART_Print("Er is geklikt op: Blauw Rechts\r\n");
+		UART_Print("Status Relaxstoel veranderd\r\n");
 		HAL_Delay(300);
 	}
 }
@@ -349,10 +335,8 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : Rood_R_Pin Wit_L_Pin Wit_R_Pin Blauw_L_Pin
-                           Blauw_R_Pin Rood_L_Pin */
-  GPIO_InitStruct.Pin = Rood_R_Pin|Wit_L_Pin|Wit_R_Pin|Blauw_L_Pin
-                          |Blauw_R_Pin|Rood_L_Pin;
+  /*Configure GPIO pins : Noodknop_Input_Pin DeurCyclus_Pin SwitchRelaxstoelStatus_Pin AlleDeurenOpen_Pin */
+  GPIO_InitStruct.Pin = Noodknop_Input_Pin|DeurCyclus_Pin|SwitchRelaxstoelStatus_Pin|AlleDeurenOpen_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
