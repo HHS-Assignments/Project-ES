@@ -71,6 +71,10 @@ void Error_Handler(void);
 #define SwitchRelaxstoelStatus_GPIO_Port GPIOA
 #define AlleDeurenOpen_Pin GPIO_PIN_7
 #define AlleDeurenOpen_GPIO_Port GPIOA
+#define CO2OverGrens_Pin GPIO_PIN_0
+#define CO2OverGrens_GPIO_Port GPIOB
+#define NoodknopLed_Pin GPIO_PIN_1
+#define NoodknopLed_GPIO_Port GPIOB
 #define SWDIO_Pin GPIO_PIN_13
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14
@@ -79,6 +83,12 @@ void Error_Handler(void);
 #define VCP_RX_GPIO_Port GPIOA
 #define LD3_Pin GPIO_PIN_3
 #define LD3_GPIO_Port GPIOB
+#define RelaxstoelStatus_Pin GPIO_PIN_5
+#define RelaxstoelStatus_GPIO_Port GPIOB
+#define TemperatuurOverGrens_Pin GPIO_PIN_6
+#define TemperatuurOverGrens_GPIO_Port GPIOB
+#define Dag_Nacht_Pin GPIO_PIN_7
+#define Dag_Nacht_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
