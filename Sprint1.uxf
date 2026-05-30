@@ -1,60 +1,70 @@
-<diagram program="umletino" version="15.1"><zoom_level>9</zoom_level><element><id>UMLClass</id><coordinates><x>1296</x><y>0</y><w>189</w><h>126</h></coordinates><panel_attributes>
+<diagram program="umletino" version="15.1"><zoom_level>8</zoom_level><element><id>UMLClass</id><coordinates><x>784</x><y>112</y><w>168</w><h>80</h></coordinates><panel_attributes>Nucleo L432kc
 --
+- toestand: String
+--
++ start() : void
++ verwerkInterrupt() : void
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>400</x><y>376</y><w>168</w><h>64</h></coordinates><panel_attributes>NoodKnop
+--
+- Ingedrukt
+--
++ druk(): void
 
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>968</x><y>528</y><w>168</w><h>64</h></coordinates><panel_attributes>PIR sensor
 --
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>801</x><y>153</y><w>189</w><h>126</h></coordinates><panel_attributes>Nucleo L432kc
---
-- status: bool
---
-+ LeesSensor() : void
-+StuurActuatorAan() : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>414</x><y>486</y><w>189</w><h>126</h></coordinates><panel_attributes>ServoDeur2
---
-- pin: String 
-- hoek: int
---
-+ setHoek(hoek: int) : void
-+ open() : void
-+ sluit() : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>252</x><y>333</y><w>189</w><h>126</h></coordinates><panel_attributes>ServoDeur1
---
-- pin: String 
-- hoek: int
---
-+ setHoek(hoek: int) : void
-+ open() : void
-+ sluit() : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>333</x><y>198</y><w>486</w><h>153</h></coordinates><panel_attributes>lt=&lt;-
-Stuurt aan</panel_attributes><additional_attributes>10;150;520;10</additional_attributes></element><element><id>Relation</id><coordinates><x>504</x><y>207</y><w>315</w><h>297</h></coordinates><panel_attributes>lt=&lt;-
-Stuurt aan</panel_attributes><additional_attributes>10;310;330;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>684</x><y>513</y><w>189</w><h>126</h></coordinates><panel_attributes>Noodknop
---
-- pin: String
-- ingedrukt: bool
---
-+ druk() : void
-+ triggerAlarm() : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>765</x><y>270</y><w>99</w><h>261</h></coordinates><panel_attributes>lt=&lt;-
-Leest Uit</panel_attributes><additional_attributes>10;270;70;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>918</x><y>522</y><w>189</w><h>126</h></coordinates><panel_attributes>PIR Sensor
---
-- pin: String
 - bewegingGedetecteerd: bool
 --
-+ detecteer() : bool
-+ triggerActie() : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>891</x><y>270</y><w>144</w><h>270</h></coordinates><panel_attributes>lt=&lt;-
-Leest Uit</panel_attributes><additional_attributes>140;280;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>918</x><y>792</y><w>189</w><h>126</h></coordinates><panel_attributes>Deur
++ detecteer() : bool</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>456</x><y>904</y><w>168</w><h>80</h></coordinates><panel_attributes>MAX7219 8x8 Display
 --
-- isOpen: bool
-- positie: String
+- helderheid: int
+--
++ init() : void
++ toonAfbeelding(naam: String) : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>856</x><y>936</y><w>168</w><h>152</h></coordinates><panel_attributes>Servo 1
+--
+- kanaal: int
+- positie: int
 --
 + open() : void
-+ sluit() : void
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>621</x><y>252</y><w>315</w><h>630</h></coordinates><panel_attributes>lt=&lt;-
-Opent</panel_attributes><additional_attributes>330;680;90;650;10;520;20;270;200;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1008</x><y>639</y><w>135</w><h>171</h></coordinates><panel_attributes>lt=&lt;-
-Detecteert beweging</panel_attributes><additional_attributes>10;170;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>1215</x><y>522</y><w>189</w><h>126</h></coordinates><panel_attributes>Knop
++ sluit() : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1256</x><y>520</y><w>168</w><h>64</h></coordinates><panel_attributes>Knop
 --
-- ingedrukt
+- Ingedrukt: bool
 --
-+ druk() : void
-+ openDeur() : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1098</x><y>639</y><w>261</w><h>243</h></coordinates><panel_attributes>lt=&lt;-
-Opent deur</panel_attributes><additional_attributes>10;250;190;220;250;140;240;10</additional_attributes></element><element><id>Relation</id><coordinates><x>981</x><y>270</y><w>369</w><h>270</h></coordinates><panel_attributes>lt=&lt;-
-Leest uit</panel_attributes><additional_attributes>390;280;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>1449</x><y>522</y><w>189</w><h>126</h></coordinates><panel_attributes>
++ druk(): bool
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>656</x><y>384</y><w>168</w><h>72</h></coordinates><panel_attributes>RFID-Scanner
 --
-
+- status
 --
-</panel_attributes><additional_attributes></additional_attributes></element></diagram>
++ leesKaart(): void
++ isGeldig: bool
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>648</x><y>520</y><w>168</w><h>72</h></coordinates><panel_attributes>RFID-Kaart
+--
+- kaartID: String
+- gebruiker: String
+--
++ getID() : String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>952</x><y>768</y><w>168</w><h>64</h></coordinates><panel_attributes>OpenDeur
+--
++ openBuitenNaarBinnen() : void
++ openBinnenNaarBuiten() : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>1072</x><y>928</y><w>168</w><h>152</h></coordinates><panel_attributes>Servo 2
+--
+- kanaal: int
+- positie: int
+--
++ open() : void
++ sluit() : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>480</x><y>184</y><w>408</w><h>208</h></coordinates><panel_attributes>lt=&lt;-
+Initialiseert noodstand</panel_attributes><additional_attributes>10;240;490;10</additional_attributes></element><element><id>Relation</id><coordinates><x>736</x><y>184</y><w>152</w><h>216</h></coordinates><panel_attributes>lt=&lt;-
+Leest uit</panel_attributes><additional_attributes>10;250;170;10</additional_attributes></element><element><id>Relation</id><coordinates><x>728</x><y>448</y><w>48</w><h>88</h></coordinates><panel_attributes>lt=&lt;-
+Leest</panel_attributes><additional_attributes>10;90;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>480</x><y>432</y><w>88</w><h>488</h></coordinates><panel_attributes>lt=&lt;-
+Ingedrukt  = 
+Uitroepteken</panel_attributes><additional_attributes>20;590;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>520</x><y>584</y><w>160</w><h>336</h></coordinates><panel_attributes>lt=&lt;-
+Goede RFID =
+Vinkje</panel_attributes><additional_attributes>10;400;180;10</additional_attributes></element><element><id>Relation</id><coordinates><x>600</x><y>584</y><w>152</w><h>336</h></coordinates><panel_attributes>lt=&lt;-
+Foute RFID =
+Kruis</panel_attributes><additional_attributes>10;400;170;10</additional_attributes></element><element><id>Relation</id><coordinates><x>768</x><y>584</y><w>280</w><h>200</h></coordinates><panel_attributes>lt=&lt;-
+Roept aan
+bij goede scan</panel_attributes><additional_attributes>330;230;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1024</x><y>584</y><w>64</w><h>200</h></coordinates><panel_attributes>lt=&lt;-
+Triggert</panel_attributes><additional_attributes>10;230;30;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1024</x><y>576</y><w>328</w><h>208</h></coordinates><panel_attributes>lt=&lt;-
+Triggert</panel_attributes><additional_attributes>10;240;390;10</additional_attributes></element><element><id>Relation</id><coordinates><x>936</x><y>824</y><w>128</w><h>128</h></coordinates><panel_attributes>lt=&lt;-
+Beweegt</panel_attributes><additional_attributes>10;140;140;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1040</x><y>824</y><w>128</w><h>120</h></coordinates><panel_attributes>lt=&lt;-
+Beweegt</panel_attributes><additional_attributes>140;130;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>864</x><y>184</y><w>200</w><h>360</h></coordinates><panel_attributes>lt=&lt;-
+Leest uit</panel_attributes><additional_attributes>230;430;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>864</x><y>184</y><w>496</w><h>352</h></coordinates><panel_attributes>lt=&lt;-
+Leest uit</panel_attributes><additional_attributes>600;420;10;10</additional_attributes></element></diagram>
