@@ -1,0 +1,60 @@
+<diagram program="umletino" version="15.1"><zoom_level>9</zoom_level><element><id>UMLClass</id><coordinates><x>1296</x><y>0</y><w>189</w><h>126</h></coordinates><panel_attributes>
+--
+
+--
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>801</x><y>153</y><w>189</w><h>126</h></coordinates><panel_attributes>Nucleo L432kc
+--
+- status: bool
+--
++ LeesSensor() : void
++StuurActuatorAan() : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>414</x><y>486</y><w>189</w><h>126</h></coordinates><panel_attributes>ServoDeur2
+--
+- pin: String 
+- hoek: int
+--
++ setHoek(hoek: int) : void
++ open() : void
++ sluit() : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>252</x><y>333</y><w>189</w><h>126</h></coordinates><panel_attributes>ServoDeur1
+--
+- pin: String 
+- hoek: int
+--
++ setHoek(hoek: int) : void
++ open() : void
++ sluit() : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>333</x><y>198</y><w>486</w><h>153</h></coordinates><panel_attributes>lt=&lt;-
+Stuurt aan</panel_attributes><additional_attributes>10;150;520;10</additional_attributes></element><element><id>Relation</id><coordinates><x>504</x><y>207</y><w>315</w><h>297</h></coordinates><panel_attributes>lt=&lt;-
+Stuurt aan</panel_attributes><additional_attributes>10;310;330;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>684</x><y>513</y><w>189</w><h>126</h></coordinates><panel_attributes>Noodknop
+--
+- pin: String
+- ingedrukt: bool
+--
++ druk() : void
++ triggerAlarm() : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>765</x><y>270</y><w>99</w><h>261</h></coordinates><panel_attributes>lt=&lt;-
+Leest Uit</panel_attributes><additional_attributes>10;270;70;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>918</x><y>522</y><w>189</w><h>126</h></coordinates><panel_attributes>PIR Sensor
+--
+- pin: String
+- bewegingGedetecteerd: bool
+--
++ detecteer() : bool
++ triggerActie() : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>891</x><y>270</y><w>144</w><h>270</h></coordinates><panel_attributes>lt=&lt;-
+Leest Uit</panel_attributes><additional_attributes>140;280;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>918</x><y>792</y><w>189</w><h>126</h></coordinates><panel_attributes>Deur
+--
+- isOpen: bool
+- positie: String
+--
++ open() : void
++ sluit() : void
+</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>621</x><y>252</y><w>315</w><h>630</h></coordinates><panel_attributes>lt=&lt;-
+Opent</panel_attributes><additional_attributes>330;680;90;650;10;520;20;270;200;10</additional_attributes></element><element><id>Relation</id><coordinates><x>1008</x><y>639</y><w>135</w><h>171</h></coordinates><panel_attributes>lt=&lt;-
+Detecteert beweging</panel_attributes><additional_attributes>10;170;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>1215</x><y>522</y><w>189</w><h>126</h></coordinates><panel_attributes>Knop
+--
+- ingedrukt
+--
++ druk() : void
++ openDeur() : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>1098</x><y>639</y><w>261</w><h>243</h></coordinates><panel_attributes>lt=&lt;-
+Opent deur</panel_attributes><additional_attributes>10;250;190;220;250;140;240;10</additional_attributes></element><element><id>Relation</id><coordinates><x>981</x><y>270</y><w>369</w><h>270</h></coordinates><panel_attributes>lt=&lt;-
+Leest uit</panel_attributes><additional_attributes>390;280;10;10</additional_attributes></element><element><id>UMLClass</id><coordinates><x>1449</x><y>522</y><w>189</w><h>126</h></coordinates><panel_attributes>
+--
+
+--
+</panel_attributes><additional_attributes></additional_attributes></element></diagram>
