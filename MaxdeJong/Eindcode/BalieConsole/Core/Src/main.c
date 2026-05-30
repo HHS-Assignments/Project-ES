@@ -378,12 +378,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
     uint32_t nu = HAL_GetTick();
 
-    if (GPIO_Pin == AlleDeurenOpen_Pin && (nu - db_Deuren) >= 300)
-    {
-        db_Deuren = nu;
-        UART_Print("Alle Deuren gaan open\r\n\r\n");
-    }
-    else if (GPIO_Pin == Noodstatusknop_Pin && (nu - db_Nood) >= 300)
+    // Noodknop altijd verwerken, ongeacht noodActief
+    if (GPIO_Pin == Noodstatusknop_Pin && (nu - db_Nood) >= 300)
     {
         db_Nood = nu;
         noodActief = !noodActief;
@@ -397,6 +393,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
             UART_Print("Noodstand uit!\r\n\r\n");
             ZetUit(GPIOB, NoodknopLed_Pin);
         }
+        return;
+    }
+
+    if (noodActief) return;
+
+    if (GPIO_Pin == AlleDeurenOpen_Pin && (nu - db_Deuren) >= 300)
+    {
+        db_Deuren = nu;
+        UART_Print("Alle Deuren gaan open\r\n\r\n");
     }
     else if (GPIO_Pin == DeurCyclus_Pin && (nu - db_Cyclus) >= 300)
     {
@@ -410,7 +415,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     }
 }
 
-/* USER CODE END 4 */
 /* USER CODE END 4 */
 
 /**
