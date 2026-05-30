@@ -61,16 +61,20 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define MCO_Pin GPIO_PIN_0
 #define MCO_GPIO_Port GPIOA
-#define Noodknop_Input_Pin GPIO_PIN_1
-#define Noodknop_Input_GPIO_Port GPIOA
+#define Noodstatusknop_Pin GPIO_PIN_1
+#define Noodstatusknop_GPIO_Port GPIOA
+#define Noodstatusknop_EXTI_IRQn EXTI1_IRQn
 #define VCP_TX_Pin GPIO_PIN_2
 #define VCP_TX_GPIO_Port GPIOA
 #define DeurCyclus_Pin GPIO_PIN_3
 #define DeurCyclus_GPIO_Port GPIOA
+#define DeurCyclus_EXTI_IRQn EXTI3_IRQn
 #define SwitchRelaxstoelStatus_Pin GPIO_PIN_4
 #define SwitchRelaxstoelStatus_GPIO_Port GPIOA
+#define SwitchRelaxstoelStatus_EXTI_IRQn EXTI4_IRQn
 #define AlleDeurenOpen_Pin GPIO_PIN_7
 #define AlleDeurenOpen_GPIO_Port GPIOA
+#define AlleDeurenOpen_EXTI_IRQn EXTI9_5_IRQn
 #define CO2OverGrens_Pin GPIO_PIN_0
 #define CO2OverGrens_GPIO_Port GPIOB
 #define NoodknopLed_Pin GPIO_PIN_1

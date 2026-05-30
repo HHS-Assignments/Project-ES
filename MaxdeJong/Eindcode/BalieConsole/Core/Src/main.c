@@ -60,74 +60,25 @@ static void MX_TIM1_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void WritePin(GPIO_TypeDef* GPIO, uint16_t pin) {
+void ZetAan(GPIO_TypeDef* GPIO, uint16_t pin) {
     HAL_GPIO_WritePin(GPIO, pin, GPIO_PIN_SET);
 }
 
-void ResetPin(GPIO_TypeDef* GPIO, uint16_t pin) {
+void ZetUit(GPIO_TypeDef* GPIO, uint16_t pin) {
     HAL_GPIO_WritePin(GPIO, pin, GPIO_PIN_RESET);
 }
 
 void UART_Print(const char* str)
 {
-  while (*str)
-  {
-    HAL_UART_Transmit(&huart2, (uint8_t*)str, 1, HAL_MAX_DELAY);
-    str++;
-  }
+    while (*str)
+    {
+        HAL_UART_Transmit(&huart2, (uint8_t*)str, 1, HAL_MAX_DELAY);
+        str++;
+    }
 }
 
-void Check_Buttons(void)
-{
-	//Rood_L
-	if (HAL_GPIO_ReadPin(GPIOA, AlleDeurenOpen_Pin) == GPIO_PIN_RESET)
-	{
-		UART_Print("Alle Deuren gaan open\r\n");
-		UART_Print("\r\n");
-		HAL_Delay(300);
-	}
-
-	//Rood_R
-	static GPIO_PinState lastNoodknopState = GPIO_PIN_SET;
-	static uint8_t noodstandActief = 0;
-	GPIO_PinState currentNoodknopState = HAL_GPIO_ReadPin(GPIOA, Noodknop_Input_Pin);
-
-	if (currentNoodknopState == GPIO_PIN_RESET && lastNoodknopState == GPIO_PIN_SET)
-	{
-	    if (noodstandActief == 0)
-	    {
-	        UART_Print("Noodknop ingedrukt!\r\n");
-	        UART_Print("\r\n");
-	        WritePin(GPIOB, NoodknopLed_Pin);
-	        noodstandActief = 1;
-	        HAL_Delay(300);
-	    }
-	    else
-	    {
-	        UART_Print("Noodstand uit!\r\n");
-	        UART_Print("\r\n");
-	        ResetPin(GPIOB, NoodknopLed_Pin);
-	        noodstandActief = 0;
-	        HAL_Delay(300);
-	    }
-	}
-
-	lastNoodknopState = currentNoodknopState;
-	//Wit_L
-	if (HAL_GPIO_ReadPin(GPIOA, DeurCyclus_Pin ) == GPIO_PIN_RESET)
-	{
-		UART_Print("Deurcyclus wordt gestart\r\n");
-		UART_Print("\r\n");
-		HAL_Delay(300);
-	}
-
-	//Wit_R
-	if (HAL_GPIO_ReadPin(GPIOA, SwitchRelaxstoelStatus_Pin) == GPIO_PIN_RESET)
-	{
-		UART_Print("Status Relaxstoel veranderd\r\n");
-		UART_Print("\r\n");
-		HAL_Delay(300);
-	}
+void Test(){
+	UART_Print("Test");
 }
 /* USER CODE END 0 */
 
@@ -170,7 +121,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  Check_Buttons();
+
+
 	  if(1){
 		  //WritePin(GPIOB, Dag_Nacht_Pin);
 	  }
@@ -380,9 +332,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOB, CO2OverGrens_Pin|NoodknopLed_Pin|LD3_Pin|RelaxstoelStatus_Pin
                           |TemperatuurOverGrens_Pin|Dag_Nacht_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : Noodknop_Input_Pin DeurCyclus_Pin SwitchRelaxstoelStatus_Pin AlleDeurenOpen_Pin */
-  GPIO_InitStruct.Pin = Noodknop_Input_Pin|DeurCyclus_Pin|SwitchRelaxstoelStatus_Pin|AlleDeurenOpen_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  /*Configure GPIO pins : Noodstatusknop_Pin DeurCyclus_Pin SwitchRelaxstoelStatus_Pin AlleDeurenOpen_Pin */
+  GPIO_InitStruct.Pin = Noodstatusknop_Pin|DeurCyclus_Pin|SwitchRelaxstoelStatus_Pin|AlleDeurenOpen_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
@@ -395,13 +347,70 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
   /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
+/* USER CODE BEGIN 4 */
 
+static uint32_t db_Deuren = 0;
+static uint32_t db_Nood   = 0;
+static uint32_t db_Cyclus = 0;
+static uint32_t db_Relax  = 0;
+static uint8_t  noodActief = 0;
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    uint32_t nu = HAL_GetTick();
+
+    if (GPIO_Pin == AlleDeurenOpen_Pin && (nu - db_Deuren) >= 300)
+    {
+        db_Deuren = nu;
+        UART_Print("Alle Deuren gaan open\r\n\r\n");
+    }
+    else if (GPIO_Pin == Noodstatusknop_Pin && (nu - db_Nood) >= 300)
+    {
+        db_Nood = nu;
+        noodActief = !noodActief;
+        if (noodActief)
+        {
+            UART_Print("Noodknop ingedrukt!\r\n\r\n");
+            ZetAan(GPIOB, NoodknopLed_Pin);
+        }
+        else
+        {
+            UART_Print("Noodstand uit!\r\n\r\n");
+            ZetUit(GPIOB, NoodknopLed_Pin);
+        }
+    }
+    else if (GPIO_Pin == DeurCyclus_Pin && (nu - db_Cyclus) >= 300)
+    {
+        db_Cyclus = nu;
+        UART_Print("Deurcyclus wordt gestart\r\n\r\n");
+    }
+    else if (GPIO_Pin == SwitchRelaxstoelStatus_Pin && (nu - db_Relax) >= 300)
+    {
+        db_Relax = nu;
+        UART_Print("Status Relaxstoel veranderd\r\n\r\n");
+    }
+}
+
+/* USER CODE END 4 */
 /* USER CODE END 4 */
 
 /**
