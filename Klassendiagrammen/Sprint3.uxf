@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <diagram program="umlet" version="15.1">
   <help_text>Space for diagram notes</help_text>
-  <zoom_level>4</zoom_level>
+  <zoom_level>9</zoom_level>
   <element>
     <id>UMLPackage</id>
     <coordinates>
       <x>0</x>
-      <y>460</y>
-      <w>576</w>
-      <h>520</h>
+      <y>918</y>
+      <w>1296</w>
+      <h>1170</h>
     </coordinates>
     <panel_attributes>Luchtsluis</panel_attributes>
     <additional_attributes/>
@@ -16,10 +16,10 @@
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>244</x>
-      <y>480</y>
-      <w>84</w>
-      <h>40</h>
+      <x>549</x>
+      <y>963</y>
+      <w>189</w>
+      <h>90</h>
     </coordinates>
     <panel_attributes>Nucleo L432kc
 --
@@ -33,10 +33,10 @@
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>52</x>
-      <y>612</y>
-      <w>84</w>
-      <h>32</h>
+      <x>117</x>
+      <y>1260</y>
+      <w>189</w>
+      <h>72</h>
     </coordinates>
     <panel_attributes>NoodKnop
 --
@@ -50,10 +50,10 @@
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>336</x>
-      <y>688</y>
-      <w>84</w>
-      <h>32</h>
+      <x>756</x>
+      <y>1431</y>
+      <w>189</w>
+      <h>72</h>
     </coordinates>
     <panel_attributes>PIR sensor
 --
@@ -65,10 +65,10 @@
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>80</x>
-      <y>876</y>
-      <w>84</w>
-      <h>40</h>
+      <x>180</x>
+      <y>1854</y>
+      <w>189</w>
+      <h>90</h>
     </coordinates>
     <panel_attributes>MAX7219 8x8 Display
 --
@@ -81,10 +81,10 @@
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>280</x>
-      <y>892</y>
-      <w>84</w>
-      <h>76</h>
+      <x>630</x>
+      <y>1890</y>
+      <w>189</w>
+      <h>171</h>
     </coordinates>
     <panel_attributes>Servo 1
 --
@@ -98,10 +98,10 @@
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>480</x>
-      <y>684</y>
-      <w>84</w>
-      <h>32</h>
+      <x>1080</x>
+      <y>1422</y>
+      <w>189</w>
+      <h>72</h>
     </coordinates>
     <panel_attributes>Knop
 --
@@ -114,10 +114,10 @@
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>180</x>
-      <y>616</y>
-      <w>84</w>
-      <h>36</h>
+      <x>405</x>
+      <y>1269</y>
+      <w>189</w>
+      <h>81</h>
     </coordinates>
     <panel_attributes>RFID-Scanner
 --
@@ -131,10 +131,10 @@
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>176</x>
-      <y>684</y>
-      <w>84</w>
-      <h>36</h>
+      <x>396</x>
+      <y>1422</y>
+      <w>189</w>
+      <h>81</h>
     </coordinates>
     <panel_attributes>RFID-Kaart
 --
@@ -147,10 +147,10 @@
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>328</x>
-      <y>808</y>
-      <w>84</w>
-      <h>32</h>
+      <x>738</x>
+      <y>1701</y>
+      <w>189</w>
+      <h>72</h>
     </coordinates>
     <panel_attributes>OpenDeur
 --
@@ -161,10 +161,10 @@
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>388</x>
-      <y>888</y>
-      <w>84</w>
-      <h>76</h>
+      <x>873</x>
+      <y>1881</y>
+      <w>189</w>
+      <h>171</h>
     </coordinates>
     <panel_attributes>Servo 2
 --
@@ -178,10 +178,10 @@
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>92</x>
-      <y>516</y>
-      <w>204</w>
-      <h>104</h>
+      <x>207</x>
+      <y>1044</y>
+      <w>459</w>
+      <h>234</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Initialiseert noodstand
@@ -191,10 +191,10 @@ op Interrupt basis</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>220</x>
-      <y>516</y>
-      <w>76</w>
-      <h>108</h>
+      <x>495</x>
+      <y>1044</y>
+      <w>171</w>
+      <h>243</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Leest uit</panel_attributes>
@@ -203,10 +203,10 @@ Leest uit</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>216</x>
-      <y>648</y>
-      <w>24</w>
-      <h>44</h>
+      <x>486</x>
+      <y>1341</y>
+      <w>54</w>
+      <h>99</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Leest</panel_attributes>
@@ -215,10 +215,10 @@ Leest</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>92</x>
-      <y>640</y>
-      <w>44</w>
-      <h>244</h>
+      <x>207</x>
+      <y>1323</y>
+      <w>99</w>
+      <h>549</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Ingedrukt  = 
@@ -228,10 +228,10 @@ Uitroepteken</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>112</x>
-      <y>716</y>
-      <w>80</w>
-      <h>168</h>
+      <x>252</x>
+      <y>1494</y>
+      <w>180</w>
+      <h>378</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Goede RFID =
@@ -241,10 +241,10 @@ Vinkje</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>152</x>
-      <y>716</y>
-      <w>76</w>
-      <h>168</h>
+      <x>342</x>
+      <y>1494</y>
+      <w>171</w>
+      <h>378</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Foute RFID =
@@ -254,10 +254,10 @@ Kruis</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>236</x>
-      <y>716</y>
-      <w>140</w>
-      <h>100</h>
+      <x>531</x>
+      <y>1494</y>
+      <w>315</w>
+      <h>225</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Roept aan
@@ -267,10 +267,10 @@ bij goede scan</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>364</x>
-      <y>716</y>
-      <w>36</w>
-      <h>100</h>
+      <x>819</x>
+      <y>1494</y>
+      <w>81</w>
+      <h>225</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Triggert</panel_attributes>
@@ -279,10 +279,10 @@ Triggert</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>364</x>
-      <y>712</y>
-      <w>164</w>
-      <h>104</h>
+      <x>819</x>
+      <y>1485</y>
+      <w>369</w>
+      <h>234</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Triggert</panel_attributes>
@@ -291,10 +291,10 @@ Triggert</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>320</x>
-      <y>836</y>
-      <w>64</w>
-      <h>64</h>
+      <x>720</x>
+      <y>1764</y>
+      <w>144</w>
+      <h>144</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Beweegt</panel_attributes>
@@ -303,10 +303,10 @@ Beweegt</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>372</x>
-      <y>836</y>
-      <w>64</w>
-      <h>60</h>
+      <x>837</x>
+      <y>1764</y>
+      <w>144</w>
+      <h>135</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Beweegt</panel_attributes>
@@ -315,10 +315,10 @@ Beweegt</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>284</x>
-      <y>516</y>
-      <w>100</w>
-      <h>180</h>
+      <x>639</x>
+      <y>1044</y>
+      <w>225</w>
+      <h>405</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Leest uit</panel_attributes>
@@ -327,10 +327,10 @@ Leest uit</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>284</x>
-      <y>516</y>
-      <w>248</w>
-      <h>176</h>
+      <x>639</x>
+      <y>1044</y>
+      <w>558</w>
+      <h>396</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Leest uit</panel_attributes>
@@ -339,10 +339,10 @@ Leest uit</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>92</x>
-      <y>640</y>
-      <w>244</w>
-      <h>188</h>
+      <x>207</x>
+      <y>1323</y>
+      <w>549</w>
+      <h>423</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Sluit beide deuren</panel_attributes>
@@ -351,10 +351,10 @@ Sluit beide deuren</panel_attributes>
   <element>
     <id>UMLPackage</id>
     <coordinates>
-      <x>608</x>
-      <y>456</y>
-      <w>548</w>
-      <h>292</h>
+      <x>1368</x>
+      <y>909</y>
+      <w>1233</w>
+      <h>657</h>
     </coordinates>
     <panel_attributes>Balieconsole</panel_attributes>
     <additional_attributes/>
@@ -362,10 +362,10 @@ Sluit beide deuren</panel_attributes>
   <element>
     <id>UMLPackage</id>
     <coordinates>
-      <x>1168</x>
-      <y>456</y>
-      <w>244</w>
-      <h>292</h>
+      <x>2628</x>
+      <y>909</y>
+      <w>549</w>
+      <h>657</h>
     </coordinates>
     <panel_attributes>Lichtvoorziening</panel_attributes>
     <additional_attributes/>
@@ -373,10 +373,10 @@ Sluit beide deuren</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>836</x>
-      <y>480</y>
-      <w>84</w>
-      <h>40</h>
+      <x>1881</x>
+      <y>963</y>
+      <w>189</w>
+      <h>90</h>
     </coordinates>
     <panel_attributes>Nucleo L432kc
 --
@@ -390,10 +390,10 @@ Sluit beide deuren</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>768</x>
-      <y>668</y>
-      <w>84</w>
-      <h>40</h>
+      <x>1728</x>
+      <y>1386</y>
+      <w>189</w>
+      <h>90</h>
     </coordinates>
     <panel_attributes>SwitchRelaxstoelStatus
 --
@@ -407,10 +407,10 @@ Sluit beide deuren</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>648</x>
-      <y>560</y>
-      <w>84</w>
-      <h>40</h>
+      <x>1458</x>
+      <y>1143</y>
+      <w>189</w>
+      <h>90</h>
     </coordinates>
     <panel_attributes>NoodstopKnop
 --
@@ -423,10 +423,10 @@ Sluit beide deuren</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>768</x>
-      <y>560</y>
-      <w>84</w>
-      <h>40</h>
+      <x>1728</x>
+      <y>1143</y>
+      <w>189</w>
+      <h>90</h>
     </coordinates>
     <panel_attributes>Deurcyclus
 --
@@ -439,10 +439,10 @@ Sluit beide deuren</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>768</x>
-      <y>616</y>
-      <w>84</w>
-      <h>40</h>
+      <x>1728</x>
+      <y>1269</y>
+      <w>189</w>
+      <h>90</h>
     </coordinates>
     <panel_attributes>AlleDeurenOpen
 --
@@ -457,10 +457,10 @@ Sluit beide deuren</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>684</x>
-      <y>516</y>
-      <w>196</w>
-      <h>52</h>
+      <x>1539</x>
+      <y>1044</y>
+      <w>441</w>
+      <h>117</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Leest uit</panel_attributes>
@@ -469,10 +469,10 @@ Leest uit</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>812</x>
-      <y>516</y>
-      <w>68</w>
-      <h>52</h>
+      <x>1827</x>
+      <y>1044</y>
+      <w>153</w>
+      <h>117</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Leest uit</panel_attributes>
@@ -481,10 +481,10 @@ Leest uit</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>804</x>
-      <y>516</y>
-      <w>96</w>
-      <h>108</h>
+      <x>1809</x>
+      <y>1044</y>
+      <w>216</w>
+      <h>243</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Leest uit</panel_attributes>
@@ -493,10 +493,10 @@ Leest uit</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>808</x>
-      <y>516</y>
-      <w>120</w>
-      <h>160</h>
+      <x>1818</x>
+      <y>1044</y>
+      <w>270</w>
+      <h>360</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Leest uit</panel_attributes>
@@ -505,10 +505,10 @@ Leest uit</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>644</x>
-      <y>656</y>
-      <w>84</w>
-      <h>40</h>
+      <x>1449</x>
+      <y>1359</y>
+      <w>189</w>
+      <h>90</h>
     </coordinates>
     <panel_attributes>NoodknopLed
 --
@@ -522,10 +522,10 @@ Leest uit</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>964</x>
-      <y>560</y>
-      <w>72</w>
-      <h>40</h>
+      <x>2169</x>
+      <y>1143</y>
+      <w>162</w>
+      <h>90</h>
     </coordinates>
     <panel_attributes>Co2overgrens
 --
@@ -539,10 +539,10 @@ Leest uit</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>684</x>
-      <y>592</y>
-      <w>36</w>
-      <h>72</h>
+      <x>1539</x>
+      <y>1215</y>
+      <w>81</w>
+      <h>162</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 stuurt aan</panel_attributes>
@@ -551,10 +551,10 @@ stuurt aan</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>924</x>
-      <y>628</y>
-      <w>84</w>
-      <h>44</h>
+      <x>2079</x>
+      <y>1296</y>
+      <w>189</w>
+      <h>99</h>
     </coordinates>
     <panel_attributes>RelaxStoelStatus
 --
@@ -568,10 +568,10 @@ stuurt aan</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>892</x>
-      <y>516</y>
-      <w>116</w>
-      <h>52</h>
+      <x>2007</x>
+      <y>1044</y>
+      <w>261</w>
+      <h>117</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Stuurt aan</panel_attributes>
@@ -580,10 +580,10 @@ Stuurt aan</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1020</x>
-      <y>624</y>
-      <w>84</w>
-      <h>44</h>
+      <x>2295</x>
+      <y>1287</y>
+      <w>189</w>
+      <h>99</h>
     </coordinates>
     <panel_attributes>TemperatuurOverGrens
 --
@@ -596,10 +596,10 @@ Stuurt aan</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>892</x>
-      <y>516</y>
-      <w>84</w>
-      <h>120</h>
+      <x>2007</x>
+      <y>1044</y>
+      <w>189</w>
+      <h>270</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Stuurt aan</panel_attributes>
@@ -608,10 +608,10 @@ Stuurt aan</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1040</x>
-      <y>488</y>
-      <w>84</w>
-      <h>40</h>
+      <x>2340</x>
+      <y>981</y>
+      <w>189</w>
+      <h>90</h>
     </coordinates>
     <panel_attributes>Dag/Nacht
 --
@@ -624,10 +624,10 @@ Stuurt aan</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>916</x>
-      <y>516</y>
-      <w>148</w>
-      <h>116</h>
+      <x>2061</x>
+      <y>1044</y>
+      <w>333</w>
+      <h>261</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Stuurt aan</panel_attributes>
@@ -636,10 +636,10 @@ Stuurt aan</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>916</x>
-      <y>496</y>
-      <w>132</w>
-      <h>24</h>
+      <x>2061</x>
+      <y>999</y>
+      <w>297</w>
+      <h>54</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 stuurt aan</panel_attributes>
@@ -648,10 +648,10 @@ stuurt aan</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1228</x>
-      <y>644</y>
-      <w>84</w>
-      <h>48</h>
+      <x>2763</x>
+      <y>1332</y>
+      <w>189</w>
+      <h>108</h>
     </coordinates>
     <panel_attributes>Lees_Co2_Sensor
 --
@@ -663,10 +663,10 @@ stuurt aan</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1324</x>
-      <y>576</y>
-      <w>84</w>
-      <h>48</h>
+      <x>2979</x>
+      <y>1179</y>
+      <w>189</w>
+      <h>108</h>
     </coordinates>
     <panel_attributes>ZetLampAan
 --
@@ -680,10 +680,10 @@ stuurt aan</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1228</x>
-      <y>576</y>
-      <w>84</w>
-      <h>48</h>
+      <x>2763</x>
+      <y>1179</y>
+      <w>189</w>
+      <h>108</h>
     </coordinates>
     <panel_attributes>I2C-interface
 --
@@ -696,10 +696,10 @@ stuurt aan</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>1264</x>
-      <y>620</y>
-      <w>12</w>
-      <h>32</h>
+      <x>2844</x>
+      <y>1278</y>
+      <w>27</w>
+      <h>72</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;-</panel_attributes>
     <additional_attributes>10.0;10.0;10.0;60.0</additional_attributes>
@@ -707,10 +707,10 @@ stuurt aan</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1236</x>
-      <y>480</y>
-      <w>84</w>
-      <h>48</h>
+      <x>2781</x>
+      <y>963</y>
+      <w>189</w>
+      <h>108</h>
     </coordinates>
     <panel_attributes>Nucleo L432KC
 --
@@ -723,10 +723,10 @@ stuurt aan</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>1260</x>
-      <y>524</y>
-      <w>24</w>
-      <h>60</h>
+      <x>2835</x>
+      <y>1062</y>
+      <w>54</w>
+      <h>135</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
     <additional_attributes>20.0;130.0;10.0;60.0;40.0;10.0</additional_attributes>
@@ -734,10 +734,10 @@ stuurt aan</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>1272</x>
-      <y>524</y>
-      <w>104</w>
-      <h>60</h>
+      <x>2862</x>
+      <y>1062</y>
+      <w>234</w>
+      <h>135</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
     <additional_attributes>240.0;130.0;10.0;10.0</additional_attributes>
@@ -745,10 +745,10 @@ stuurt aan</panel_attributes>
   <element>
     <id>UMLPackage</id>
     <coordinates>
-      <x>812</x>
-      <y>212</y>
-      <w>152</w>
-      <h>120</h>
+      <x>1827</x>
+      <y>360</y>
+      <w>342</w>
+      <h>270</h>
     </coordinates>
     <panel_attributes>CAN</panel_attributes>
     <additional_attributes/>
@@ -756,10 +756,10 @@ stuurt aan</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>836</x>
-      <y>232</y>
-      <w>112</w>
-      <h>76</h>
+      <x>1881</x>
+      <y>405</y>
+      <w>252</w>
+      <h>171</h>
     </coordinates>
     <panel_attributes>&lt;int&gt; CAN
 --
@@ -773,10 +773,10 @@ stuurt aan</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>284</x>
-      <y>268</y>
-      <w>560</w>
-      <h>220</h>
+      <x>639</x>
+      <y>486</y>
+      <w>1260</w>
+      <h>495</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 CAN.Send</panel_attributes>
@@ -785,10 +785,10 @@ CAN.Send</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>320</x>
-      <y>288</y>
-      <w>524</w>
-      <h>204</h>
+      <x>720</x>
+      <y>531</y>
+      <w>1179</w>
+      <h>459</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 CAN.Recieve</panel_attributes>
@@ -797,10 +797,10 @@ CAN.Recieve</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>860</x>
-      <y>304</y>
-      <w>44</w>
-      <h>184</h>
+      <x>1935</x>
+      <y>567</y>
+      <w>99</w>
+      <h>414</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 CAN.Recieve</panel_attributes>
@@ -809,10 +809,10 @@ CAN.Recieve</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>900</x>
-      <y>304</y>
-      <w>36</w>
-      <h>184</h>
+      <x>2025</x>
+      <y>567</y>
+      <w>81</w>
+      <h>414</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 CAN.Send</panel_attributes>
@@ -821,10 +821,10 @@ CAN.Send</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>944</x>
-      <y>288</y>
-      <w>328</w>
-      <h>200</h>
+      <x>2124</x>
+      <y>531</y>
+      <w>738</w>
+      <h>450</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 CAN.Send</panel_attributes>
@@ -833,10 +833,10 @@ CAN.Send</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>944</x>
-      <y>264</y>
-      <w>372</w>
-      <h>224</h>
+      <x>2124</x>
+      <y>477</y>
+      <w>837</w>
+      <h>504</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 CAN.Recieve</panel_attributes>
@@ -845,10 +845,10 @@ CAN.Recieve</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1656</x>
-      <y>72</y>
-      <w>84</w>
-      <h>76</h>
+      <x>3726</x>
+      <y>45</y>
+      <w>189</w>
+      <h>171</h>
     </coordinates>
     <panel_attributes>RaspberryPi1
 --
@@ -859,10 +859,10 @@ CAN.Recieve</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>856</x>
-      <y>68</y>
-      <w>84</w>
-      <h>76</h>
+      <x>1926</x>
+      <y>36</y>
+      <w>189</w>
+      <h>171</h>
     </coordinates>
     <panel_attributes>RaspberryPi2
 --
@@ -877,10 +877,10 @@ CAN.Recieve</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>892</x>
-      <y>140</y>
-      <w>12</w>
-      <h>100</h>
+      <x>2007</x>
+      <y>198</y>
+      <w>27</w>
+      <h>225</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
     <additional_attributes>10.0;10.0;10.0;230.0</additional_attributes>
@@ -888,10 +888,10 @@ CAN.Recieve</panel_attributes>
   <element>
     <id>UMLPackage</id>
     <coordinates>
-      <x>840</x>
-      <y>52</y>
-      <w>924</w>
-      <h>104</h>
+      <x>1890</x>
+      <y>0</y>
+      <w>2079</w>
+      <h>234</h>
     </coordinates>
     <panel_attributes>Socket connectie</panel_attributes>
     <additional_attributes/>
@@ -899,10 +899,10 @@ CAN.Recieve</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>936</x>
-      <y>96</y>
-      <w>728</w>
-      <h>20</h>
+      <x>2106</x>
+      <y>99</y>
+      <w>1638</w>
+      <h>45</h>
     </coordinates>
     <panel_attributes>lt=&lt;-&gt;
 Socket verbinding</panel_attributes>
@@ -911,10 +911,10 @@ Socket verbinding</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1644</x>
-      <y>204</y>
-      <w>112</w>
-      <h>76</h>
+      <x>3699</x>
+      <y>342</y>
+      <w>252</w>
+      <h>171</h>
     </coordinates>
     <panel_attributes>&lt;int&gt; Wireless
 --
@@ -926,10 +926,10 @@ Socket verbinding</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>1696</x>
-      <y>144</y>
-      <w>12</w>
-      <h>68</h>
+      <x>3816</x>
+      <y>207</y>
+      <w>27</w>
+      <h>153</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
     <additional_attributes>10.0;150.0;10.0;10.0</additional_attributes>
@@ -937,10 +937,10 @@ Socket verbinding</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1532</x>
-      <y>480</y>
-      <w>84</w>
-      <h>32</h>
+      <x>3447</x>
+      <y>963</y>
+      <w>189</w>
+      <h>72</h>
     </coordinates>
     <panel_attributes>Wemos D1 mini pro
 --
@@ -952,10 +952,10 @@ Socket verbinding</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1532</x>
-      <y>532</y>
-      <w>84</w>
-      <h>36</h>
+      <x>3447</x>
+      <y>1080</y>
+      <w>189</w>
+      <h>81</h>
     </coordinates>
     <panel_attributes>Lichtkrant (MAX7219 32x8 Display)
 --
@@ -968,10 +968,10 @@ Socket verbinding</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>1568</x>
-      <y>508</y>
-      <w>12</w>
-      <h>32</h>
+      <x>3528</x>
+      <y>1026</y>
+      <w>27</w>
+      <h>72</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
     <additional_attributes>10.0;60.0;10.0;10.0</additional_attributes>
@@ -979,10 +979,10 @@ Socket verbinding</panel_attributes>
   <element>
     <id>UMLPackage</id>
     <coordinates>
-      <x>1512</x>
-      <y>464</y>
-      <w>120</w>
-      <h>108</h>
+      <x>3402</x>
+      <y>927</y>
+      <w>270</w>
+      <h>243</h>
     </coordinates>
     <panel_attributes>Lichtkrant</panel_attributes>
     <additional_attributes/>
@@ -990,10 +990,10 @@ Socket verbinding</panel_attributes>
   <element>
     <id>UMLPackage</id>
     <coordinates>
-      <x>1744</x>
-      <y>464</y>
-      <w>244</w>
-      <h>244</h>
+      <x>3816</x>
+      <y>927</y>
+      <w>945</w>
+      <h>828</h>
     </coordinates>
     <panel_attributes>Name</panel_attributes>
     <additional_attributes/>
@@ -1001,10 +1001,10 @@ Socket verbinding</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1832</x>
-      <y>480</y>
-      <w>84</w>
-      <h>56</h>
+      <x>4122</x>
+      <y>963</y>
+      <w>189</w>
+      <h>126</h>
     </coordinates>
     <panel_attributes>Wemos D1 mini pro
 --
@@ -1016,10 +1016,10 @@ Socket verbinding</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>1572</x>
-      <y>276</y>
-      <w>132</w>
-      <h>212</h>
+      <x>3537</x>
+      <y>504</y>
+      <w>297</w>
+      <h>477</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Wireless</panel_attributes>
@@ -1028,13 +1028,156 @@ Wireless</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>1692</x>
-      <y>276</y>
-      <w>188</w>
-      <h>212</h>
+      <x>3807</x>
+      <y>504</y>
+      <w>423</w>
+      <h>477</h>
     </coordinates>
     <panel_attributes>lt=&lt;-
 Wireless</panel_attributes>
     <additional_attributes>450.0;510.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>4059</x>
+      <y>1215</y>
+      <w>189</w>
+      <h>171</h>
+    </coordinates>
+    <panel_attributes>startknop
+--
+
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>4149</x>
+      <y>1080</y>
+      <w>90</w>
+      <h>153</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>10.0;150.0;80.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>3843</x>
+      <y>1215</y>
+      <w>189</w>
+      <h>171</h>
+    </coordinates>
+    <panel_attributes>stopknop
+--
+
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>3924</x>
+      <y>1080</y>
+      <w>315</w>
+      <h>153</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>10.0;150.0;330.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>3933</x>
+      <y>1494</y>
+      <w>189</w>
+      <h>171</h>
+    </coordinates>
+    <panel_attributes>vibratieMotor
+--
+- frequentie: int
+--
++ ZetAan(): void
++ ZetUit(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>3933</x>
+      <y>1377</y>
+      <w>108</w>
+      <h>135</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>100.0;130.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>4014</x>
+      <y>1377</y>
+      <w>171</w>
+      <h>135</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>10.0;130.0;170.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>4293</x>
+      <y>1215</y>
+      <w>189</w>
+      <h>171</h>
+    </coordinates>
+    <panel_attributes>LDRSensor
+--
+
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>4212</x>
+      <y>1080</y>
+      <w>198</w>
+      <h>153</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>200.0;150.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>4293</x>
+      <y>1467</y>
+      <w>189</w>
+      <h>171</h>
+    </coordinates>
+    <panel_attributes>Schemerlamp
+--
+
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>4374</x>
+      <y>1377</y>
+      <w>27</w>
+      <h>108</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+</panel_attributes>
+    <additional_attributes>10.0;100.0;10.0;10.0</additional_attributes>
   </element>
 </diagram>
