@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include <string.h>
 #include <stdbool.h>
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,6 +42,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
+
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
@@ -51,13 +54,30 @@ UART_HandleTypeDef huart2;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void SGP30_Init(void) {
+    uint8_t cmd[2] = {0x20, 0x03};
+    HAL_I2C_Master_Transmit(&hi2c1, 0x58 << 1, cmd, 2, HAL_MAX_DELAY);
+    //for the first 15s after the “sgp30_iaq_init” command the sensor isin an initialization phase during which a “sgp30_measure_iaq” command returns fixed values of 400 ppm CO2eq and 0 ppb TVOC.
+    HAL_Delay(15000);
+}
 
+uint16_t SGP30_ReadCO2(void) {
+    uint8_t cmd[2] = {0x20, 0x08};
+    HAL_I2C_Master_Transmit(&hi2c1, 0x58 << 1, cmd, 2, HAL_MAX_DELAY);
+    HAL_Delay(12);
+
+    uint8_t buf[6];
+    HAL_I2C_Master_Receive(&hi2c1, 0x58 << 1, buf, 6, HAL_MAX_DELAY);
+
+    return (buf[0] << 8) | buf[1];
+}
 /* USER CODE END 0 */
 
 /**
@@ -89,10 +109,12 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART2_UART_Init();
+  MX_I2C1_Init();       // eerst I2C
+  MX_USART2_UART_Init(); // dan UART
   /* USER CODE BEGIN 2 */
   char test[] = "STM32 gestart!\r\n";
   HAL_UART_Transmit(&huart2, (uint8_t*)test, strlen(test), 1000);
+  SGP30_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -100,13 +122,30 @@ int main(void)
   char Beweging [] = "Beweging gedetecteerd, Verlichting gaat aan! \r\n";
   while (1)
   {
-	    if (HAL_GPIO_ReadPin(GPIOB, Motion_Input_Pin))
-	    {
-	        HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_SET);
-	        HAL_UART_Transmit(&huart2, (uint8_t*)Beweging, strlen(Beweging), strlen(Beweging));
-	        HAL_Delay(5000);
-	        HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_RESET);
-	    }
+	  uint16_t eco2 = SGP30_ReadCO2();
+
+	  char msg[64];
+	  sprintf(msg, "eCO2: %d ppm\r\n", eco2);
+	  HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+
+//	    if (HAL_GPIO_ReadPin(GPIOB, Motion_Input_Pin))
+//	    {
+//	        HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_SET);
+//	        HAL_UART_Transmit(&huart2, (uint8_t*)Beweging, strlen(Beweging), strlen(Beweging));
+//	        HAL_Delay(5000);
+//	        HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_RESET);
+//	    }
+	  if(HAL_GPIO_ReadPin(GPIOA, Button_Input_Pin) == GPIO_PIN_RESET){
+		  HAL_UART_Transmit(&huart2, (uint8_t*)Beweging, strlen(Beweging), strlen(Beweging));
+		  HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_SET);
+		  //HAL_GPIO_WritePin(GPIOA, RGB_Blauw_Pin, GPIO_PIN_SET);
+		  //HAL_GPIO_WritePin(GPIOA,RGB__Rood_Pin, GPIO_PIN_SET);
+		  HAL_Delay(5000);
+		  //HAL_GPIO_WritePin(GPIOA, RGB__Rood_Pin, GPIO_PIN_RESET);
+		  //HAL_GPIO_WritePin(GPIOA, RGB_Blauw_Pin, GPIO_PIN_RESET);
+		  HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_RESET);
+		  HAL_Delay(1000);
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -175,6 +214,54 @@ void SystemClock_Config(void)
 }
 
 /**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.Timing = 0x20302E37;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Analogue filter
+  */
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Digital filter
+  */
+  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -190,7 +277,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 9600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -231,6 +318,12 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : Button_Input_Pin */
+  GPIO_InitStruct.Pin = Button_Input_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(Button_Input_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : RGB__Rood_Pin RGB_Blauw_Pin RGB_Groen_Pin */
   GPIO_InitStruct.Pin = RGB__Rood_Pin|RGB_Blauw_Pin|RGB_Groen_Pin;
