@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/RPi_A.dir/RPi_A.cpp.o -o RPi_A  libsocketlib.a libcjsonlib.a -lpthread 
