@@ -1,78 +1,856 @@
-<diagram program="umletino" version="15.1"><zoom_level>4</zoom_level><help_text>Space for diagram notes</help_text><element><id>UMLPackage</id><coordinates><x>0</x><y>108</y><w>576</w><h>520</h></coordinates><panel_attributes>Luchtsluis</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>244</x><y>128</y><w>84</w><h>40</h></coordinates><panel_attributes>Nucleo L432kc
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="15.1">
+  <help_text>Space for diagram notes</help_text>
+  <zoom_level>5</zoom_level>
+  <element>
+    <id>UMLPackage</id>
+    <coordinates>
+      <x>15</x>
+      <y>580</y>
+      <w>720</w>
+      <h>650</h>
+    </coordinates>
+    <panel_attributes>Luchtsluis</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>320</x>
+      <y>605</y>
+      <w>105</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>Nucleo L432kc
 --
 - toestand: String
 --
 + start() : void
 + verwerkInterrupt() : void
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>52</x><y>260</y><w>84</w><h>32</h></coordinates><panel_attributes>NoodKnop
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>80</x>
+      <y>770</y>
+      <w>105</w>
+      <h>40</h>
+    </coordinates>
+    <panel_attributes>NoodKnop
 --
 - Ingedrukt
 --
 + druk(): void
 
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>336</x><y>336</y><w>84</w><h>32</h></coordinates><panel_attributes>PIR sensor
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>435</x>
+      <y>865</y>
+      <w>105</w>
+      <h>40</h>
+    </coordinates>
+    <panel_attributes>PIR sensor
 --
 - bewegingGedetecteerd: bool
 --
-+ detecteer() : bool</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>80</x><y>524</y><w>84</w><h>40</h></coordinates><panel_attributes>MAX7219 8x8 Display
++ detecteer() : bool</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>115</x>
+      <y>1100</y>
+      <w>105</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>MAX7219 8x8 Display
 --
 - helderheid: int
 --
 + init() : void
-+ toonAfbeelding(naam: String) : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>280</x><y>540</y><w>84</w><h>76</h></coordinates><panel_attributes>Servo 1
++ toonAfbeelding(naam: String) : void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>365</x>
+      <y>1120</y>
+      <w>105</w>
+      <h>95</h>
+    </coordinates>
+    <panel_attributes>Servo 1
 --
 - kanaal: int
 - positie: int
 --
 + open() : void
-+ sluit() : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>480</x><y>332</y><w>84</w><h>32</h></coordinates><panel_attributes>Knop
++ sluit() : void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>615</x>
+      <y>860</y>
+      <w>105</w>
+      <h>40</h>
+    </coordinates>
+    <panel_attributes>Knop
 --
 - Ingedrukt: bool
 --
 + druk(): bool
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>180</x><y>264</y><w>84</w><h>36</h></coordinates><panel_attributes>RFID-Scanner
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>240</x>
+      <y>775</y>
+      <w>105</w>
+      <h>45</h>
+    </coordinates>
+    <panel_attributes>RFID-Scanner
 --
 - status
 --
 + leesKaart(): void
 + isGeldig: bool
-</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>176</x><y>332</y><w>84</w><h>36</h></coordinates><panel_attributes>RFID-Kaart
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>235</x>
+      <y>860</y>
+      <w>105</w>
+      <h>45</h>
+    </coordinates>
+    <panel_attributes>RFID-Kaart
 --
 - kaartID: String
 - gebruiker: String
 --
-+ getID() : String</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>328</x><y>456</y><w>84</w><h>32</h></coordinates><panel_attributes>OpenDeur
++ getID() : String</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>425</x>
+      <y>1015</y>
+      <w>105</w>
+      <h>40</h>
+    </coordinates>
+    <panel_attributes>OpenDeur
 --
 + openBuitenNaarBinnen() : void
-+ openBinnenNaarBuiten() : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>388</x><y>536</y><w>84</w><h>76</h></coordinates><panel_attributes>Servo 2
++ openBinnenNaarBuiten() : void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>500</x>
+      <y>1115</y>
+      <w>105</w>
+      <h>95</h>
+    </coordinates>
+    <panel_attributes>Servo 2
 --
 - kanaal: int
 - positie: int
 --
 + open() : void
-+ sluit() : void</panel_attributes><additional_attributes></additional_attributes></element><element><id>Relation</id><coordinates><x>92</x><y>164</y><w>204</w><h>104</h></coordinates><panel_attributes>lt=&lt;-
++ sluit() : void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>130</x>
+      <y>650</y>
+      <w>255</w>
+      <h>130</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
 Initialiseert noodstand
-op Interrupt basis</panel_attributes><additional_attributes>10;240;490;10</additional_attributes></element><element><id>Relation</id><coordinates><x>220</x><y>164</y><w>76</w><h>108</h></coordinates><panel_attributes>lt=&lt;-
-Leest uit</panel_attributes><additional_attributes>10;250;170;10</additional_attributes></element><element><id>Relation</id><coordinates><x>216</x><y>296</y><w>24</w><h>44</h></coordinates><panel_attributes>lt=&lt;-
-Leest</panel_attributes><additional_attributes>10;90;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>92</x><y>288</y><w>44</w><h>244</h></coordinates><panel_attributes>lt=&lt;-
+op Interrupt basis</panel_attributes>
+    <additional_attributes>10.0;240.0;490.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>290</x>
+      <y>650</y>
+      <w>95</w>
+      <h>135</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+Leest uit</panel_attributes>
+    <additional_attributes>10.0;250.0;170.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>285</x>
+      <y>815</y>
+      <w>30</w>
+      <h>55</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+Leest</panel_attributes>
+    <additional_attributes>10.0;90.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>130</x>
+      <y>805</y>
+      <w>55</w>
+      <h>305</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
 Ingedrukt  = 
-Uitroepteken</panel_attributes><additional_attributes>20;590;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>112</x><y>364</y><w>80</w><h>168</h></coordinates><panel_attributes>lt=&lt;-
+Uitroepteken</panel_attributes>
+    <additional_attributes>20.0;590.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>155</x>
+      <y>900</y>
+      <w>100</w>
+      <h>210</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
 Goede RFID =
-Vinkje</panel_attributes><additional_attributes>10;400;180;10</additional_attributes></element><element><id>Relation</id><coordinates><x>152</x><y>364</y><w>76</w><h>168</h></coordinates><panel_attributes>lt=&lt;-
+Vinkje</panel_attributes>
+    <additional_attributes>10.0;400.0;180.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>205</x>
+      <y>900</y>
+      <w>95</w>
+      <h>210</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
 Foute RFID =
-Kruis</panel_attributes><additional_attributes>10;400;170;10</additional_attributes></element><element><id>Relation</id><coordinates><x>236</x><y>364</y><w>140</w><h>100</h></coordinates><panel_attributes>lt=&lt;-
+Kruis</panel_attributes>
+    <additional_attributes>10.0;400.0;170.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>310</x>
+      <y>900</y>
+      <w>175</w>
+      <h>125</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
 Roept aan
-bij goede scan</panel_attributes><additional_attributes>330;230;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>364</x><y>364</y><w>32</w><h>100</h></coordinates><panel_attributes>lt=&lt;-
-Triggert</panel_attributes><additional_attributes>10;230;30;10</additional_attributes></element><element><id>Relation</id><coordinates><x>364</x><y>360</y><w>164</w><h>104</h></coordinates><panel_attributes>lt=&lt;-
-Triggert</panel_attributes><additional_attributes>10;240;390;10</additional_attributes></element><element><id>Relation</id><coordinates><x>320</x><y>484</y><w>64</w><h>64</h></coordinates><panel_attributes>lt=&lt;-
-Beweegt</panel_attributes><additional_attributes>10;140;140;10</additional_attributes></element><element><id>Relation</id><coordinates><x>372</x><y>484</y><w>64</w><h>60</h></coordinates><panel_attributes>lt=&lt;-
-Beweegt</panel_attributes><additional_attributes>140;130;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>284</x><y>164</y><w>100</w><h>180</h></coordinates><panel_attributes>lt=&lt;-
-Leest uit</panel_attributes><additional_attributes>230;430;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>284</x><y>164</y><w>248</w><h>176</h></coordinates><panel_attributes>lt=&lt;-
-Leest uit</panel_attributes><additional_attributes>600;420;10;10</additional_attributes></element><element><id>Relation</id><coordinates><x>92</x><y>288</y><w>244</w><h>188</h></coordinates><panel_attributes>lt=&lt;-
-Sluit beide deuren</panel_attributes><additional_attributes>590;450;210;280;10;10</additional_attributes></element><element><id>UMLPackage</id><coordinates><x>132</x><y>692</y><w>84</w><h>92</h></coordinates><panel_attributes>Balieconsole</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLPackage</id><coordinates><x>264</x><y>700</y><w>124</w><h>132</h></coordinates><panel_attributes>Lichtvoorziening</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLPackage</id><coordinates><x>416</x><y>724</y><w>132</w><h>116</h></coordinates><panel_attributes>Lichtkrant</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLPackage</id><coordinates><x>592</x><y>724</y><w>132</w><h>116</h></coordinates><panel_attributes>Relaxhoek</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLPackage</id><coordinates><x>260</x><y>436</y><w>228</w><h>184</h></coordinates><panel_attributes>Deursysteem</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLPackage</id><coordinates><x>48</x><y>492</y><w>156</w><h>108</h></coordinates><panel_attributes>Display aansturing</panel_attributes><additional_attributes></additional_attributes></element><element><id>UMLClass</id><coordinates><x>772</x><y>116</y><w>84</w><h>40</h></coordinates><panel_attributes>Nucleo L432kc
+bij goede scan</panel_attributes>
+    <additional_attributes>330.0;230.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>470</x>
+      <y>900</y>
+      <w>45</w>
+      <h>125</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+Triggert</panel_attributes>
+    <additional_attributes>10.0;230.0;30.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>470</x>
+      <y>895</y>
+      <w>205</w>
+      <h>130</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+Triggert</panel_attributes>
+    <additional_attributes>10.0;240.0;390.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>415</x>
+      <y>1050</y>
+      <w>80</w>
+      <h>80</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+Beweegt</panel_attributes>
+    <additional_attributes>10.0;140.0;140.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>480</x>
+      <y>1050</y>
+      <w>80</w>
+      <h>75</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+Beweegt</panel_attributes>
+    <additional_attributes>140.0;130.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>370</x>
+      <y>650</y>
+      <w>125</w>
+      <h>225</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+Leest uit</panel_attributes>
+    <additional_attributes>230.0;430.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>370</x>
+      <y>650</y>
+      <w>310</w>
+      <h>220</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+Leest uit</panel_attributes>
+    <additional_attributes>600.0;420.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>130</x>
+      <y>805</y>
+      <w>305</w>
+      <h>235</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+Sluit beide deuren</panel_attributes>
+    <additional_attributes>590.0;450.0;210.0;280.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLPackage</id>
+    <coordinates>
+      <x>775</x>
+      <y>575</y>
+      <w>685</w>
+      <h>365</h>
+    </coordinates>
+    <panel_attributes>Balieconsole</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLPackage</id>
+    <coordinates>
+      <x>1475</x>
+      <y>575</y>
+      <w>305</w>
+      <h>365</h>
+    </coordinates>
+    <panel_attributes>Lichtvoorziening</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1060</x>
+      <y>605</y>
+      <w>105</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>Nucleo L432kc
 --
 - toestand: String
 --
 + start() : void
 + verwerkInterrupt() : void
-</panel_attributes><additional_attributes></additional_attributes></element></diagram>
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>975</x>
+      <y>840</y>
+      <w>105</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>SwitchRelaxstoelStatus
+--
+- Ingedrukt: bool
+--
++ druk(): void
++ SwitchStatus(): void
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>825</x>
+      <y>705</y>
+      <w>105</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>NoodstopKnop
+--
+- Ingedrukt: bool
+--
++ druk(): void
++ NoodstandActiveren(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>975</x>
+      <y>705</y>
+      <w>105</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>Deurcyclus
+--
+- Ingedrukt: bool
+--
++ druk(): void
++ StartDeurcyclus(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>975</x>
+      <y>775</y>
+      <w>105</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>AlleDeurenOpen
+--
+- Ingedrukt: bool
+--
++ druk(): void
++ DeurenOpen(): void
+
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>870</x>
+      <y>650</y>
+      <w>245</w>
+      <h>65</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+Leest uit</panel_attributes>
+    <additional_attributes>10.0;110.0;470.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1030</x>
+      <y>650</y>
+      <w>85</w>
+      <h>65</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+Leest uit</panel_attributes>
+    <additional_attributes>10.0;110.0;150.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1020</x>
+      <y>650</y>
+      <w>120</w>
+      <h>135</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+Leest uit</panel_attributes>
+    <additional_attributes>10.0;250.0;170.0;200.0;170.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1025</x>
+      <y>650</y>
+      <w>150</w>
+      <h>200</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+Leest uit</panel_attributes>
+    <additional_attributes>10.0;380.0;150.0;350.0;230.0;260.0;220.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>820</x>
+      <y>825</y>
+      <w>105</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>NoodknopLed
+--
+- status
+--
++ LedAan(): void
++ LedUit(): void
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1220</x>
+      <y>705</y>
+      <w>90</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>Co2overgrens
+--
+- ontvangt: bool
+--
++ OverGrens(): void
++ LedUit(): void
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>0</x>
+      <y>520</y>
+      <w>95</w>
+      <h>15</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>10.0;10.0;170.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>870</x>
+      <y>745</y>
+      <w>45</w>
+      <h>90</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+stuurt aan</panel_attributes>
+    <additional_attributes>10.0;160.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1170</x>
+      <y>790</y>
+      <w>105</w>
+      <h>55</h>
+    </coordinates>
+    <panel_attributes>RelaxStoelStatus
+--
+- ontvangt: bool
+--
++ StoelStatus(): void
++ LedAan(): void
++ LedUit(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1130</x>
+      <y>650</y>
+      <w>145</w>
+      <h>65</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+Stuurt aan</panel_attributes>
+    <additional_attributes>270.0;110.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1290</x>
+      <y>785</y>
+      <w>105</w>
+      <h>55</h>
+    </coordinates>
+    <panel_attributes>TemperatuurOverGrens
+--
+- ontvangt: bool
+--
++ OverGrens(): void
++ LedUit(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1130</x>
+      <y>650</y>
+      <w>105</w>
+      <h>150</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+Stuurt aan</panel_attributes>
+    <additional_attributes>190.0;280.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1315</x>
+      <y>615</y>
+      <w>105</w>
+      <h>50</h>
+    </coordinates>
+    <panel_attributes>Dag/Nacht
+--
+- status: bool
+--
++ Dag(): void
++ Nacht(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1160</x>
+      <y>650</y>
+      <w>185</w>
+      <h>145</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+Stuurt aan</panel_attributes>
+    <additional_attributes>350.0;270.0;350.0;90.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1160</x>
+      <y>625</y>
+      <w>165</w>
+      <h>30</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+stuurt aan</panel_attributes>
+    <additional_attributes>310.0;40.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1550</x>
+      <y>810</y>
+      <w>105</w>
+      <h>60</h>
+    </coordinates>
+    <panel_attributes>Lees_Co2_Sensor
+--
+- uint16_t SensorWaarde
+--
++ Leessensor() : Void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1670</x>
+      <y>725</y>
+      <w>105</w>
+      <h>60</h>
+    </coordinates>
+    <panel_attributes>ZetLampAan
+--
+- uint8_t status()
+- uitn8_t kleur()
+--
++ ZetLampAan(int) : void
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1550</x>
+      <y>725</y>
+      <w>105</w>
+      <h>60</h>
+    </coordinates>
+    <panel_attributes>I2C-interface
+--
+- uint8_t buffer
+--
++ SendData() : void
++ receiveData() : Void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1595</x>
+      <y>780</y>
+      <w>15</w>
+      <h>40</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;60.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1560</x>
+      <y>605</y>
+      <w>105</w>
+      <h>60</h>
+    </coordinates>
+    <panel_attributes>Nucleo L432KC
+--
+- toestand : string
+--
++ start() : void
++ verwerkInterupt() : void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1590</x>
+      <y>660</y>
+      <w>30</w>
+      <h>75</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>20.0;130.0;10.0;60.0;40.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1605</x>
+      <y>660</y>
+      <w>130</w>
+      <h>75</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>240.0;130.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLPackage</id>
+    <coordinates>
+      <x>1030</x>
+      <y>270</y>
+      <w>190</w>
+      <h>150</h>
+    </coordinates>
+    <panel_attributes>CAN</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1060</x>
+      <y>295</y>
+      <w>140</w>
+      <h>95</h>
+    </coordinates>
+    <panel_attributes>&lt;int&gt; CAN
+--
+- berichtID: int
+- data: byte[]
+--
++ verstuur(berichtID: int, data: byte[]) : void
++ ontvang() : byte[]</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>370</x>
+      <y>340</y>
+      <w>700</w>
+      <h>275</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+CAN.Send</panel_attributes>
+    <additional_attributes>1380.0;10.0;10.0;530.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>415</x>
+      <y>365</y>
+      <w>655</w>
+      <h>255</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+CAN.Recieve</panel_attributes>
+    <additional_attributes>10.0;490.0;1290.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1090</x>
+      <y>385</y>
+      <w>55</w>
+      <h>230</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+CAN.Recieve</panel_attributes>
+    <additional_attributes>10.0;440.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1140</x>
+      <y>385</y>
+      <w>45</w>
+      <h>230</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+CAN.Send</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;440.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1195</x>
+      <y>365</y>
+      <w>410</w>
+      <h>250</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+CAN.Send</panel_attributes>
+    <additional_attributes>10.0;10.0;800.0;480.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1195</x>
+      <y>335</y>
+      <w>465</w>
+      <h>280</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-
+CAN.Recieve</panel_attributes>
+    <additional_attributes>910.0;540.0;10.0;10.0</additional_attributes>
+  </element>
+</diagram>
