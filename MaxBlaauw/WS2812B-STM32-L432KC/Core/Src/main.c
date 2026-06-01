@@ -68,9 +68,9 @@ static void chase_tick(int step) {
     for (int r = 0; r < NUM_RUNNERS; r++) {
         int i = (step + r * spacing) % WS2812B_NUM_LEDS;
 
-		WS2812B_SetLED(i, 80, 0, 0);
+		WS2812B_SetLED(i, 8, 0, 0);
 		if (i - 1 >= 0) WS2812B_SetLED(i - 1, 25, 0, 0);
-		if (i - 2 >= 0) WS2812B_SetLED(i - 2, 8, 0, 0);
+		if (i - 2 >= 0) WS2812B_SetLED(i - 2, 80, 0, 0);
     }
 }
 /* USER CODE END 0 */
