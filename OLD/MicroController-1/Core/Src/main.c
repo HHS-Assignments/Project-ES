@@ -149,15 +149,10 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  if (datacheck) {
-		  DiscoDisco();
-	  }
 
-	  if (RTRReceived) {
-		  RTRReceived = 0;
-		  uint64_t StuurSensor = 0xAABB;
-		  SendCanMessage(2, StuurSensor);
-	  }
+	  uint64_t StuurSensor = 0xAABB;
+	  SendCanMessage(2, StuurSensor);
+	  HAL_Delay(200);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
