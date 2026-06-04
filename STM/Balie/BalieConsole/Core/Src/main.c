@@ -124,19 +124,19 @@ int main(void)
 
 
 	  if(1){
-		  //WritePin(GPIOB, Dag_Nacht_Pin);
+		  //ZetAan(GPIOB, Dag_Nacht_Pin);
 	  }
 
 	  if(1){
-		  //WritePin(GPIOB, TemperatuurOverGrens_Pin);
+		  //ZetAan(GPIOB, TemperatuurOverGrens_Pin);
 	  }
 
 	  if(1){
-		  //WritePin(GPIOB, RelaxstoelStatus_Pin);
+		  //ZetAan(GPIOB, RelaxstoelStatus_Pin);
 	  }
 
 	  if(1){
-		  //WritePin(GPIOB, CO2OverGrens_Pin);
+		  //ZetAan(GPIOB, CO2OverGrens_Pin);
 	  }
 
     /* USER CODE END WHILE */
