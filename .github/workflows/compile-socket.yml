@@ -24,7 +24,7 @@ on:
       - main
       - dev
     paths:
-      - './PI/Socket/**'
+      - 'PI/Socket/**'
       - 'Code-Tests/**'
       - '.github/workflows/**'
   workflow_dispatch:
@@ -45,7 +45,7 @@ jobs:
       - name: Install build tools
         run: |
           apt-get update -qq
-          apt-get install -y -qq build-essential cmake gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          apt-get install -y -qq build-essential cmake git gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
       - name: Compile for linux-x86_64
         run: |
