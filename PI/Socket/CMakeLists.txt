@@ -22,8 +22,8 @@ add_library(socketlib ${SOURCES})
 target_include_directories(socketlib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Add C files (for cJSON)
-add_library(cjsonlib STATIC ../Socket_C/cJSON.c)
-target_include_directories(cjsonlib PUBLIC ../Socket_C)
+add_library(cjsonlib STATIC cJSON.c)
+target_include_directories(cjsonlib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Link cJSON to socketlib
 target_link_libraries(socketlib PRIVATE cjsonlib)
@@ -51,4 +51,3 @@ enable_testing()
 add_executable(test_basic tests/test_basic.cpp)
 target_link_libraries(test_basic socketlib pthread)
 add_test(NAME BasicTest COMMAND test_basic)
-
