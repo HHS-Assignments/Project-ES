@@ -47,16 +47,16 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: socket-binaries-linux-x86_64
-          path: PI/Socket/
+          path: .
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Make binaries executable
-        run: chmod +x PI/Socket/RPi_B PI/Socket/RPi_A
+        run: chmod +x PI/Socket/build/RPi_B PI/Socket/build/RPi_A
 
       # Run the test suite using the pre-built binaries (no recompilation).
       - name: Run end-to-end socket tests
         env:
-          PI_B_BINARY: ${{ github.workspace }}/PI/Socket/RPi_B
-          PI_A_BINARY: ${{ github.workspace }}/PI/Socket/RPi_A
+          PI_B_BINARY: ${{ github.workspace }}/PI/Socket/build/RPi_B
+          PI_A_BINARY: ${{ github.workspace }}/PI/Socket/build/RPi_A
         run: bash Code-Tests/Socket/test_socket.sh
