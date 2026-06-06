@@ -1,4 +1,4 @@
-# WMos D1 Mini - Button and HTTP POST to Pi-1
+# Wemos D1 Mini - Button and HTTP POST to Pi-1
 
 ## Overview
 
@@ -6,12 +6,12 @@ This sketch connects the WeMos D1 Mini to WiFi, sends a JSON message to Pi-1
 whenever the button is pressed, and listens on a TCP port for inbound commands
 from Pi-1.
 
-All JSON/HTTP sender logic is implemented directly inside `WMos-Wifi.ino`
+All JSON/HTTP sender logic is implemented directly inside `Wemos-Wifi.ino`
 (no separate SendJsonToPi library files are required).
 
 ## Hardware
 
-- WeMos D1 Mini (ESP8266)
+- Wemos D1 Mini (ESP8266)
 - Push button between D2 and GND
 - USB cable for upload and Serial Monitor
 
@@ -37,12 +37,12 @@ WiFi configuration is split between a local secrets file and in-code constants.
 
 3. Keep `secrets.h` private (it is ignored by git via repo `.gitignore`).
 
-Network and hardware constants are defined in `WMos-Wifi.ino`:
+Network and hardware constants are defined in `Wemos-Wifi.ino`:
 
 - `piHost` (default `172.16.0.80`)
 - `piPort` (default `9000`)
 - `wemosReceivePort` (default `9001`)
-- `BUTTON_PIN` (default `2`, WeMos D2, declared locally in `setup()` and `loop()`)
+- `BUTTON_PIN` (default `2`, Wemos D2, declared locally in `setup()` and `loop()`)
 - `debounceDelay` (default `50 ms`, declared in `loop()`)
 
 If `secrets.h` is missing or required macros are not defined, compilation stops with a clear error message.
@@ -52,7 +52,7 @@ If `secrets.h` is missing or required macros are not defined, compilation stops 
 On each button press, the sketch sends:
 
 ```json
-{"Device":"Wmos","Sensor":"ButtonD2","Data":<press_count>}
+{"Device":"Wemos","Sensor":"ButtonD2","Data":<press_count>}
 ```
 
 Inbound messages are read as one line of text per TCP connection. The sketch

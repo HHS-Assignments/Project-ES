@@ -1,17 +1,17 @@
-# Socket - JSON Communication between WMos, Pi-B and Pi-A
+# Socket - JSON Communication between Wemos, Pi-B and Pi-A
 
 ## Overview
 
 The socket layer implements a three-node, full-duplex pipeline:
 
 ```
-WMos D1 Mini  --HTTP POST-->  Pi-B  <==full-duplex TCP==>  Pi-A
+Wemos D1 Mini  --HTTP POST-->  Pi-B  <==full-duplex TCP==>  Pi-A
 ```
 
-1. **WMos D1 Mini** (`WMos-Wifi/WMos-Wifi.ino`) — when the button on pin D2 is
+1. **Wemos D1 Mini** (`Wemos-Wifi/Wemos-Wifi.ino`) — when the button on pin D2 is
    pressed it sends an HTTP POST to Pi 1 on port 9000 with a JSON body.
 2. **Pi-B** (`Pi-B.c`) — listens on port 9000 with a **multi-threaded accept
-   loop** (one worker thread per WMos connection), parses the incoming JSON,
+   loop** (one worker thread per Wemos connection), parses the incoming JSON,
    and forwards it to Pi-A over a persistent full-duplex TCP socket.  A
    background thread simultaneously receives messages (acknowledgements,
    commands) sent back by Pi-A.
@@ -24,17 +24,17 @@ WMos D1 Mini  --HTTP POST-->  Pi-B  <==full-duplex TCP==>  Pi-A
 
 ## JSON Message Format
 
-### WMos → Pi 1 (HTTP POST body)
+### Wemos  → Pi 1 (HTTP POST body)
 
 ```json
-{"Device": "Wmos", "Sensor": "ButtonD2", "Data": 1}
+{"Device": "Wemos", "Sensor": "ButtonD2", "Data": 1}
 ```
 
-| Field    | Type          | Description                                       |
-|----------|---------------|---------------------------------------------------|
-| Device   | string        | Identifies the sending device (`"Wmos"`)          |
-| Sensor   | string        | Sensor or output name (e.g. `"ButtonD2"`)         |
-| Data     | number/string | Reading or state (integer press counter for WMos) |
+| Field  | Type          | Description                                       |
+| ------ | ------------- | ------------------------------------------------- |
+| Device | string        | Identifies the sending device (`"Wemos"`)         |
+| Sensor | string        | Sensor or output name (e.g. `"ButtonD2"`)         |
+| Data   | number/string | Reading or state (integer press counter for Wemos) |
 
 ### Pi-B ↔ Pi-A (persistent TCP, newline-delimited JSON)
 
@@ -81,28 +81,28 @@ Replace `<pi-a-hostname>` with the hostname or IP of the Pi-A machine (e.g.
 
 ### 3. Trigger from WMos
 
-Flash `WMos-Wifi/WMos-Wifi.ino`, connect to the `Project-ES` WiFi, then press
-the button wired to pin **D2**.  The WMos calls
-`SendJsonToPi_int("Wmos", "ButtonD2", pressCount)` which sends:
+Flash `Wemos-Wifi/Wemos-Wifi.ino`, connect to the `Project-ES` WiFi, then press
+the button wired to pin **D2**.  The Wemos calls
+`SendJsonToPi_int("Wemos", "ButtonD2", pressCount)` which sends:
 
 ```
 POST http://<PI_HOST>:<PI_PORT>/
 Content-Type: application/json
 
-{"Device":"Wmos","Sensor":"ButtonD2","Data":1}
+{"Device":"Wemos","Sensor":"ButtonD2","Data":1}
 ```
 
-`PI_HOST` is configured in `WMos-Wifi/secrets.h` (copied from
-`WMos-Wifi/secrets.h.example`), and `PI_PORT` defaults to `9000` in the
+`PI_HOST` is configured in `Wemos-Wifi/secrets.h` (copied from
+`Wemos-Wifi/secrets.h.example`), and `PI_PORT` defaults to `9000` in the
 current sketch configuration.
 
 Pi-B parses the request and forwards to Pi-A, which prints:
 
 ```
 --- Received from Pi-B (46 bytes) ---
-  Device: Wmos
-  [WMos] Sensor : ButtonD2
-  [WMos] Data   : 1
+  Device: Wemos
+  [Wemos] Sensor : ButtonD2
+  [Wemos] Data   : 1
 -------------------------------------
 ```
 
@@ -130,7 +130,7 @@ Pi-B prints:
 
    ```c
    static const DeviceHandler device_handlers[] = {
-       { "Wmos",     handle_wmos      },
+       { "Wemos",     handle_wemos      },
        { "MyDevice", handle_my_device }, /* ← new entry */
    };
    ```
@@ -147,14 +147,14 @@ bash Tests/Socket/test_socket.sh
 ```
 
 The script compiles the binaries, starts Pi-B and Pi-A as background
-processes, sends synthetic HTTP POST requests (mimicking the WMos) via
+processes, sends synthetic HTTP POST requests (mimicking the Wemos) via
 `curl`, and verifies that both directions of the full-duplex channel work.
 
 Tests covered:
 
 | # | Scenario                                        |
 |---|-------------------------------------------------|
-| 1 | WMos button press, numeric Data                 |
+| 1 | Wemos button press, numeric Data                 |
 | 2 | Second press – incremented Data value           |
 | 3 | Invalid JSON body → error response              |
 | 4 | Unknown device → fallback handler               |
@@ -176,13 +176,13 @@ Device,Sensor,Data
 Example: typing this line in either Pi's terminal:
 
 ```
-Wmos,Button,1
+Wemos,Button,1
 ```
 
 will be forwarded as this JSON message over the socket:
 
 ```json
-{"Device":"Wmos","Sensor":"Button","Data":1}
+{"Device":"Wemos","Sensor":"Button","Data":1}
 ```
 
 This makes it easy to issue manual test commands from either Pi without

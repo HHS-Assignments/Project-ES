@@ -15,7 +15,7 @@ docs/
 *.sln.docstates
 language.settings.xml
 *.env
-WMos-Wifi/secrets.h
+Wemos-Wifi/secrets.h
 
 
 

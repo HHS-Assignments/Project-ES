@@ -26,7 +26,7 @@ van aanpak.
 • In een onderzoeken naar welke bussysteem (CAN, I2C, SPI) het beste ge-
 selecteerd kan worden om de onderlinge embedded-componenten, in een
 gebouw automatisering, met elkaar te laten communiceren. Verder zal be-
-keken worden hoe losse componenten (met een WMOS D1 bordje) kan com-
+keken worden hoe losse componenten (met een Wemos D1 bordje) kan com-
 municeren met een Raspberry PI en hoe twee Raspberry PI’s met elkaar
 kunnen communiceren.
 • Het opstellen van product backlog’s
@@ -131,7 +131,7 @@ een verdieping). De opdrachtgever bepaald immers wat geautomaiseerd moet
 worden.
 4.3 Scope.
 PoC: Je hoeft niet het complete sensor en actuatoren netwerk te demonstreren. Beperk
-je tot de communicatie van een microcontrollers met een wmos via de Raspberry pi ,
+je tot de communicatie van een microcontrollers met een Wemos via de Raspberry pi ,
 waarbij een sensor uitgelezen en een actuator aangestuurd wordt, zoals weergegeven
 in figuur 4.1.
 Figuur 4.1: De proef of concept van deel 1.

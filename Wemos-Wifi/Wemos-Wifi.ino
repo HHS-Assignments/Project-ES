@@ -1,5 +1,5 @@
 /**
- * @file WMos-Wifi.ino
+ * @file Wemos-Wifi.ino
  * @brief WeMos D1 Mini WiFi Button Controller
  * @details Connects a button on WeMos D1 Mini GPIO4 (D2) to WiFi and sends
  *          raw JSON messages over TCP to Pi-1 receiver when button is pressed.
@@ -19,7 +19,7 @@
 #if __has_include("secrets.h")
 #include "secrets.h"
 #else
-#error "Missing secrets.h. Copy WMos-Wifi/secrets.h.example to WMos-Wifi/secrets.h and set WIFI_SSID/WIFI_PASSWORD/WIFI_MAX_ATTEMPTS."
+#error "Missing secrets.h. Copy Wemos-Wifi/secrets.h.example to Wemos-Wifi/secrets.h and set WIFI_SSID/WIFI_PASSWORD/WIFI_MAX_ATTEMPTS."
 #endif
 
 #ifndef WIFI_SSID
@@ -51,8 +51,8 @@ const char* const ssid = WIFI_SSID;
 const char* const password = WIFI_PASSWORD;
 /** @brief Maximum WiFi connection attempts (500ms per attempt) */
 const int max_attempts = WIFI_MAX_ATTEMPTS;
-/** @brief Wmos Device Name */
-const char* const Device_Name = "Wmos-1";
+/** @brief Wemos Device Name */
+const char* const Device_Name = "Wemos-1";
 
 /** @brief TCP server used to receive commands from Pi-1 */
 WiFiServer receiveServer(wemosReceivePort);
@@ -166,7 +166,7 @@ static bool post_payload(const char *json_payload) {
 
 /**
  * @brief Sends JSON with integer data to Pi-1 receiver
- * @param[in] device Device identifier string (e.g., "Wmos")
+ * @param[in] device Device identifier string (e.g., "Wemos")
  * @param[in] sensor Sensor/component name (e.g., "ButtonD2")
  * @param[in] data Integer data value to transmit
  * @details Constructs JSON object with numeric data field and sends via TCP
