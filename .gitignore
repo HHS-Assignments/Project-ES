@@ -13,6 +13,7 @@ docs/
 *.user
 *.userosscache
 *.sln.docstates
+language.settings.xml
 *.env
 WMos-Wifi/secrets.h
 
