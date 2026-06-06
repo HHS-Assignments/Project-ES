@@ -1,0 +1,3 @@
+# CAN to Wemos communication
+PiA filtert de CAN IDs en stuurt ze indien nodig via de socket door naar PiB. PiB stuurt zij dan door naar de Wemos. De Wemos zelf handelt het decoderen van een CAN meesage af. Van de 3 JSON velden wordt 1 gebruikt voor de CAN ID, en 1 voor de payload/data.
+Voorbeeld: De balieconsole zegt dat de relaxstoel uit moet (bijv. omdat er niemand op zit), de balieconsole MC stuurt via CAN een bericht op de bus zetten. PiA ontvangt de CAN bericht en kijkt naar de CAN ID. Aan de hand van de CAN ID kijkt de Pi naar welke Wemos de data moet, en stuurt de CAN ID dan door naar de correcte Wemos. De Wemos kijkt naar de CAN ID en data en zet de relaxstoel uit.
