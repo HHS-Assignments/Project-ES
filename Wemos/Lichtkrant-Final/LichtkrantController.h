@@ -1,17 +1,17 @@
 #pragma once
 #include "Display.h"
-#include "WiFiCommunication.h"
+#include "Communication.h"
 
 class LichtkrantController {
 public:
-    LichtkrantController(Display *display, WiFiCommunication *comm);
+    LichtkrantController(Display *display, Communication *comm);
 
     void begin();
     void update();
 
 private:
     Display           *_display;
-    WiFiCommunication *_comm;
+    Communication     *_comm;
 
     bool _noodModus;
 

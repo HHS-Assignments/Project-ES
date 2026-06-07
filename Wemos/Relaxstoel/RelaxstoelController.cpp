@@ -10,7 +10,7 @@
 #endif
 
 RelaxstoelController::RelaxstoelController(Motor *motor, Lamp *lamp,
-                                            Lichtsensor *sensor, WiFiCommunication *comm,
+                                            Lichtsensor *sensor, Communication *comm,
                                             int ldrDrempel)
     : _motor(motor), _lamp(lamp), _sensor(sensor), _comm(comm),
       _motorAan(false), _ldrDrempel(ldrDrempel),

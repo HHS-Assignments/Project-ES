@@ -9,7 +9,7 @@
 #error "Missing secrets.h"
 #endif
 
-LichtkrantController::LichtkrantController(Display *display, WiFiCommunication *comm)
+LichtkrantController::LichtkrantController(Display *display, Communication *comm)
     : _display(display), _comm(comm), _noodModus(false), _vorigeWifiCheck(0)
 {
     strncpy(_normaleTekst, "Welkom", sizeof(_normaleTekst) - 1);

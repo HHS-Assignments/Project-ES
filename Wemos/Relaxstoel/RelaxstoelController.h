@@ -2,12 +2,12 @@
 #include "Motor.h"
 #include "Lamp.h"
 #include "Lichtsensor.h"
-#include "WiFiCommunication.h"
+#include "Communication.h"
 
 class RelaxstoelController {
 public:
     RelaxstoelController(Motor *motor, Lamp *lamp,
-                         Lichtsensor *sensor, WiFiCommunication *comm,
+                         Lichtsensor *sensor, Communication *comm,
                          int ldrDrempel = 100);
     void begin();
     void update();
@@ -16,7 +16,7 @@ private:
     Motor             *_motor;
     Lamp              *_lamp;
     Lichtsensor       *_sensor;
-    WiFiCommunication *_comm;
+    Communication     *_comm;
 
     bool          _motorAan;
     int           _ldrDrempel;
