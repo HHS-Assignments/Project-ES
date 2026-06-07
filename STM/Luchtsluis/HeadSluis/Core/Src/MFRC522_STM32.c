@@ -44,6 +44,8 @@ void MFRC522_Init(MFRC522_t *dev) {
     uint8_t txCtrl = MFRC522_ReadReg(dev, PCD_TxControlReg);
     DEBUG_LOG("TxControlReg: 0x%02X (expect >= 0x03)", txCtrl);
     USER_LOG("MFRC522 Min Init complete");
+    uint8_t v = MFRC522_ReadReg(dev, PCD_VersionReg);
+    printf("VERSION = 0x%02X\r\n", v);
 }
 
 void MFRC522_AntennaOff(MFRC522_t *dev) {
