@@ -9,13 +9,14 @@
 #error "Missing secrets.h"
 #endif
 
-LichtkrantController::LichtkrantController(Display *display, Communication *comm)
-    : _display(display), _comm(comm), _noodModus(false), _vorigeWifiCheck(0)
-{
-    strncpy(_normaleTekst, "Welkom", sizeof(_normaleTekst) - 1);
-    strncpy(_noodTekst,    "NOOD: volg de veiligheidsinstructies", sizeof(_noodTekst) - 1);
-    _normaalAssembly[0] = '\0';
-    _noodAssembly[0]    = '\0';
+LichtkrantController& LichtkrantController::getInstance() {
+    static LichtkrantController instance;
+    return instance;
+}
+
+void LichtkrantController::init(Display *display, Communication *comm) {
+    _display = display;
+    _comm    = comm;
 }
 
 void LichtkrantController::begin() {

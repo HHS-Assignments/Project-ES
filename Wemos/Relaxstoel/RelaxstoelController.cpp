@@ -9,12 +9,20 @@
 #error "Missing secrets.h"
 #endif
 
-RelaxstoelController::RelaxstoelController(Motor *motor, Lamp *lamp,
-                                            Lichtsensor *sensor, Communication *comm,
-                                            int ldrDrempel)
-    : _motor(motor), _lamp(lamp), _sensor(sensor), _comm(comm),
-      _motorAan(false), _ldrDrempel(ldrDrempel),
-      _vorigeLdrTijd(0), _vorigeWifiCheck(0) {}
+RelaxstoelController& RelaxstoelController::getInstance() {
+    static RelaxstoelController instance;
+    return instance;
+}
+
+void RelaxstoelController::init(Motor *motor, Lamp *lamp,
+                                 Lichtsensor *sensor, Communication *comm,
+                                 int ldrDrempel) {
+    _motor       = motor;
+    _lamp        = lamp;
+    _sensor      = sensor;
+    _comm        = comm;
+    _ldrDrempel  = ldrDrempel;
+}
 
 void RelaxstoelController::begin() {
     Serial.begin(9600);

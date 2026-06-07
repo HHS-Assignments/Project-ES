@@ -10,7 +10,10 @@ Schemerlamp       lamp(D5);
 LDR               ldr(A0);
 WiFiCommunication wifi("10.42.0.1", 9000, 9001);
 
-RelaxstoelController relaxstoel(&motor, &lamp, &ldr, &wifi, 100);
-
-void setup() { relaxstoel.begin(); }
-void loop()  { relaxstoel.update(); }
+void setup() {
+    RelaxstoelController::getInstance().init(&motor, &lamp, &ldr, &wifi, 100);
+    RelaxstoelController::getInstance().begin();
+}
+void loop() {
+    RelaxstoelController::getInstance().update();
+}
