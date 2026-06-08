@@ -12,19 +12,39 @@ void WiFiCommunication::begin() {
 }
 
 bool WiFiCommunication::connect(const char *ssid, const char *pass) {
+    WiFi.disconnect();   // ← reset vorige sessie
+    delay(100);
     WiFi.mode(WIFI_STA);
 
     // Statisch IP instellen vóór WiFi.begin()
     IPAddress ip(10, 42, 0, 11);       // gewenst IP van de Wemos
     IPAddress gateway(10, 42, 0, 1);   // IP van de router/Pi
     IPAddress subnet(255, 255, 255, 0);
-    WiFi.config(ip, gateway, subnet);
+    IPAddress dns(1, 1, 1, 1);
+    WiFi.config(ip, gateway, subnet, dns);
+
+    Serial.print(F("[WiFi] SSID: ")); Serial.println(ssid);
+    Serial.print(F("[WiFi] Vrij geheugen voor verbinden: "));
+    Serial.print(ESP.getFreeHeap()); Serial.println(F(" bytes"));
+
+    Serial.println(F("[WiFi] Netwerken scannen..."));
+    int n = WiFi.scanNetworks();
+    for (int i = 0; i < n; i++) {
+        Serial.print(F("  Gevonden: "));
+        Serial.print(WiFi.SSID(i));
+        Serial.print(F("  Kanaal: "));
+        Serial.print(WiFi.channel(i));
+        Serial.print(F("  RSSI: "));
+        Serial.println(WiFi.RSSI(i));
+    }
+    WiFi.scanDelete();
 
     WiFi.begin(ssid, pass);
     int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 10) {
+    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
         delay(500);
         Serial.print(".");
+        Serial.print(WiFi.status());
         attempts++;
     }
     Serial.println();
@@ -33,7 +53,8 @@ bool WiFiCommunication::connect(const char *ssid, const char *pass) {
         Serial.println(WiFi.localIP());
         return true;
     }
-    Serial.println(F("[WiFi] Verbinding mislukt!"));
+    Serial.print(F("[WiFi] Verbinding mislukt! Eindstatus: "));
+    Serial.println(WiFi.status());
     return false;
 }
 
