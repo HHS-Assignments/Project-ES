@@ -15,6 +15,7 @@ on:
     branches:
       - main
       - dev
+      - Automatisering
     paths:
       - 'PI/Socket/**'
       - 'Code-Tests/**'
@@ -23,6 +24,7 @@ on:
     branches:
       - main
       - dev
+      - Automatisering
     paths:
       - 'PI/Socket/**'
       - 'Code-Tests/**'
