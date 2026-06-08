@@ -276,13 +276,13 @@ void handle_http_client(int client_fd)
         std::lock_guard<std::mutex> lock(g_upstream_mutex);
         if (g_upstream && g_upstream->isConnected()) {
             if (g_upstream->sendLine(body)) {
-                ack_response = g_upstream->readLine();
-                std::cout << "[http<-wemos] ACK Pi A: " << ack_response << std::endl;
+                // Removed the problematic readLine() to avoid race condition
+                ack_response = "{\"status\":\"forwarded\"}"; // Static HTTP response
             } else {
-                ack_response = "ERROR: send to Pi A failed";
+                ack_response = "{\"status\":\"error\"}";
             }
         } else {
-            ack_response = "ERROR: not connected to Pi A";
+            ack_response = "{\"status\":\"not connected to Pi A\"}";
         }
     }
 
