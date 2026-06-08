@@ -22,7 +22,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "MFRC522_STM32.h"
-#include "sht3x.h"
 #include <string.h>
 /* USER CODE END Includes */
 
@@ -44,8 +43,6 @@
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan1;
 
-I2C_HandleTypeDef hi2c1;
-
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi3;
 
@@ -54,7 +51,6 @@ TIM_HandleTypeDef htim1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-sht3x_handle_t sht3x;
 uint8_t uid[4];
 extern uint8_t atqa[];
 
@@ -88,7 +84,6 @@ static void MX_GPIO_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_SPI1_Init(void);
-static void MX_I2C1_Init(void);
 static void MX_CAN1_Init(void);
 static void MX_SPI3_Init(void);
 /* USER CODE BEGIN PFP */
@@ -277,24 +272,9 @@ int main(void)
   MX_TIM1_Init();
   MX_USART2_UART_Init();
   MX_SPI1_Init();
-  MX_I2C1_Init();
   MX_CAN1_Init();
   MX_SPI3_Init();
   /* USER CODE BEGIN 2 */
-  float temperature = 0;
-  float humidity = 0;
-  sht3x.i2c_handle = &hi2c1;
-  sht3x.device_address = SHT3X_I2C_DEVICE_ADDRESS_ADDR_PIN_LOW;
-
-  if (!sht3x_init(&sht3x))
-  {
-      printf("SHT3x init FAILED\r\n");
-  }
-  else
-  {
-      printf("SHT3x init OK\r\n");
-  }
-
 	max7219_init();
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
@@ -422,21 +402,9 @@ int main(void)
 			TIM1->CCR1 = BuitendeurOpen;
 			break;
 		}
-
 //		uint64_t StuurSensor = 0xAABB;
 //		SendCanMessage(2, StuurSensor, 0x112);
 //		HAL_Delay(100);
-	    if (sht3x_read_temperature_and_humidity(&sht3x, &temperature, &humidity))
-	    {
-	        printf("T: %.2f C  H: %.2f %%\r\n", temperature, humidity);
-	    }
-	    else
-	    {
-	        printf("SHT3x read failed\r\n");
-	    }
-
-	    HAL_Delay(1000);
-
 	}
   /* USER CODE END 3 */
 }
@@ -535,54 +503,6 @@ static void MX_CAN1_Init(void)
   /* USER CODE BEGIN CAN1_Init 2 */
 
   /* USER CODE END CAN1_Init 2 */
-
-}
-
-/**
-  * @brief I2C1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_I2C1_Init(void)
-{
-
-  /* USER CODE BEGIN I2C1_Init 0 */
-
-  /* USER CODE END I2C1_Init 0 */
-
-  /* USER CODE BEGIN I2C1_Init 1 */
-
-  /* USER CODE END I2C1_Init 1 */
-  hi2c1.Instance = I2C1;
-  hi2c1.Init.Timing = 0x10D19CE4;
-  hi2c1.Init.OwnAddress1 = 0;
-  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c1.Init.OwnAddress2 = 0;
-  hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
-  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Analogue filter
-  */
-  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure Digital filter
-  */
-  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN I2C1_Init 2 */
-
-  /* USER CODE END I2C1_Init 2 */
 
 }
 
