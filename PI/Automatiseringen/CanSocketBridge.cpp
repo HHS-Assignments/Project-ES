@@ -1,22 +1,30 @@
 // =============================================================================
 //  CanSocketBridge.cpp
 //  ---------------------------------------------------------------------------
-//  Implements the automation/routing framework on Pi A.
+//  Implementatie van het automatisering / routing framework op Pi A.
 //
 //  Flow:
 //      CAN bus  --->  canRxLoop()  --->  shouldForward()
 //                                   --->  routeCanIdToTarget()
 //                                   --->  buildJson()
-//                                   --->  TCP send to Pi B
+//                                   --->  TCP send naar Pi B
 //
 //      Pi B  --->  socketRxLoop()  --->  handleIncomingJson()
 //                                   --->  sendCanFrame()  --->  CAN bus
 //
-//  All routing decisions live inside the switch-case blocks below so a new
-//  device only requires:
-//      1. adding a CanId enum value in CanSocketBridge.h
-//      2. adding a case in shouldForward() + routeCanIdToTarget()
-//      3. (optional) adding a case in handleIncomingJson() for Wemos->CAN
+//  Alle routing-beslissingen leven in de switch-case blokken hieronder, zodat
+//  een nieuw apparaat / message-id alleen vereist:
+//      1. een CanId enum waarde toevoegen in CanSocketBridge.h
+//      2. een case in shouldForward() + routeCanIdToTarget()
+//      3. (optioneel) een case in handleIncomingJson() voor Wemos->CAN
+//
+//  Conventies uit het busprotocol:
+//      - Wemos modules hangen NIET direct aan de bus. De Pi vertaalt voor hen.
+//      - 0x4xx zijn van de Pi zelf -> deze plaatsen we op de bus wanneer een
+//        Wemos data opstuurt (bv. LDR waarde, relaxstoel status).
+//      - 0x140 / 0x150-0x170 / 0x180-0x101 hebben bestemming "Pi", dus die
+//        moeten we vanaf de bus doorsturen naar de juiste Wemos.
+//      - 0x001 (nood) en 0x410/0x420 (dag/nacht) zijn broadcast.
 // =============================================================================
 #include "CanSocketBridge.h"
 
@@ -33,7 +41,7 @@
 #include <iomanip>
 #include <chrono>
 
-// NOTE: integrate with the existing cJSON helper in Socket/protocol/.
+// NOTE: integreert met de bestaande cJSON helper in Socket/protocol/.
 #include "../Socket/protocol/cJSON.h"
 
 namespace pia {
@@ -42,13 +50,12 @@ namespace pia {
 // LIFECYCLE
 // =============================================================================
 CanSocketBridge::CanSocketBridge() = default;
-
 CanSocketBridge::~CanSocketBridge() { stop(); }
 
 bool CanSocketBridge::start() {
     if (running_) return true;
-    if (!openCan())    { std::cerr << "[bridge] CAN open failed\n"; return false; }
-    if (!openSocket()) { std::cerr << "[bridge] socket open failed\n"; }
+    if (!openCan())    { std::cerr << "[bridge] CAN open faalde\n"; return false; }
+    if (!openSocket()) { std::cerr << "[bridge] socket open faalde (retry later)\n"; }
     running_ = true;
     canThread_  = std::thread(&CanSocketBridge::canRxLoop,    this);
     sockThread_ = std::thread(&CanSocketBridge::socketRxLoop, this);
@@ -64,7 +71,7 @@ void CanSocketBridge::stop() {
 }
 
 // =============================================================================
-// DIRECTION 1: CAN -> SOCKET (-> Pi B -> Wemos)
+// RICHTING 1: CAN -> SOCKET (-> Pi B -> Wemos)
 // =============================================================================
 void CanSocketBridge::canRxLoop() {
     struct can_frame frame {};
@@ -84,33 +91,58 @@ void CanSocketBridge::canRxLoop() {
 
         if (sockFd_ < 0 && !openSocket()) continue;
 
-        // Length-prefixed framing keeps Pi B's parser simple
+        // Length-prefixed framing zodat Pi B's parser simpel kan blijven
         uint32_t len = htonl(static_cast<uint32_t>(json.size()));
         if (::send(sockFd_, &len,        sizeof(len),  MSG_NOSIGNAL) <= 0 ||
             ::send(sockFd_, json.data(), json.size(),  MSG_NOSIGNAL) <= 0) {
-            std::cerr << "[bridge] socket send failed, reconnecting\n";
+            std::cerr << "[bridge] socket send faalde, reconnect\n";
             closeSocket();
         }
     }
 }
 
-// ----- Filter: only IDs we know should leave the CAN bus -----
+// ----- Filter: welke message IDs moeten van de bus naar een Wemos? -----
+//
+//  Volgens de eigenaar-tabel zijn de IDs met bestemming "Pi" degene die
+//  wij moeten doorzetten naar Wemos. Daarnaast broadcast (0x001/0x410/0x420).
+//
 bool CanSocketBridge::shouldForward(uint32_t canId) {
     switch (canId) {
-        case CAN_ID_BALIE_RELAX_CTRL:
-        case CAN_ID_BALIE_LIGHT_CTRL:
-        case CAN_ID_BALIE_DOOR_CTRL:
-        case CAN_ID_LIGHT_DIM:
-        case CAN_ID_DOOR_LOCK:
-        case CAN_ID_CLIMATE_SETPOINT:
+        // Broadcast -> elke Wemos moet dit weten
+        case CAN_ID_EMERGENCY:
+        case CAN_ID_PI_DAYMODE:
+        case CAN_ID_PI_NIGHTMODE:
             return true;
 
-        // Sensor/telemetry IDs stay on the bus by default
-        case CAN_ID_RELAX_STATUS:
-        case CAN_ID_RELAX_PRESENCE:
-        case CAN_ID_LIGHT_STATUS:
-        case CAN_ID_DOOR_STATUS:
-        case CAN_ID_CLIMATE_TEMP:
+        // Bestemming "Pi": doorsturen naar de juiste Wemos
+        case CAN_ID_BALIE_RELAX_SWITCH:     // 0x140 -> relaxstoel
+        case CAN_ID_BALIE_EMERGTEXT_1:      // 0x150 -> lichtkrant
+        case CAN_ID_BALIE_EMERGTEXT_2:      // 0x160 -> lichtkrant
+        case CAN_ID_BALIE_EMERGTEXT_3:      // 0x170 -> lichtkrant
+        case CAN_ID_BALIE_TEXT_1:           // 0x180 -> lichtkrant
+        case CAN_ID_BALIE_TEXT_2:           // 0x190 -> lichtkrant
+        case CAN_ID_BALIE_TEXT_3:           // 0x101 -> lichtkrant
+            return true;
+
+        // RFID UID is voor Pi & Balie -> Pi mag dit ook gebruiken intern,
+        // maar er is (nog) geen Wemos bestemming. Niet forwarden.
+        case CAN_ID_LUCHTSLUIS_RFID_UID:
+            return false;
+
+        // Berichten die NIET bij een Wemos horen (Balie/Luchtsluis interne
+        // communicatie via de CAN-bus zelf):
+        case CAN_ID_BALIE_LED_COLOR:        // direct naar Lichtvoorziening MC
+        case CAN_ID_BALIE_LED_BRIGHTNESS:   // idem
+        case CAN_ID_BALIE_LOCK_OPEN_ALL:    // direct naar Luchtsluis MC
+        case CAN_ID_BALIE_DECON_CYCLE:      // idem
+        case CAN_ID_LUCHTSLUIS_TEMP:        // -> Balie
+        case CAN_ID_LUCHTSLUIS_EMERGBTN:    // -> Balie
+        case CAN_ID_LICHT_CO2:              // -> Balie
+            return false;
+
+        // Onze eigen Pi-IDs horen niet door ons gefilterd te worden
+        case CAN_ID_PI_LDR_VALUE:
+        case CAN_ID_PI_RELAX_STATUS:
             return false;
 
         default:
@@ -118,29 +150,34 @@ bool CanSocketBridge::shouldForward(uint32_t canId) {
     }
 }
 
-// ----- Routing: which Wemos owns this CAN ID -----
+// ----- Routing: welke Wemos hoort bij deze CAN ID? -----
 const char* CanSocketBridge::routeCanIdToTarget(uint32_t canId) {
     switch (canId) {
-        case CAN_ID_BALIE_RELAX_CTRL:
-            return TARGET_RELAX;
+        // Broadcast naar alle Wemos modules
+        case CAN_ID_EMERGENCY:
+        case CAN_ID_PI_DAYMODE:
+        case CAN_ID_PI_NIGHTMODE:
+            return TARGET_BROADCAST;
 
-        case CAN_ID_BALIE_LIGHT_CTRL:
-        case CAN_ID_LIGHT_DIM:
-            return TARGET_LIGHT;
+        // Relaxstoel Wemos
+        case CAN_ID_BALIE_RELAX_SWITCH:
+            return TARGET_RELAXSTOEL;
 
-        case CAN_ID_BALIE_DOOR_CTRL:
-        case CAN_ID_DOOR_LOCK:
-            return TARGET_DOOR;
-
-        case CAN_ID_CLIMATE_SETPOINT:
-            return TARGET_CLIMATE;
+        // Lichtkrant Wemos (zowel normale tekst als noodtekst, 3 delen elk)
+        case CAN_ID_BALIE_EMERGTEXT_1:
+        case CAN_ID_BALIE_EMERGTEXT_2:
+        case CAN_ID_BALIE_EMERGTEXT_3:
+        case CAN_ID_BALIE_TEXT_1:
+        case CAN_ID_BALIE_TEXT_2:
+        case CAN_ID_BALIE_TEXT_3:
+            return TARGET_LICHTKRANT;
 
         default:
             return TARGET_UNKNOWN;
     }
 }
 
-// ----- Encode CAN frame as JSON for the Wemos -----
+// ----- Encode CAN frame als JSON voor de Wemos -----
 std::string CanSocketBridge::buildJson(uint32_t canId,
                                        const uint8_t* data,
                                        uint8_t dlc,
@@ -163,7 +200,7 @@ std::string CanSocketBridge::buildJson(uint32_t canId,
 }
 
 // =============================================================================
-// DIRECTION 2: SOCKET (Pi B / Wemos) -> CAN
+// RICHTING 2: SOCKET (Pi B / Wemos) -> CAN
 // =============================================================================
 void CanSocketBridge::socketRxLoop() {
     while (running_) {
@@ -190,6 +227,20 @@ void CanSocketBridge::socketRxLoop() {
     }
 }
 
+// Een Wemos mag alleen IDs op de bus zetten die wettelijk "van de Pi" zijn,
+// want de Pi is de eigenaar/zender namens die Wemos.
+bool CanSocketBridge::isPiOwnedId(uint32_t canId) {
+    switch (canId) {
+        case CAN_ID_PI_LDR_VALUE:
+        case CAN_ID_PI_DAYMODE:
+        case CAN_ID_PI_NIGHTMODE:
+        case CAN_ID_PI_RELAX_STATUS:
+            return true;
+        default:
+            return false;
+    }
+}
+
 void CanSocketBridge::handleIncomingJson(const std::string& jsonStr) {
     cJSON* root = cJSON_Parse(jsonStr.c_str());
     if (!root) return;
@@ -210,27 +261,45 @@ void CanSocketBridge::handleIncomingJson(const std::string& jsonStr) {
             std::stoi(hex.substr(i, 2), nullptr, 16));
     }
 
-    // --- Decide what to do with each ID coming back from the Wemos ---
+    // --- Beslissen wat er met elk ID vanuit de Wemos gebeurt ---
     switch (canId) {
-        case CAN_ID_RELAX_STATUS:
-        case CAN_ID_RELAX_PRESENCE:
-        case CAN_ID_LIGHT_STATUS:
-        case CAN_ID_DOOR_STATUS:
-        case CAN_ID_CLIMATE_TEMP:
+        // Normale Pi-owned telemetrie/commando's: plaatsen op de bus
+        case CAN_ID_PI_LDR_VALUE:        // LDR meting -> Balie
+        case CAN_ID_PI_RELAX_STATUS:     // Status relaxstoel -> Balie
+        case CAN_ID_PI_DAYMODE:          // Dag modus broadcast
+        case CAN_ID_PI_NIGHTMODE:        // Nacht modus broadcast
             sendCanFrame(canId, data, dlc);
             break;
 
-        case CAN_ID_BALIE_RELAX_CTRL:
-        case CAN_ID_BALIE_LIGHT_CTRL:
-        case CAN_ID_BALIE_DOOR_CTRL:
-            // Control IDs should not normally originate from a Wemos.
-            std::cerr << "[bridge] unexpected control ID from Wemos: 0x"
-                      << std::hex << canId << "\n";
+        // Een Wemos mag GEEN balie/luchtsluis/licht IDs op de bus zetten:
+        case CAN_ID_EMERGENCY:
+        case CAN_ID_BALIE_LED_COLOR:
+        case CAN_ID_BALIE_LED_BRIGHTNESS:
+        case CAN_ID_BALIE_LOCK_OPEN_ALL:
+        case CAN_ID_BALIE_DECON_CYCLE:
+        case CAN_ID_BALIE_RELAX_SWITCH:
+        case CAN_ID_BALIE_EMERGTEXT_1:
+        case CAN_ID_BALIE_EMERGTEXT_2:
+        case CAN_ID_BALIE_EMERGTEXT_3:
+        case CAN_ID_BALIE_TEXT_1:
+        case CAN_ID_BALIE_TEXT_2:
+        case CAN_ID_BALIE_TEXT_3:
+        case CAN_ID_LUCHTSLUIS_TEMP:
+        case CAN_ID_LUCHTSLUIS_EMERGBTN:
+        case CAN_ID_LUCHTSLUIS_RFID_UID:
+        case CAN_ID_LICHT_CO2:
+            std::cerr << "[bridge] geweigerd: Wemos mag ID 0x"
+                      << std::hex << canId << " niet op de bus zetten\n";
             break;
 
         default:
-            std::cerr << "[bridge] unknown CAN ID from Wemos: 0x"
-                      << std::hex << canId << "\n";
+            // Fallback: alleen toestaan als het echt een Pi-owned ID is
+            if (isPiOwnedId(canId)) {
+                sendCanFrame(canId, data, dlc);
+            } else {
+                std::cerr << "[bridge] onbekende CAN ID van Wemos: 0x"
+                          << std::hex << canId << "\n";
+            }
             break;
     }
 
@@ -241,15 +310,24 @@ bool CanSocketBridge::sendCanFrame(uint32_t canId,
                                    const uint8_t* data,
                                    uint8_t dlc) {
     if (canFd_ < 0) return false;
+    if (dlc > 8) dlc = 8;
+
     struct can_frame frame {};
-    frame.can_id  = canId;
-    frame.can_dlc = (dlc > 8) ? 8 : dlc;
-    std::memcpy(frame.data, data, frame.can_dlc);
-    return ::write(canFd_, &frame, sizeof(frame)) == sizeof(frame);
+    frame.can_id  = canId & CAN_SFF_MASK;   // 11-bit standaard ID
+    frame.can_dlc = dlc;
+    std::memcpy(frame.data, data, dlc);
+
+    ssize_t n = ::write(canFd_, &frame, sizeof(frame));
+    if (n != sizeof(frame)) {
+        std::cerr << "[bridge] CAN write faalde voor ID 0x"
+                  << std::hex << canId << "\n";
+        return false;
+    }
+    return true;
 }
 
 // =============================================================================
-// CONNECTION HELPERS
+// CONNECTIE HELPERS
 // =============================================================================
 bool CanSocketBridge::openCan() {
     canFd_ = ::socket(PF_CAN, SOCK_RAW, CAN_RAW);
@@ -263,12 +341,16 @@ bool CanSocketBridge::openCan() {
     addr.can_family  = AF_CAN;
     addr.can_ifindex = ifr.ifr_ifindex;
     if (::bind(canFd_, reinterpret_cast<struct sockaddr*>(&addr),
-               sizeof(addr)) < 0) { closeCan(); return false; }
+               sizeof(addr)) < 0) {
+        closeCan();
+        return false;
+    }
     return true;
 }
 
 void CanSocketBridge::closeCan() {
-    if (canFd_ >= 0) { ::close(canFd_); canFd_ = -1; }
+    if (canFd_ >= 0) ::close(canFd_);
+    canFd_ = -1;
 }
 
 bool CanSocketBridge::openSocket() {
@@ -289,13 +371,14 @@ bool CanSocketBridge::openSocket() {
 }
 
 void CanSocketBridge::closeSocket() {
-    if (sockFd_ >= 0) { ::close(sockFd_); sockFd_ = -1; }
+    if (sockFd_ >= 0) ::close(sockFd_);
+    sockFd_ = -1;
 }
 
 } // namespace pia
 
 // =============================================================================
-// OPTIONAL ENTRY POINT
+// Optionele standalone main (compile met -DBRIDGE_STANDALONE)
 // =============================================================================
 #ifdef BRIDGE_STANDALONE
 int main() {
