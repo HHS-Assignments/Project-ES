@@ -67,6 +67,7 @@ static void MX_USART2_UART_Init(void);
 void SGP30_Init(void);
 uint16_t SGP30_ReadCO2(void);
 static void chase_tick(int step);
+void SHT3x_Read(float *temp);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -75,7 +76,6 @@ void SGP30_Init(void)
 {
     uint8_t cmd[2] = {0x20, 0x03};
     HAL_I2C_Master_Transmit(&hi2c1, 0x58 << 1, cmd, 2, HAL_MAX_DELAY);
-    HAL_Delay(15000);
 }
 
 uint16_t SGP30_ReadCO2(void)
@@ -136,6 +136,7 @@ int main(void)
   MX_TIM1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  /* USER CODE BEGIN 2 */
   char startup[] = "STM32 gestart!\r\n";
   HAL_UART_Transmit(&huart2, (uint8_t *)startup, strlen(startup), 1000);
   SGP30_Init();
@@ -150,17 +151,24 @@ int main(void)
   uint32_t last_chase_tick = 0;
   while (1)
   {
-	  /* CO2 meting elke 1000 ms */
 	  if (HAL_GetTick() - last_sensor_tick >= 1000)
 	  {
 	      last_sensor_tick = HAL_GetTick();
+
 	      uint16_t eco2 = SGP30_ReadCO2();
-	      char co2_msg[64];
-	      sprintf(co2_msg, "eCO2: %d ppm\r\n", eco2);
-	      HAL_UART_Transmit(&huart2, (uint8_t *)co2_msg, strlen(co2_msg), HAL_MAX_DELAY);
+
+	      float temp = 0.0f;
+	      SHT3x_Read(&temp);
+	      int t_int = (int)temp;
+	      int t_dec = (int)((temp - t_int) * 100);
+
+	      char uart_msg[96];
+	      sprintf(uart_msg, "eCO2: %d ppm | Temp: %d.%02d C\r\n", eco2, t_int, t_dec);
+
+	      HAL_UART_Transmit(&huart2, (uint8_t *)uart_msg, strlen(uart_msg), HAL_MAX_DELAY);
 	  }
 
-	  /* Chase effect elke 150 ms */
+	  //led strip
 	  if (HAL_GetTick() - last_chase_tick >= 150)
 	  {
 	      last_chase_tick = HAL_GetTick();
@@ -168,7 +176,7 @@ int main(void)
 	      chase_step++;
 	  }
 
-	  /* Knopdruk verwerken */
+
 	  if (button_pressed)
 	  {
 	      button_pressed = 0;
@@ -178,7 +186,6 @@ int main(void)
 	      led_on = 1;
 	  }
 
-	  /* Groene LED na 5 s uitzetten */
 	  if (led_on && (HAL_GetTick() - led_on_tick >= 5000))
 	  {
 	      HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_RESET);
@@ -498,6 +505,19 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 {
     if (htim->Instance == TIM1)
         WS2812B_DMA_CpltCallback();
+}
+
+void SHT3x_Read(float *temp)
+{
+    uint8_t cmd[2] = {0x24, 0x00};
+    uint8_t data[6];
+
+    HAL_I2C_Master_Transmit(&hi2c1, 0x44 << 1, cmd, 2, HAL_MAX_DELAY);
+    HAL_Delay(15);
+    HAL_I2C_Master_Receive(&hi2c1, 0x44 << 1, data, 6, HAL_MAX_DELAY);
+
+    uint16_t rawTemp = (data[0] << 8) | data[1];
+    *temp = -45.0f + 175.0f * ((float)rawTemp / 65535.0f);
 }
 /* USER CODE END 4 */
 

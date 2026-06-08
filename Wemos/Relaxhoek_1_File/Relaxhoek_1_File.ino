@@ -34,7 +34,7 @@ public:
 
     void update() {
         _ldrWaarde = analogRead(_ldrPin);
-        if (_ldrWaarde > _drempel) {
+        if (_ldrWaarde < _drempel) {
             _lampAan = true;
             digitalWrite(_ledPin, HIGH);
         } else {
