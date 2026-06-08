@@ -40,12 +40,22 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+CAN_HandleTypeDef hcan1;
+
 TIM_HandleTypeDef htim1;
 
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+CAN_TxHeaderTypeDef TxHeader;
+CAN_RxHeaderTypeDef RxHeader;
+uint8_t TxData[8];
+uint8_t RxData[8];
+uint32_t TxMailbox;
+uint8_t datacheck = 0;
+uint8_t RTRReceived = 0;
 
+static uint8_t  noodActief = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -53,8 +63,9 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_TIM1_Init(void);
+static void MX_CAN1_Init(void);
 /* USER CODE BEGIN PFP */
-
+void SendCanMessage(int dataLength, uint64_t data, uint16_t canID);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -113,8 +124,78 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_TIM1_Init();
+  MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
+  CAN_FilterTypeDef canfilterconfig;
 
+  /* Common filter settings */
+  canfilterconfig.FilterActivation = CAN_FILTER_ENABLE;
+  canfilterconfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+  canfilterconfig.FilterMode = CAN_FILTERMODE_IDMASK;
+  canfilterconfig.FilterScale = CAN_FILTERSCALE_32BIT;
+  canfilterconfig.SlaveStartFilterBank = 10;
+
+  /* Filter 0 -> 0x200 */
+  canfilterconfig.FilterBank = 0;
+  canfilterconfig.FilterIdHigh = (0x200 << 5);
+  canfilterconfig.FilterIdLow = 0;
+  canfilterconfig.FilterMaskIdHigh = (0x7FF << 5);
+  canfilterconfig.FilterMaskIdLow = 0;
+  HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
+
+  /* Filter 1 -> 0x210 */
+  canfilterconfig.FilterBank = 1;
+  canfilterconfig.FilterIdHigh = (0x210 << 5);
+  HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
+
+  /* Filter 2 -> 0x001 */
+  canfilterconfig.FilterBank = 2;
+  canfilterconfig.FilterIdHigh = (0x001 << 5);
+  HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
+
+  /* Filter 3 -> 0x300 */
+  canfilterconfig.FilterBank = 3;
+  canfilterconfig.FilterIdHigh = (0x300 << 5);
+  HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
+
+  /* Filter 4 -> 0x310 */
+  canfilterconfig.FilterBank = 4;
+  canfilterconfig.FilterIdHigh = (0x310 << 5);
+  HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
+
+  /* Filter 5 -> 0x400 */
+  canfilterconfig.FilterBank = 5;
+  canfilterconfig.FilterIdHigh = (0x400 << 5);
+  HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
+
+  /* Filter 6 -> 0x410 */
+  canfilterconfig.FilterBank = 6;
+  canfilterconfig.FilterIdHigh = (0x410 << 5);
+  HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
+
+  /* Filter 7 -> 0x420 */
+  canfilterconfig.FilterBank = 7;
+  canfilterconfig.FilterIdHigh = (0x420 << 5);
+  HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
+
+  /* Filter 8 -> 0x430 */
+  canfilterconfig.FilterBank = 8;
+  canfilterconfig.FilterIdHigh = (0x430 << 5);
+  HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
+
+	if (HAL_CAN_Start(&hcan1) != HAL_OK) {
+		Error_Handler();
+	}
+
+	TxHeader.IDE = CAN_ID_STD;
+	TxHeader.RTR = CAN_RTR_DATA;
+	TxHeader.DLC = 1;
+
+	if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING)
+			!= HAL_OK) {
+		Error_Handler();
+	}
+	HAL_Delay(100);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -178,7 +259,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_MSI;
   RCC_OscInitStruct.PLL.PLLM = 1;
-  RCC_OscInitStruct.PLL.PLLN = 16;
+  RCC_OscInitStruct.PLL.PLLN = 40;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV7;
   RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
   RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
@@ -196,7 +277,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
   {
     Error_Handler();
   }
@@ -204,6 +285,43 @@ void SystemClock_Config(void)
   /** Enable MSI Auto calibration
   */
   HAL_RCCEx_EnableMSIPLLMode();
+}
+
+/**
+  * @brief CAN1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_CAN1_Init(void)
+{
+
+  /* USER CODE BEGIN CAN1_Init 0 */
+
+  /* USER CODE END CAN1_Init 0 */
+
+  /* USER CODE BEGIN CAN1_Init 1 */
+
+  /* USER CODE END CAN1_Init 1 */
+  hcan1.Instance = CAN1;
+  hcan1.Init.Prescaler = 16;
+  hcan1.Init.Mode = CAN_MODE_NORMAL;
+  hcan1.Init.SyncJumpWidth = CAN_SJW_1TQ;
+  hcan1.Init.TimeSeg1 = CAN_BS1_3TQ;
+  hcan1.Init.TimeSeg2 = CAN_BS2_6TQ;
+  hcan1.Init.TimeTriggeredMode = DISABLE;
+  hcan1.Init.AutoBusOff = DISABLE;
+  hcan1.Init.AutoWakeUp = DISABLE;
+  hcan1.Init.AutoRetransmission = DISABLE;
+  hcan1.Init.ReceiveFifoLocked = DISABLE;
+  hcan1.Init.TransmitFifoPriority = DISABLE;
+  if (HAL_CAN_Init(&hcan1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN CAN1_Init 2 */
+
+  /* USER CODE END CAN1_Init 2 */
+
 }
 
 /**
@@ -292,7 +410,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 9600;
+  huart2.Init.BaudRate = 115200;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -366,13 +484,59 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-/* USER CODE BEGIN 4 */
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
+	if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK) {
+		Error_Handler();
+	}
+
+	char msg[] = "CAN ontvangen!\r\n";
+	HAL_UART_Transmit(&huart2, (uint8_t*) msg, sizeof(msg) - 1, HAL_MAX_DELAY);
+//  if ((RxHeader.StdId == 0x113)) {
+//	  if (RxData[0] == 0x01) {
+//		  datacheck = 1;
+//	  } else if (RxData[0] == 0x02) {
+//		  datacheck =0;
+//	  }
+//  }
+
+//  if (RxHeader.RTR == CAN_RTR_REMOTE && RxHeader.StdId == 0x112) {
+//	  RTRReceived = 1;
+//  }
+	if ((RxHeader.StdId == 0x001)) {
+        noodActief = !noodActief;
+        if (noodActief)
+        {
+            UART_Print("Noodknop ingedrukt!\r\n\r\n");
+            ZetAan(GPIOB, NoodknopLed_Pin);
+        }
+        else
+        {
+            UART_Print("Noodstand uit!\r\n\r\n");
+            ZetUit(GPIOB, NoodknopLed_Pin);
+        }
+	}
+}
+
+void SendCanMessage(int dataLength, uint64_t data, uint16_t canID) {
+	uint8_t tempData[8] = { data, data >> 8, data >> 16, data >> 24, data >> 32,
+			data >> 40, data >> 48, data >> 56 };
+	int y = 0;
+	for (int i = dataLength - 1; i >= 0; i--) {
+		TxData[i] = tempData[y];
+		y++;
+	}
+	TxHeader.DLC = dataLength;
+	TxHeader.StdId = canID;
+
+	if (HAL_CAN_AddTxMessage(&hcan1, &TxHeader, TxData, &TxMailbox) != HAL_OK) {
+		Error_Handler();
+	}
+}
 
 static uint32_t db_Deuren = 0;
 static uint32_t db_Nood   = 0;
 static uint32_t db_Cyclus = 0;
 static uint32_t db_Relax  = 0;
-static uint8_t  noodActief = 0;
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
@@ -387,11 +551,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         {
             UART_Print("Noodknop ingedrukt!\r\n\r\n");
             ZetAan(GPIOB, NoodknopLed_Pin);
+			uint64_t StuurNiks = 0x00;
+			SendCanMessage(1, StuurNiks, 0x001);
         }
         else
         {
             UART_Print("Noodstand uit!\r\n\r\n");
             ZetUit(GPIOB, NoodknopLed_Pin);
+			uint64_t StuurNiks = 0x00;
+			SendCanMessage(1, StuurNiks, 0x001);
         }
         return;
     }
@@ -402,16 +570,21 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     {
         db_Deuren = nu;
         UART_Print("Alle Deuren gaan open\r\n\r\n");
+		uint64_t StuurNiks = 0x00;
+		SendCanMessage(1, StuurNiks, 0x120);
     }
     else if (GPIO_Pin == DeurCyclus_Pin && (nu - db_Cyclus) >= 300)
     {
         db_Cyclus = nu;
         UART_Print("Deurcyclus wordt gestart\r\n\r\n");
+		uint64_t StuurNiks = 0x00;
+		SendCanMessage(1, StuurNiks, 0x130);
     }
     else if (GPIO_Pin == SwitchRelaxstoelStatus_Pin && (nu - db_Relax) >= 300)
     {
         db_Relax = nu;
         UART_Print("Status Relaxstoel veranderd\r\n\r\n");
+
     }
 }
 

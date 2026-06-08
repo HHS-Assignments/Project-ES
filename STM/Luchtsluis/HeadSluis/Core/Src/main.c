@@ -776,11 +776,14 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 				state = STATE_EMERGENCY;
 				max7219_show_2d(uitroepteken_2d);
 				char nood[] = "Noodknop ingedrukt, alle deuren gaan dicht\r\n";
-				HAL_UART_Transmit(&huart2, (uint8_t*) nood, sizeof(nood) - 1,
-				HAL_MAX_DELAY);
+				HAL_UART_Transmit(&huart2, (uint8_t*) nood, sizeof(nood) - 1, HAL_MAX_DELAY);
+				uint64_t StuurNiks = 0x00;
+				SendCanMessage(1, StuurNiks, 0x001);
 			} else if (state == STATE_EMERGENCY) {
 				state = STATE_NORMAL;
 				max7219_show_2d(leeg_2d);
+				uint64_t StuurNiks = 0x00;
+				SendCanMessage(1, StuurNiks, 0x001);
 			}
 		}
 	}
