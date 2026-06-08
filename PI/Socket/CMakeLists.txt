@@ -16,6 +16,7 @@ set(SOURCES
     dispatch/DeviceDispatcher.cpp
     service/PiAService.cpp
     service/PiBService.cpp
+    bridge/CanSocketBridge.cpp  # Add this line
 )
 
 # Create library
