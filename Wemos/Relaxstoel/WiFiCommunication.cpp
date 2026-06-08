@@ -13,6 +13,13 @@ void WiFiCommunication::begin() {
 
 bool WiFiCommunication::connect(const char *ssid, const char *pass) {
     WiFi.mode(WIFI_STA);
+
+    // Statisch IP instellen vóór WiFi.begin()
+    IPAddress ip(10, 42, 0, 10);       // gewenst IP van de Wemos
+    IPAddress gateway(10, 42, 0, 1);   // IP van de router/Pi
+    IPAddress subnet(255, 255, 255, 0);
+    WiFi.config(ip, gateway, subnet);
+    
     WiFi.begin(ssid, pass);
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts < 10) {
