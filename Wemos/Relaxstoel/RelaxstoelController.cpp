@@ -42,7 +42,7 @@ void RelaxstoelController::update() {
 
     // Lamp automatisch aansturen op basis van LDR
     int ldr = _sensor->getWaarde();
-    if (ldr > _ldrDrempel) _lamp->setAan();
+    if (ldr < _ldrDrempel) _lamp->setAan();
     else                   _lamp->setUit();
 
     unsigned long nu = millis();
