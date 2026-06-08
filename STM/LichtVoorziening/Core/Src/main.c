@@ -21,6 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "ws2812b.h"
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -33,7 +34,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define NUM_RUNNERS  3
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -44,17 +45,25 @@
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
 
+TIM_HandleTypeDef htim1;
+DMA_HandleTypeDef hdma_tim1_ch1;
+
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 volatile uint8_t button_pressed = 0;
+volatile uint32_t last_sensor_tick = 0;
+volatile uint32_t led_on_tick = 0;
+volatile uint8_t led_on = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -71,13 +80,26 @@ void SGP30_Init(void) {
 uint16_t SGP30_ReadCO2(void) {
     uint8_t cmd[2] = {0x20, 0x08};
     HAL_I2C_Master_Transmit(&hi2c1, 0x58 << 1, cmd, 2, HAL_MAX_DELAY);
-    HAL_Delay(12);
+
+    uint32_t start = HAL_GetTick();
+    while (HAL_GetTick() - start < 12);
 
     uint8_t buf[6];
     HAL_I2C_Master_Receive(&hi2c1, 0x58 << 1, buf, 6, HAL_MAX_DELAY);
 
     return (buf[0] << 8) | buf[1];
 }
+
+static void chase_tick(int step) {
+    WS2812B_Clear();
+
+    int j = step % WS2812B_NUM_LEDS;
+    int i = (step + 1) % WS2812B_NUM_LEDS;
+
+    WS2812B_SetLED(i, 255, 0, 0);
+    WS2812B_SetLED(j, 255, 0, 0);
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -109,44 +131,60 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_I2C1_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   char test[] = "STM32 gestart!\r\n";
   HAL_UART_Transmit(&huart2, (uint8_t*)test, strlen(test), 1000);
-  SGP30_Init();
+  SGP30_Init();   // eerst SGP30
+  WS2812B_Init(); // dan pas WS2812B
+  //HAL_GPIO_WritePin(GPIOA, RGB_Rood_Pin, GPIO_PIN_SET);
+  //HAL_GPIO_WritePin(GPIOA, RGB_Blauw_Pin, GPIO_PIN_SET);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   char Beweging [] = "Beweging gedetecteerd, Verlichting gaat aan! \r\n";
+  char LampUit[] = "Lamp gaat uit! \r\n";
   while (1)
   {
-	  uint16_t eco2 = SGP30_ReadCO2();
+	  if (HAL_GetTick() - last_sensor_tick >= 1000)
+	     {
+	         last_sensor_tick = HAL_GetTick();
+	         uint16_t eco2 = SGP30_ReadCO2();
+	         char msg[64];
+	         sprintf(msg, "eCO2: %d ppm\r\n", eco2);
+	         HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+	     }
 
-	  char msg[64];
-	  sprintf(msg, "eCO2: %d ppm\r\n", eco2);
-	  HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+		  static int step = 0;
+		  static uint32_t last_chase_tick = 0;
+		  if (HAL_GetTick() - last_chase_tick >= 100)  // was 60, nu trager
+		  {
+		      last_chase_tick = HAL_GetTick();
+		      chase_tick(step);
+		      step += 1;
+		  }
 
-//	    if (HAL_GPIO_ReadPin(GPIOB, Motion_Input_Pin))
-//	    {
-//	        HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_SET);
-//	        HAL_UART_Transmit(&huart2, (uint8_t*)Beweging, strlen(Beweging), strlen(Beweging));
-//	        HAL_Delay(5000);
-//	        HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_RESET);
-//	    }
-	  if (button_pressed){
-		  button_pressed = 0;
-		  HAL_UART_Transmit(&huart2, (uint8_t*)Beweging, strlen(Beweging), strlen(Beweging));
-		  HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_SET);
-		  //HAL_GPIO_WritePin(GPIOA, RGB_Blauw_Pin, GPIO_PIN_SET);
-		  //HAL_GPIO_WritePin(GPIOA,RGB__Rood_Pin, GPIO_PIN_SET);
-		  HAL_Delay(5000);
-		  //HAL_GPIO_WritePin(GPIOA, RGB__Rood_Pin, GPIO_PIN_RESET);
-		  //HAL_GPIO_WritePin(GPIOA, RGB_Blauw_Pin, GPIO_PIN_RESET);
-		  HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_RESET);
-		  HAL_Delay(1000);
-	  }
+	     if (button_pressed)
+	     {
+	         button_pressed = 0;
+	         HAL_UART_Transmit(&huart2, (uint8_t*)Beweging, strlen(Beweging), strlen(Beweging));
+	         HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_SET);
+	         led_on_tick = HAL_GetTick();
+	         led_on = 1;
+	     }
+
+	     if (led_on && (HAL_GetTick() - led_on_tick >= 5000))
+	     {
+	         HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_RESET);
+	         HAL_UART_Transmit(&huart2, (uint8_t*)LampUit, strlen(LampUit), HAL_MAX_DELAY);
+	         led_on = 0;
+	     }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -263,6 +301,76 @@ static void MX_I2C1_Init(void)
 }
 
 /**
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM1_Init(void)
+{
+
+  /* USER CODE BEGIN TIM1_Init 0 */
+
+  /* USER CODE END TIM1_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
+
+  /* USER CODE BEGIN TIM1_Init 1 */
+
+  /* USER CODE END TIM1_Init 1 */
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 0;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 39;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_PWM_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
+  sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
+  sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
+  sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
+  sBreakDeadTimeConfig.DeadTime = 0;
+  sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
+  sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
+  sBreakDeadTimeConfig.BreakFilter = 0;
+  sBreakDeadTimeConfig.Break2State = TIM_BREAK2_DISABLE;
+  sBreakDeadTimeConfig.Break2Polarity = TIM_BREAK2POLARITY_HIGH;
+  sBreakDeadTimeConfig.Break2Filter = 0;
+  sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
+  if (HAL_TIMEx_ConfigBreakDeadTime(&htim1, &sBreakDeadTimeConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM1_Init 2 */
+
+  /* USER CODE END TIM1_Init 2 */
+  HAL_TIM_MspPostInit(&htim1);
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -298,6 +406,22 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -315,7 +439,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, RGB__Rood_Pin|RGB_Blauw_Pin|RGB_Groen_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, RGB_Rood_Pin|RGB_Blauw_Pin|RGB_Groen_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
@@ -326,8 +450,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(Button_Input_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : RGB__Rood_Pin RGB_Blauw_Pin RGB_Groen_Pin */
-  GPIO_InitStruct.Pin = RGB__Rood_Pin|RGB_Blauw_Pin|RGB_Groen_Pin;
+  /*Configure GPIO pins : RGB_Rood_Pin RGB_Blauw_Pin RGB_Groen_Pin */
+  GPIO_InitStruct.Pin = RGB_Rood_Pin|RGB_Blauw_Pin|RGB_Groen_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -347,8 +471,8 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(Motion_Input_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+  HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
@@ -363,14 +487,25 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     if (GPIO_Pin == Button_Input_Pin)
     {
         uint32_t now = HAL_GetTick();
-        if (now - last_tick > 200)   // 200 ms debounce
+        if (now - last_tick > 200)
         {
             button_pressed = 1;
             last_tick = now;
         }
     }
 }
-/* USER CODE END 4 */
+
+void HAL_TIM_PWM_PulseFinishedHalfCpltCallback(TIM_HandleTypeDef *htim) {
+    if (htim->Instance == TIM1) {
+        WS2812B_DMA_HalfCpltCallback();
+    }
+}
+
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim) {
+    if (htim->Instance == TIM1) {
+        WS2812B_DMA_CpltCallback();
+    }
+}
 /* USER CODE END 4 */
 
 /**
