@@ -68,10 +68,10 @@ void Error_Handler(void);
 #define Button_Input_EXTI_IRQn EXTI4_IRQn
 #define RGB_Rood_Pin GPIO_PIN_5
 #define RGB_Rood_GPIO_Port GPIOA
-#define RGB_Groen_Pin GPIO_PIN_6
-#define RGB_Groen_GPIO_Port GPIOA
-#define RGB_Blauw_Pin GPIO_PIN_7
+#define RGB_Blauw_Pin GPIO_PIN_6
 #define RGB_Blauw_GPIO_Port GPIOA
+#define RGB_Groen_Pin GPIO_PIN_7
+#define RGB_Groen_GPIO_Port GPIOA
 #define SWDIO_Pin GPIO_PIN_13
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14
