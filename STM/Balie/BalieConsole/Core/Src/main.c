@@ -56,6 +56,10 @@ uint8_t datacheck = 0;
 uint8_t RTRReceived = 0;
 
 static uint8_t  noodActief = 0;
+volatile uint8_t relaxStoelStatus = 0;
+volatile uint8_t co2High = 0;
+
+uint8_t rxByte;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -126,8 +130,6 @@ int main(void)
   MX_TIM1_Init();
   MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
-  uint8_t rxByte;
-
   HAL_UART_Receive_IT(&huart2, &rxByte, 1);
 
   CAN_FilterTypeDef canfilterconfig;
@@ -209,19 +211,19 @@ int main(void)
 
 
 	  if(1){
-		  //ZetAan(GPIOB, Dag_Nacht_Pin);
+//		  ZetAan(GPIOB, Dag_Nacht_Pin);
 	  }
 
 	  if(1){
-		  //ZetAan(GPIOB, TemperatuurOverGrens_Pin);
+//		  ZetAan(GPIOB, TemperatuurOverGrens_Pin);
 	  }
 
 	  if(1){
-		  //ZetAan(GPIOB, RelaxstoelStatus_Pin);
+//		  ZetAan(GPIOB, RelaxstoelStatus_Pin);
 	  }
 
 	  if(1){
-		  //ZetAan(GPIOB, CO2OverGrens_Pin);
+//		  ZetAan(GPIOB, CO2OverGrens_Pin);
 	  }
 
     /* USER CODE END WHILE */
@@ -510,8 +512,8 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 		Error_Handler();
 	}
 
-	char msg[] = "CAN ontvangen!\r\n";
-	HAL_UART_Transmit(&huart2, (uint8_t*) msg, sizeof(msg) - 1, HAL_MAX_DELAY);
+//	char msg[] = "CAN ontvangen!\r\n";
+//	HAL_UART_Transmit(&huart2, (uint8_t*) msg, sizeof(msg) - 1, HAL_MAX_DELAY);
 //  if ((RxHeader.StdId == 0x113)) {
 //	  if (RxData[0] == 0x01) {
 //		  datacheck = 1;
@@ -524,17 +526,32 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 //	  RTRReceived = 1;
 //  }
 	if ((RxHeader.StdId == 0x001)) {
-        noodActief = !noodActief;
-        if (noodActief)
-        {
-            UART_Print("Noodknop ingedrukt!\r\n\r\n");
-            ZetAan(GPIOB, NoodknopLed_Pin);
-        }
-        else
-        {
-            UART_Print("Noodstand uit!\r\n\r\n");
-            ZetUit(GPIOB, NoodknopLed_Pin);
-        }
+		if (RxData[0] == 0x01) {
+			noodActief = 1;
+			UART_Print("Noodknop aan!\r\n\r\n");
+			ZetAan(GPIOB, NoodknopLed_Pin);
+		}
+		if (RxData[0] == 0x00) {
+			noodActief = 0;
+			UART_Print("Noodstand uit!\r\n\r\n");
+			ZetUit(GPIOB, NoodknopLed_Pin);
+		}
+	}
+	if (RxHeader.StdId == 0x300) {
+	    uint16_t value = ((uint16_t)RxData[0] << 8) | RxData[1];
+	    if (value >= 600) {
+	        if (!co2High) {
+	            UART_Print("CO2 te hoog\r\n\r\n");
+	            ZetAan(GPIOB, CO2OverGrens_Pin);
+	            co2High = 1;
+	        }
+	    } else {
+	        if (co2High) {
+	            UART_Print("CO2 normaal\r\n\r\n");
+	            ZetUit(GPIOB, CO2OverGrens_Pin);
+	            co2High = 0;
+	        }
+	    }
 	}
 }
 
@@ -572,15 +589,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         {
             UART_Print("Noodknop ingedrukt!\r\n\r\n");
             ZetAan(GPIOB, NoodknopLed_Pin);
-			uint64_t StuurNiks = 0x00;
-			SendCanMessage(1, StuurNiks, 0x001);
+			uint64_t NoodknopAan = 0x01;
+			SendCanMessage(1, NoodknopAan, 0x001);
         }
         else
         {
             UART_Print("Noodstand uit!\r\n\r\n");
             ZetUit(GPIOB, NoodknopLed_Pin);
-			uint64_t StuurNiks = 0x00;
-			SendCanMessage(1, StuurNiks, 0x001);
+			uint64_t NoodknopUit = 0x00;
+			SendCanMessage(1, NoodknopUit, 0x001);
         }
         return;
     }
@@ -604,8 +621,17 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     else if (GPIO_Pin == SwitchRelaxstoelStatus_Pin && (nu - db_Relax) >= 300)
     {
         db_Relax = nu;
-        UART_Print("Status Relaxstoel veranderd\r\n\r\n");
-
+		if (relaxStoelStatus == 0) {
+			relaxStoelStatus = 1;
+			UART_Print("Status Relaxstoel aan\r\n\r\n");
+			uint64_t AanBit = 0x01;
+			SendCanMessage(1, AanBit, 0x140);
+		} else if (relaxStoelStatus == 1) {
+			relaxStoelStatus = 0;
+			UART_Print("Status Relaxstoel uit\r\n\r\n");
+			uint64_t UitBit = 0x00;
+			SendCanMessage(1, UitBit, 0x140);
+		}
     }
 }
 
