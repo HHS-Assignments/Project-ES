@@ -58,6 +58,8 @@ uint8_t RTRReceived = 0;
 static uint8_t  noodActief = 0;
 volatile uint8_t relaxStoelStatus = 0;
 volatile uint8_t co2High = 0;
+volatile uint8_t tempHigh = 0;
+volatile uint8_t timeOfDay = 0;
 
 uint8_t rxByte;
 /* USER CODE END PV */
@@ -552,6 +554,41 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 	            co2High = 0;
 	        }
 	    }
+	}
+	if (RxHeader.StdId == 0x310) {
+	    if (RxData[0] >= 25) {
+	    	if (!tempHigh) {
+	            UART_Print("Temperatuur te hoog\r\n\r\n");
+	            ZetAan(GPIOB, TemperatuurOverGrens_Pin);
+	            tempHigh = 1;
+	    	}
+	    } else {
+	    	if (tempHigh) {
+	            UART_Print("Temperatuur normaal\r\n\r\n");
+	            ZetUit(GPIOB, TemperatuurOverGrens_Pin);
+	            tempHigh = 0;
+	    	}
+	    }
+	}
+	if (RxHeader.StdId == 0x430) {
+	    if (RxData[0] == 0x01) {
+	            UART_Print("RelaxStoel aan\r\n\r\n");
+	            ZetAan(GPIOB, RelaxstoelStatus_Pin);
+	            relaxStoelStatus = 1;
+	    }
+	    else if (RxData[0] == 0x00) {
+	            UART_Print("RelaxStoel uit\r\n\r\n");
+	            ZetUit(GPIOB, RelaxstoelStatus_Pin);
+	            relaxStoelStatus = 0;
+	    }
+	}
+	if (RxHeader.StdId == 0x410) {
+		UART_Print("Het is dag\r\n\r\n");
+		timeOfDay = 0;
+	}
+	if (RxHeader.StdId == 0x420) {
+		UART_Print("Het is nacht\r\n\r\n");
+		timeOfDay = 1;
 	}
 }
 

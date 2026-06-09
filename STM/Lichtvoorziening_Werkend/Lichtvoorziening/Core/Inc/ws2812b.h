@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 /* ── Configuration ─────────────────────────────────────────────────── */
-#define WS2812B_NUM_LEDS        7      /* Adjust to your strip length  */
+#define WS2812B_NUM_LEDS        60      /* Adjust to your strip length  */
 
 /* PWM compare values (ARR = 99, 80 MHz clock → 800 kHz period)        */
 #define WS2812B_PWM_HI          26      /* ~750 ns high  (bit 1)        */

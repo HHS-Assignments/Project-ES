@@ -67,7 +67,8 @@ uint8_t datacheck = 0;
 uint8_t RTRReceived = 0;
 
 uint8_t huidigeKleur = 2;
-static uint8_t noodActief = 0;
+volatile uint8_t noodActief = 1;
+uint8_t helderheid = 255;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -108,11 +109,16 @@ uint16_t SGP30_ReadCO2(void) {
 }
 
 static void chase_tick(int step) {
-	WS2812B_Clear();
-	uint16_t j = (uint16_t) (step % WS2812B_NUM_LEDS);
-	uint16_t i = (uint16_t) ((step + 1) % WS2812B_NUM_LEDS);
-	WS2812B_SetLED(i, 255, 0, 0);
-	WS2812B_SetLED(j, 255, 0, 0);
+    WS2812B_Clear();
+    int spacing = WS2812B_NUM_LEDS / 3;
+
+    for (int r = 0; r < 3; r++) {
+        int i = (step + r * spacing) % WS2812B_NUM_LEDS;
+
+		WS2812B_SetLED(i, 8, 0, 0);
+		if (i - 1 >= 0) WS2812B_SetLED(i - 1, 25, 0, 0);
+		if (i - 2 >= 0) WS2812B_SetLED(i - 2, 80, 0, 0);
+    }
 }
 /* USER CODE END 0 */
 
@@ -243,10 +249,14 @@ int main(void)
 		//led strip
 		if (HAL_GetTick() - last_chase_tick >= 150) {
 		    last_chase_tick = HAL_GetTick();
-		    for (int i = 0; i < WS2812B_NUM_LEDS; i++) {
-		        WS2812B_SetLED(i, 255, 255, 255);
-		    }
+//		    for (int i = 0; i < WS2812B_NUM_LEDS; i++) {
+//		        WS2812B_SetLED(i, 255, 255, 255);
+//		    }
 		}
+		static int step = 0;
+		chase_tick(step++);
+		HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+		HAL_Delay(60);
 
 		if (button_pressed) {
 			button_pressed = 0;
@@ -461,7 +471,7 @@ static void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 39;
+  htim1.Init.Period = 99;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -477,7 +487,7 @@ static void MX_TIM1_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
+  sConfigOC.Pulse = 32;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
