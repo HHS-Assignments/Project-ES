@@ -5,6 +5,9 @@
 # artifacts so the test workflow can download and run them without
 # recompiling.
 #
+# Also publishes the raw binaries to a GitHub Release ("latest-build")
+# so they can be downloaded directly without unzipping.
+#
 # Triggered when any C/C++ source or header in PI/Socket changes.
 # Can also be triggered manually from the Actions tab.
 
@@ -24,6 +27,9 @@ on:
       - 'Code-Tests/**'
       - '.github/workflows/**'
   workflow_dispatch:
+
+permissions:
+  contents: write   # needed to publish a Release
 
 jobs:
   compile:
@@ -65,6 +71,13 @@ jobs:
 
           file "$OUT/RPi_A" "$OUT/RPi_B"
 
+      - name: Rename binaries for release (include target)
+        working-directory: PI/Socket/build/${{ matrix.target }}
+        run: |
+          cp RPi_A "RPi_A-${{ matrix.target }}"
+          cp RPi_B "RPi_B-${{ matrix.target }}"
+
+      # Zipped artifact (used by the test workflow)
       - name: Upload ${{ matrix.target }} artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -73,3 +86,18 @@ jobs:
             PI/Socket/build/${{ matrix.target }}/RPi_A
             PI/Socket/build/${{ matrix.target }}/RPi_B
           if-no-files-found: error
+
+      # Raw binaries published as Release assets (no zip wrapping)
+      - name: Publish raw binaries to "latest-build" Release
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-build
+          name: Latest Build
+          body: |
+            Automated build of pi_a / pi_b socket binaries.
+            Commit: ${{ github.sha }}
+          files: |
+            PI/Socket/build/${{ matrix.target }}/RPi_A-${{ matrix.target }}
+            PI/Socket/build/${{ matrix.target }}/RPi_B-${{ matrix.target }}
+          fail_on_unmatched_files: true
