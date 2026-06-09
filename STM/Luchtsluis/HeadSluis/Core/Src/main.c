@@ -77,10 +77,8 @@ uint8_t RTRReceived = 0;
 
 uint8_t DoorloopCyclus = 0;
 
-uint8_t UIDDatabase[][4] = {
-		{ 0x1A, 0xEE, 0xC2, 0x6E },
-		{ 0xFA, 0xA8, 0x04,0xDD }
-};
+uint8_t UIDDatabase[][4] = { { 0x1A, 0xEE, 0xC2, 0x6E }, { 0xFA, 0xA8, 0x04,
+		0xDD } };
 uint8_t UIDValidated = 0;
 uint64_t uidPacked = 0;
 /* USER CODE END PV */
@@ -287,56 +285,56 @@ int main(void) {
 	MFRC522_Init(&rfID);
 	ResetDeuren();
 
-	  CAN_FilterTypeDef canfilterconfig;
+	CAN_FilterTypeDef canfilterconfig;
 
-	  /* Common filter settings */
-	  canfilterconfig.FilterActivation = CAN_FILTER_ENABLE;
-	  canfilterconfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
-	  canfilterconfig.FilterMode = CAN_FILTERMODE_IDMASK;
-	  canfilterconfig.FilterScale = CAN_FILTERSCALE_32BIT;
-	  canfilterconfig.SlaveStartFilterBank = 10;
+	/* Common filter settings */
+	canfilterconfig.FilterActivation = CAN_FILTER_ENABLE;
+	canfilterconfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+	canfilterconfig.FilterMode = CAN_FILTERMODE_IDMASK;
+	canfilterconfig.FilterScale = CAN_FILTERSCALE_32BIT;
+	canfilterconfig.SlaveStartFilterBank = 10;
 
-	  /* Filter 0 -> 0x200 */
-	  canfilterconfig.FilterBank = 0;
-	  canfilterconfig.FilterIdHigh = (0x001 << 5);
-	  canfilterconfig.FilterIdLow = 0;
-	  canfilterconfig.FilterMaskIdHigh = (0x7FF << 5);
-	  canfilterconfig.FilterMaskIdLow = 0;
-	  HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
+	/* Filter 0 -> 0x200 */
+	canfilterconfig.FilterBank = 0;
+	canfilterconfig.FilterIdHigh = (0x001 << 5);
+	canfilterconfig.FilterIdLow = 0;
+	canfilterconfig.FilterMaskIdHigh = (0x7FF << 5);
+	canfilterconfig.FilterMaskIdLow = 0;
+	HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
 
-	  /* Filter 1 -> 0x210 */
-	  canfilterconfig.FilterBank = 1;
-	  canfilterconfig.FilterIdHigh = (0x120 << 5);
-	  HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
+	/* Filter 1 -> 0x210 */
+	canfilterconfig.FilterBank = 1;
+	canfilterconfig.FilterIdHigh = (0x120 << 5);
+	HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
 
-	  /* Filter 2 -> 0x001 */
-	  canfilterconfig.FilterBank = 2;
-	  canfilterconfig.FilterIdHigh = (0x130 << 5);
-	  HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
+	/* Filter 2 -> 0x001 */
+	canfilterconfig.FilterBank = 2;
+	canfilterconfig.FilterIdHigh = (0x130 << 5);
+	HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
 
-	  /* Filter 3 -> 0x300 */
-	  canfilterconfig.FilterBank = 3;
-	  canfilterconfig.FilterIdHigh = (0x140 << 5);
-	  HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
+	/* Filter 3 -> 0x300 */
+	canfilterconfig.FilterBank = 3;
+	canfilterconfig.FilterIdHigh = (0x140 << 5);
+	HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
 
-	  /* Filter 4 -> 0x310 */
-	  canfilterconfig.FilterBank = 4;
-	  canfilterconfig.FilterIdHigh = (0x420 << 5);
-	  HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
+	/* Filter 4 -> 0x310 */
+	canfilterconfig.FilterBank = 4;
+	canfilterconfig.FilterIdHigh = (0x420 << 5);
+	HAL_CAN_ConfigFilter(&hcan1, &canfilterconfig);
 
-		if (HAL_CAN_Start(&hcan1) != HAL_OK) {
-			Error_Handler();
-		}
+	if (HAL_CAN_Start(&hcan1) != HAL_OK) {
+		Error_Handler();
+	}
 
-		TxHeader.IDE = CAN_ID_STD;
-		TxHeader.RTR = CAN_RTR_DATA;
-		TxHeader.DLC = 1;
+	TxHeader.IDE = CAN_ID_STD;
+	TxHeader.RTR = CAN_RTR_DATA;
+	TxHeader.DLC = 1;
 
-		if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING)
-				!= HAL_OK) {
-			Error_Handler();
-		}
-		HAL_Delay(100);
+	if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING)
+			!= HAL_OK) {
+		Error_Handler();
+	}
+	HAL_Delay(100);
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -351,14 +349,13 @@ int main(void) {
 			max7219_show_2d(leeg_2d);
 			if (MFRC522_RequestA(&rfID, atqa) == STATUS_OK) {
 				if (MFRC522_ReadUid(&rfID, uid) == STATUS_OK) {
-					USER_LOG("CARD ID:%02X %02X %02X %02X", uid[0], uid[1], uid[2], uid[3]);
+					USER_LOG("CARD ID:%02X %02X %02X %02X", uid[0], uid[1],
+							uid[2], uid[3]);
 
-			        uidPacked =
-			            ((uint64_t)uid[0] << 24) |
-			            ((uint64_t)uid[1] << 16) |
-			            ((uint64_t)uid[2] << 8)  |
-			            ((uint64_t)uid[3]);
-			        SendCanMessage(4, uidPacked, 0x210);
+					uidPacked = ((uint64_t) uid[0] << 24)
+							| ((uint64_t) uid[1] << 16)
+							| ((uint64_t) uid[2] << 8) | ((uint64_t) uid[3]);
+					SendCanMessage(4, uidPacked, 0x210);
 
 					int count = sizeof(UIDDatabase) / sizeof(UIDDatabase[0]);
 
@@ -371,7 +368,8 @@ int main(void) {
 							break;
 						}
 					}
-					if ((uid[0] == 0x91) && (uid[1] == 0xE0) && (uid[2] == 0x76)) {
+					if ((uid[0] == 0x91) && (uid[1] == 0xE0)
+							&& (uid[2] == 0x76)) {
 						max7219_show_2d(vinkje_2d);
 						KaiDeurAutomatiseringBuitenBinnen();
 						max7219_show_2d(leeg_2d);
@@ -400,6 +398,7 @@ int main(void) {
 		case STATE_EMERGENCY:
 			max7219_show_2d(uitroepteken_2d);
 			TIM1->CCR1 = BuitendeurOpen;
+			TIM1->CCR2 = BinnendeurDicht;
 			break;
 		case STATE_ALLOPEN:
 			TIM1->CCR2 = BinnendeurOpen;
@@ -764,18 +763,14 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 				== GPIO_PIN_RESET) {
 			// noodknop logica
 			if (state == STATE_NORMAL) {
-				state = STATE_EMERGENCY;
+				state = STATE_ALLOPEN;
 				max7219_show_2d(uitroepteken_2d);
 				char nood[] = "Noodknop ingedrukt, alle deuren gaan dicht\r\n";
 				HAL_UART_Transmit(&huart2, (uint8_t*) nood, sizeof(nood) - 1,
-						HAL_MAX_DELAY);
-				uint64_t StuurNiks = 0x00;
-				SendCanMessage(1, StuurNiks, 0x001);
-			} else if (state == STATE_EMERGENCY) {
+				HAL_MAX_DELAY);
+			} else if (state == STATE_ALLOPEN) {
 				state = STATE_NORMAL;
 				max7219_show_2d(leeg_2d);
-				uint64_t StuurNiks = 0x00;
-				SendCanMessage(1, StuurNiks, 0x001);
 			}
 		}
 	}
@@ -786,8 +781,8 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 		Error_Handler();
 	}
 
-	char msg[] = "CAN ontvangen!\r\n";
-	HAL_UART_Transmit(&huart2, (uint8_t*) msg, sizeof(msg) - 1, HAL_MAX_DELAY);
+//	char msg[] = "CAN ontvangen!\r\n";
+//	HAL_UART_Transmit(&huart2, (uint8_t*) msg, sizeof(msg) - 1, HAL_MAX_DELAY);
 //  if ((RxHeader.StdId == 0x113)) {
 //	  if (RxData[0] == 0x01) {
 //		  datacheck = 1;
@@ -801,15 +796,20 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 //  }
 
 	if ((RxHeader.StdId == 0x001)) {
-		if (state == STATE_NORMAL) {
-			state = STATE_EMERGENCY;
-			max7219_show_2d(uitroepteken_2d);
-			char nood[] = "Noodknop ingedrukt, alle deuren gaan dicht\r\n";
-			HAL_UART_Transmit(&huart2, (uint8_t*) nood, sizeof(nood) - 1,
-			HAL_MAX_DELAY);
-		} else if (state == STATE_EMERGENCY) {
-			state = STATE_NORMAL;
-			max7219_show_2d(leeg_2d);
+		if (RxData[0] == 0x01) {
+			if (state != STATE_EMERGENCY) {
+				state = STATE_EMERGENCY;
+				max7219_show_2d(uitroepteken_2d);
+				char nood[] = "Noodknop ingedrukt, alle deuren gaan dicht\r\n";
+				HAL_UART_Transmit(&huart2, (uint8_t*) nood, sizeof(nood) - 1,
+				HAL_MAX_DELAY);
+			}
+		}
+		if (RxData[0] == 0x00) {
+			if (state == STATE_EMERGENCY) {
+				state = STATE_NORMAL;
+				max7219_show_2d(leeg_2d);
+			}
 		}
 	}
 	if ((RxHeader.StdId == 0x120)) {
