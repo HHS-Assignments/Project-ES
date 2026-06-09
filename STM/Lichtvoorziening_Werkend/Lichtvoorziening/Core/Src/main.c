@@ -233,8 +233,6 @@ int main(void)
 
 			HAL_UART_Transmit(&huart2, (uint8_t*) uart_msg, strlen(uart_msg),
 					HAL_MAX_DELAY);
-			SendCanMessage(2, (uint64_t) eco2, 0x300);
-			SendCanMessage(2, (uint64_t) t_int, 0x310);
 		}
 
 		//led strip
