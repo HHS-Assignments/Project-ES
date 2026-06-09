@@ -12,7 +12,7 @@ name: Compiling Socket Binaries
 
 on:
   push:
-    branches: [main, dev]
+    #branches: [main, dev]
     paths:
       - 'PI/Socket/**'
       - 'Code-Tests/**'
@@ -56,7 +56,20 @@ jobs:
           OUT=build/${{ matrix.target }}
           CXX="${{ matrix.cxx }}"
           CXXFLAGS="-O2 -std=c++17 -pthread -Wall -Wextra"
+
           echo "Compiling pi_a.cpp -> $OUT/RPi_A"
           $CXX $CXXFLAGS pi_a.cpp -o "$OUT/RPi_A"
+
           echo "Compiling pi_b.cpp -> $OUT/RPi_B"
           $CXX $CXXFLAGS pi_b.cpp -o "$OUT/RPi_B"
+
+          file "$OUT/RPi_A" "$OUT/RPi_B"
+
+      - name: Upload ${{ matrix.target }} artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: socket-binaries-${{ matrix.target }}
+          path: |
+            PI/Socket/build/${{ matrix.target }}/RPi_A
+            PI/Socket/build/${{ matrix.target }}/RPi_B
+          if-no-files-found: error
