@@ -126,6 +126,10 @@ int main(void)
   MX_TIM1_Init();
   MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
+  uint8_t rxByte;
+
+  HAL_UART_Receive_IT(&huart2, &rxByte, 1);
+
   CAN_FilterTypeDef canfilterconfig;
 
   /* Common filter settings */
@@ -484,6 +488,23 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART2)
+    {
+        // Echo back (so you see what you type)
+        HAL_UART_Transmit(&huart2, &rxByte, 1, HAL_MAX_DELAY);
+
+        // Process character here
+        if (rxByte == '1') {
+            UART_Print("You typed 1\r\n");
+        }
+
+        // Restart reception (VERY IMPORTANT)
+        HAL_UART_Receive_IT(&huart2, &rxByte, 1);
+    }
+}
+
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 	if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK) {
 		Error_Handler();
