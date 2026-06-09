@@ -1,8 +1,10 @@
 // pi_a.cpp
 // Bridge between a SocketCAN interface (default can0) and a single TCP peer (Pi B).
 // Usage:  ./pi_a <listen_port> [can_iface]
-// Wire protocol (line-delimited JSON):
-//   {"id": <canID_decimal_or_0xHEX>, "data": "<hex bytes, e.g. DEADBEEF>"}
+// Wire protocol (line-delimited JSON, Wemos format):
+//   CAN->TCP: {"CAN_ID":"0x001","Data":1}
+//   CAN->TCP (text IDs): {"CAN_ID":"0x150","Data":"Hello","More":0}
+//   TCP->CAN: {"CAN_ID":"0x400","Data":42}
 //
 // Build:  g++ -O2 -std=c++17 -pthread pi_a.cpp -o pi_a
 
@@ -26,57 +28,43 @@
 static std::atomic<bool> g_run{true};
 
 // ---------- helpers ----------
-static std::string bytesToHex(const uint8_t* d, size_t n) {
-    static const char* H = "0123456789ABCDEF";
-    std::string s; s.resize(n * 2);
-    for (size_t i = 0; i < n; ++i) { s[2*i] = H[(d[i]>>4)&0xF]; s[2*i+1] = H[d[i]&0xF]; }
-    return s;
-}
-static int hexNibble(char c) {
-    if (c >= '0' && c <= '9') return c - '0';
-    if (c >= 'a' && c <= 'f') return 10 + c - 'a';
-    if (c >= 'A' && c <= 'F') return 10 + c - 'A';
-    return -1;
-}
-static size_t hexToBytes(const std::string& s, uint8_t* out, size_t maxLen) {
-    size_t n = 0;
-    for (size_t i = 0; i + 1 < s.size() && n < maxLen; i += 2) {
-        int h = hexNibble(s[i]); int l = hexNibble(s[i+1]);
-        if (h < 0 || l < 0) break;
-        out[n++] = uint8_t((h << 4) | l);
-    }
-    return n;
+
+// CAN IDs whose data bytes are ASCII text (bytes 0..dlc-2) + More flag (byte dlc-1)
+static bool isTextId(uint32_t id) {
+    return id == 0x150 || id == 0x160 || id == 0x170 ||
+           id == 0x180 || id == 0x190 || id == 0x101;
 }
 
-// Minimal JSON extractor for our fixed shape: {"id":..,"data":"..."}.
-// Returns true on success; sets canId and dataHex.
-static bool parseJson(const std::string& line, uint32_t& canId, std::string& dataHex) {
-    auto findKey = [&](const char* key) -> size_t {
-        std::string pat = std::string("\"") + key + "\"";
-        return line.find(pat);
-    };
-    size_t pId = findKey("id");
-    size_t pDt = findKey("data");
-    if (pId == std::string::npos || pDt == std::string::npos) return false;
-
-    // id value
-    size_t c = line.find(':', pId); if (c == std::string::npos) return false;
-    ++c;
-    while (c < line.size() && (line[c]==' '||line[c]=='"')) ++c;
-    size_t e = c;
-    while (e < line.size() && line[e] != ',' && line[e] != '}' && line[e] != '"') ++e;
-    std::string idStr = line.substr(c, e - c);
+// Parse Wemos-format JSON: {"CAN_ID":"0xHEX","Data":INT}
+// Returns true on success; sets canId and dataVal.
+static bool parseJson(const std::string& line, uint32_t& canId, int& dataVal) {
+    size_t pId = line.find("\"CAN_ID\"");
+    if (pId == std::string::npos) return false;
+    size_t c = line.find(':', pId);
+    if (c == std::string::npos) return false;
+    size_t q1 = line.find('"', c);
+    if (q1 == std::string::npos) return false;
+    size_t q2 = line.find('"', q1 + 1);
+    if (q2 == std::string::npos) return false;
+    std::string idStr = line.substr(q1 + 1, q2 - q1 - 1);
     try {
         canId = (idStr.rfind("0x",0)==0 || idStr.rfind("0X",0)==0)
               ? (uint32_t)std::stoul(idStr, nullptr, 16)
               : (uint32_t)std::stoul(idStr, nullptr, 10);
     } catch (...) { return false; }
 
-    // data value (string)
-    size_t c2 = line.find(':', pDt); if (c2 == std::string::npos) return false;
-    size_t q1 = line.find('"', c2); if (q1 == std::string::npos) return false;
-    size_t q2 = line.find('"', q1 + 1); if (q2 == std::string::npos) return false;
-    dataHex = line.substr(q1 + 1, q2 - q1 - 1);
+    size_t pDt = line.find("\"Data\"");
+    if (pDt == std::string::npos) return false;
+    size_t c2 = line.find(':', pDt);
+    if (c2 == std::string::npos) return false;
+    ++c2;
+    while (c2 < line.size() && line[c2] == ' ') ++c2;
+    if (c2 < line.size() && line[c2] == '"') {
+        dataVal = 0; // string data not expected in TCP->CAN direction
+    } else {
+        try { dataVal = std::stoi(line.substr(c2)); }
+        catch (...) { return false; }
+    }
     return true;
 }
 
@@ -117,7 +105,7 @@ static bool sendLine(int fd, const std::string& line) {
     return true;
 }
 
-// CAN -> TCP
+// CAN -> TCP  (Wemos format)
 static void canReader(int canFd) {
     while (g_run) {
         can_frame f{};
@@ -126,9 +114,27 @@ static void canReader(int canFd) {
         if (n < (ssize_t)sizeof(can_frame)) continue;
 
         uint32_t id = f.can_id & (f.can_id & CAN_EFF_FLAG ? CAN_EFF_MASK : CAN_SFF_MASK);
-        std::string hex = bytesToHex(f.data, f.can_dlc);
-        char buf[128];
-        std::snprintf(buf, sizeof(buf), "{\"id\":%u,\"data\":\"%s\"}", id, hex.c_str());
+
+        char hexId[12];
+        std::snprintf(hexId, sizeof(hexId), "0x%03X", id);
+
+        char buf[256];
+        if (isTextId(id)) {
+            // bytes 0..(dlc-2) = ASCII text, byte (dlc-1) = More flag
+            char text[8] = {};
+            int more = 0;
+            if (f.can_dlc >= 1) {
+                more = f.data[f.can_dlc - 1];
+                int txtLen = (int)f.can_dlc - 1;
+                if (txtLen > 7) txtLen = 7;
+                for (int i = 0; i < txtLen; i++) text[i] = (char)f.data[i];
+            }
+            std::snprintf(buf, sizeof(buf),
+                "{\"CAN_ID\":\"%s\",\"Data\":\"%s\",\"More\":%d}", hexId, text, more);
+        } else {
+            int val = (f.can_dlc > 0) ? (int)f.data[0] : 0;
+            std::snprintf(buf, sizeof(buf), "{\"CAN_ID\":\"%s\",\"Data\":%d}", hexId, val);
+        }
 
         int fd;
         { std::lock_guard<std::mutex> lk(g_txMu); fd = g_peerFd; }
@@ -144,7 +150,7 @@ static void canReader(int canFd) {
     }
 }
 
-// TCP -> CAN
+// TCP -> CAN  (Wemos format)
 static void peerReader(int peerFd, int canFd) {
     std::string acc;
     char buf[1024];
@@ -159,20 +165,22 @@ static void peerReader(int peerFd, int canFd) {
             if (!line.empty() && line.back() == '\r') line.pop_back();
             if (line.empty()) continue;
 
-            uint32_t id = 0; std::string hex;
-            if (!parseJson(line, id, hex)) { std::cerr << "[A] bad JSON: " << line << "\n"; continue; }
+            uint32_t id = 0; int dataVal = 0;
+            if (!parseJson(line, id, dataVal)) {
+                std::cerr << "[A] bad JSON: " << line << "\n";
+                continue;
+            }
 
             can_frame f{};
             f.can_id = id;
             if (id > 0x7FF) f.can_id |= CAN_EFF_FLAG;
-            uint8_t bytes[8]{};
-            size_t dl = hexToBytes(hex, bytes, 8);
-            f.can_dlc = (uint8_t)dl;
-            std::memcpy(f.data, bytes, dl);
+            f.data[0] = (uint8_t)(dataVal & 0xFF);
+            f.can_dlc = 1;
             if (::write(canFd, &f, sizeof(f)) != (ssize_t)sizeof(f)) {
                 perror("write(CAN)");
             } else {
-                std::cout << "[A] B->CAN id=" << id << " data=" << hex << "\n";
+                std::cout << "[A] B->CAN id=0x" << std::hex << id << std::dec
+                          << " data=" << dataVal << "\n";
             }
         }
     }

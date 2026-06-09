@@ -30,7 +30,7 @@
 struct Wemos { const char* name; const char* ip; uint16_t port; };
 static const std::vector<Wemos> kWemos = {
     {"wemos_relaxstoel",  "10.42.0.10", 9001},
-    {"wemos_lichtkrant",  "10.42.0.20", 9001},
+    {"wemos_lichtkrant",  "10.42.0.11", 9001},
 };
 
 static std::atomic<bool> g_run{true};
@@ -112,7 +112,7 @@ static void piAReader(int fd) {
             if (!line.empty() && line.back() == '\r') line.pop_back();
             if (line.empty()) continue;
             std::cout << "[B] A-> " << line << "\n";
-            fanoutToWemos(line);
+            std::thread(fanoutToWemos, line).detach();
         }
     }
 }
