@@ -151,11 +151,16 @@ int main(void)
   MX_USART2_UART_Init();
   MX_CAN1_Init();
   /* USER CODE BEGIN 2 */
-	/* USER CODE BEGIN 2 */
 	char startup[] = "STM32 gestart!\r\n";
 	HAL_UART_Transmit(&huart2, (uint8_t*) startup, strlen(startup), 1000);
 	SGP30_Init();
 	WS2812B_Init();
+
+	for (int i = 0; i < WS2812B_NUM_LEDS; i++) {
+	    WS2812B_SetLED(i, 255, 255, 255);
+	}
+
+
 
 	CAN_FilterTypeDef canfilterconfig;
 
@@ -237,9 +242,10 @@ int main(void)
 
 		//led strip
 		if (HAL_GetTick() - last_chase_tick >= 150) {
-			last_chase_tick = HAL_GetTick();
-			chase_tick(chase_step);
-			chase_step++;
+		    last_chase_tick = HAL_GetTick();
+		    for (int i = 0; i < WS2812B_NUM_LEDS; i++) {
+		        WS2812B_SetLED(i, 255, 255, 255);
+		    }
 		}
 
 		if (button_pressed) {
@@ -634,6 +640,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 			huidigeKleur = 3;
 		}
 	}
+
 }
 
 void SendCanMessage(int dataLength, uint64_t data, uint16_t canID) {
