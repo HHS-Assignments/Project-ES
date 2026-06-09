@@ -39,6 +39,8 @@ std::mutex g_upstream_mutex;
  * Thread function to handle a single HTTP client connection.
  * Reads HTTP POST request, extracts JSON body, forwards to RPi-A.
  */
+
+ // just for test
 void handle_http_client(int client_fd)
 {
     char buffer[4096];
