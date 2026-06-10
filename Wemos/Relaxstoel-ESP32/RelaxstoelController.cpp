@@ -102,11 +102,16 @@ void RelaxstoelController::_setMotor(bool aan) {
 }
 
 void RelaxstoelController::_verwerkCommando(const char *incoming) {
-    if (strstr(incoming, "0x140") == nullptr) return;
+    if (strstr(incoming, "0x140") == nullptr &&
+        strstr(incoming, "0X140") == nullptr) return;
 
     const char *dataPtr = strstr(incoming, "\"Data\":");
     if (dataPtr == nullptr) return;
 
-    int waarde = atoi(dataPtr + 7);
-    _setMotor(waarde == 1);
+    // Sla spaties en aanhalingstekens over zodat zowel "Data":1 als "Data":"01" werkt
+    const char *p = dataPtr + 7;
+    while (*p == ' ' || *p == '"') p++;
+
+    int waarde = atoi(p);
+    _setMotor(waarde != 0);
 }
