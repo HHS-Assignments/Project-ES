@@ -17,8 +17,8 @@ static const char *PI_HOST   = "10.42.0.1";
 static const uint16_t PI_PORT_OUT = 9000;
 static const uint16_t MY_PORT_IN  = 9001;
 
-// Statisch IP — zet op false om DHCP te testen
-#define USE_STATIC_IP true
+// Statisch IP — false = DHCP (test dit eerst!), true = 10.42.0.10
+#define USE_STATIC_IP false
 
 WiFiServer server(MY_PORT_IN);
 
@@ -34,7 +34,10 @@ void printStatus() {
         case WL_NO_SSID_AVAIL:   Serial.println(F("NO_SSID (1) — netwerk niet gevonden")); break;
         case WL_SCAN_COMPLETED:  Serial.println(F("SCAN_DONE (2)")); break;
         case WL_CONNECTED:       Serial.print(F("CONNECTED (3) IP="));
-                                 Serial.println(WiFi.localIP()); break;
+                                 Serial.print(WiFi.localIP());
+                                 Serial.print(F("  RSSI="));
+                                 Serial.print(WiFi.RSSI());
+                                 Serial.println(F(" dBm")); break;
         case WL_CONNECT_FAILED:  Serial.println(F("FAILED (4) — verkeerd wachtwoord?")); break;
         case WL_CONNECTION_LOST: Serial.println(F("LOST (5)")); break;
         case WL_DISCONNECTED:    Serial.println(F("DISCONNECTED (6)")); break;
