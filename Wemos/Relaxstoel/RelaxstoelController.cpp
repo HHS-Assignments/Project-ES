@@ -16,12 +16,13 @@ RelaxstoelController& RelaxstoelController::getInstance() {
 
 void RelaxstoelController::init(Motor *motor, Lamp *lamp,
                                  Lichtsensor *sensor, Communication *comm,
-                                 int ldrDrempel) {
+                                 int ldrDrempel, uint8_t knopPin) {
     _motor       = motor;
     _lamp        = lamp;
     _sensor      = sensor;
     _comm        = comm;
     _ldrDrempel  = ldrDrempel;
+    _knopPin     = knopPin;
 }
 
 void RelaxstoelController::begin() {
@@ -30,14 +31,35 @@ void RelaxstoelController::begin() {
     _motor->begin();
     _lamp->begin();
     _sensor->begin();
+    if (_knopPin != 255) {
+        pinMode(_knopPin, INPUT_PULLUP);
+        Serial.print(F("[Knop] Geconfigureerd op pin "));
+        Serial.println(_knopPin);
+    }
     _comm->connect(WIFI_SSID, WIFI_PASSWORD);
     _comm->begin();
+
+    // Timers initialiseren zodat ze niet direct afvuren op de eerste update()
+    unsigned long nu = millis();
+    _vorigeLdrTijd   = nu;
+    _vorigeWifiCheck = nu;
 }
 
 void RelaxstoelController::update() {
     char buf[256];
     if (_comm->receive(buf, sizeof(buf))) {
         _verwerkCommando(buf);
+    }
+
+    // Fysieke knop: toggle bij neergaande flank (INPUT_PULLUP: HIGH=los, LOW=ingedrukt)
+    if (_knopPin != 255) {
+        bool huidig = digitalRead(_knopPin);
+        if (_vorigeKnopStaat == HIGH && huidig == LOW) {
+            // Knop net ingedrukt
+            _setMotor(!_motorAan);
+            Serial.println(F("[Knop] Toggle relaxstoel"));
+        }
+        _vorigeKnopStaat = huidig;
     }
 
     // Lamp automatisch aansturen op basis van LDR
@@ -47,8 +69,8 @@ void RelaxstoelController::update() {
 
     unsigned long nu = millis();
 
-    // Stuur LDR waarde elke 500ms als CAN 0x400
-    if (nu - _vorigeLdrTijd >= 500) {
+    // Stuur LDR waarde elke 10 seconden als CAN 0x400
+    if (nu - _vorigeLdrTijd >= 10000) {
         _vorigeLdrTijd = nu;
         if (_comm->isConnected()) {
             Serial.print(F("[0x400] LDR: ")); Serial.println(ldr);
@@ -66,23 +88,30 @@ void RelaxstoelController::update() {
     }
 }
 
+void RelaxstoelController::_setMotor(bool aan) {
+    if (aan == _motorAan) return;
+    _motorAan = aan;
+    if (_motorAan) {
+        _motor->setSpeed(50);
+        Serial.println(F("[Motor] Relaxstoel AAN"));
+        _comm->sendCanJson("0x430", 1);
+    } else {
+        _motor->setSpeed(0);
+        Serial.println(F("[Motor] Relaxstoel UIT"));
+        _comm->sendCanJson("0x430", 0);
+    }
+}
+
 void RelaxstoelController::_verwerkCommando(const char *incoming) {
     if (strstr(incoming, "0x140") == nullptr) return;
 
     const char *dataPtr = strstr(incoming, "\"Data\":");
     if (dataPtr == nullptr) return;
 
-    int waarde = atoi(dataPtr + 7);
+    // Sla spaties en aanhalingstekens over zodat zowel "Data":1 als "Data":"01" werkt
+    const char *p = dataPtr + 7;
+    while (*p == ' ' || *p == '"') p++;
 
-    if (waarde == 1 && !_motorAan) {
-        _motorAan = true;
-        _motor->setSpeed(50);
-        Serial.println(F("[0x140] Relaxstoel AAN"));
-        _comm->sendCanJson("0x430", 1);
-    } else if (waarde == 0 && _motorAan) {
-        _motorAan = false;
-        _motor->setSpeed(0);
-        Serial.println(F("[0x140] Relaxstoel UIT"));
-        _comm->sendCanJson("0x430", 0);
-    }
+    int waarde = atoi(p);
+    _setMotor(waarde != 0);
 }
