@@ -12,15 +12,18 @@ void WiFiCommunication::begin() {
 }
 
 bool WiFiCommunication::connect(const char *ssid, const char *pass) {
-    WiFi.disconnect();   // ← reset vorige sessie
+    _ssid = ssid;
+    _pass = pass;
+    WiFi.persistent(false);       // geen credentials naar flash schrijven
+    WiFi.setAutoReconnect(true);  // laat de stack zelf herverbinden
+    WiFi.disconnect();
     delay(100);
     WiFi.mode(WIFI_STA);
 
-    // Statisch IP instellen vóór WiFi.begin()
-    IPAddress ip(10, 42, 0, 10);       // gewenst IP van de Wemos
-    IPAddress gateway(10, 42, 0, 1);   // IP van de router/Pi
+    IPAddress ip(10, 42, 0, 10);
+    IPAddress gateway(10, 42, 0, 1);
     IPAddress subnet(255, 255, 255, 0);
-    IPAddress dns(1, 1, 1, 1);
+    IPAddress dns(10, 42, 0, 1);
     WiFi.config(ip, gateway, subnet, dns);
 
     WiFi.begin(ssid, pass);
@@ -38,6 +41,14 @@ bool WiFiCommunication::connect(const char *ssid, const char *pass) {
     }
     Serial.println(F("[WiFi] Verbinding mislukt!"));
     return false;
+}
+
+void WiFiCommunication::reconnect() {
+    if (_ssid == nullptr) return;
+    wl_status_t st = WiFi.status();
+    if (st == WL_IDLE_STATUS) return;   // stack is al aan het verbinden
+    Serial.println(F("[WiFi] Herverbinden (non-blocking)..."));
+    WiFi.begin(_ssid, _pass);
 }
 
 bool WiFiCommunication::isConnected() {

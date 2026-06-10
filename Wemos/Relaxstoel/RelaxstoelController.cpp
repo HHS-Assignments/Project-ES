@@ -82,8 +82,7 @@ void RelaxstoelController::update() {
     if (nu - _vorigeWifiCheck >= 5000) {
         _vorigeWifiCheck = nu;
         if (!_comm->isConnected()) {
-            Serial.println(F("[WiFi] Verbinding verloren, opnieuw verbinden..."));
-            _comm->connect(WIFI_SSID, WIFI_PASSWORD);
+            _comm->reconnect();
         }
     }
 }

@@ -15,6 +15,8 @@ void WiFiCommunication::begin() {
 bool WiFiCommunication::connect(const char *ssid, const char *pass) {
     _ssid = ssid;   // bewaar voor reconnect()
     _pass = pass;
+    WiFi.persistent(false);       // geen credentials naar NVS schrijven
+    WiFi.setAutoReconnect(true);  // laat de stack zelf herverbinden
     WiFi.disconnect();
     delay(100);
     WiFi.mode(WIFI_STA);
@@ -46,8 +48,11 @@ bool WiFiCommunication::connect(const char *ssid, const char *pass) {
 // update() blijft doorlopen; isConnected() signaleert wanneer verbonden.
 void WiFiCommunication::reconnect() {
     if (_ssid == nullptr) return;
+    // Alleen herstarten als de stack niet al bezig is te verbinden;
+    // anders wordt elke poging elke 5 s afgebroken.
+    wl_status_t st = WiFi.status();
+    if (st == WL_IDLE_STATUS) return;   // stack is al aan het verbinden
     Serial.println(F("[WiFi] Herverbinden (non-blocking)..."));
-    WiFi.disconnect();
     WiFi.begin(_ssid, _pass);
 }
 
