@@ -21,3 +21,7 @@
 
 ### Standaardfuncties
 - [x] een .c file schrijven waar alle handige functies instaan zodat zo gelijk alles gebruikt kan worden (Max)
+
+### UML
+- [ ] UML sprint 1 en 2 checken
+- [ ] UML sprint 3 afmaken
