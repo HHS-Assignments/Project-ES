@@ -102,8 +102,7 @@ void RelaxstoelController::_setMotor(bool aan) {
 }
 
 void RelaxstoelController::_verwerkCommando(const char *incoming) {
-    if (strstr(incoming, "0x140") == nullptr &&
-        strstr(incoming, "0X140") == nullptr) return;
+    if (strstr(incoming, "0x140") == nullptr) return;
 
     const char *dataPtr = strstr(incoming, "\"Data\":");
     if (dataPtr == nullptr) return;
