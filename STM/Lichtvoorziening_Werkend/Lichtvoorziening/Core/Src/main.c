@@ -47,6 +47,8 @@ CAN_HandleTypeDef hcan1;
 I2C_HandleTypeDef hi2c1;
 
 TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim16;
 DMA_HandleTypeDef hdma_tim1_ch1;
 
 UART_HandleTypeDef huart2;
@@ -67,8 +69,29 @@ uint8_t datacheck = 0;
 uint8_t RTRReceived = 0;
 
 uint8_t huidigeKleur = 2;
-volatile uint8_t noodActief = 1;
+volatile uint8_t noodActief = 0;
 uint8_t helderheid = 255;
+
+typedef struct {
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+} Color;
+
+static const Color mc_colors[26] = {
+    {0, 0, 170},       // 0 Blue
+    {0, 170, 0},       // 1 Green
+    {0, 170, 170},     // 2 Aqua
+    {170, 0, 0},       // 3 Red
+    {170, 0, 170},     // 4 Purple
+    {255, 170, 0},     // 5 Amber
+    {85, 85, 255},     // 6 licht blauw
+    {85, 255, 85},     // 7 mint Green
+    {255, 85, 85},     // 8 Roze
+    {255, 85, 255},    // 9 Light Purple
+    {255, 255, 40},    // 10 licht Geel
+    {255, 255, 255},   // 11 White
+};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -79,6 +102,8 @@ static void MX_I2C1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_CAN1_Init(void);
+static void MX_TIM2_Init(void);
+static void MX_TIM16_Init(void);
 /* USER CODE BEGIN PFP */
 void SGP30_Init(void);
 uint16_t SGP30_ReadCO2(void);
@@ -89,6 +114,14 @@ void SendCanMessage(int dataLength, uint64_t data, uint16_t canID);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void Safe_Delay(int ms)
+{
+    uint32_t start = HAL_GetTick();
+    while (HAL_GetTick() - start < ms) {
+        if (noodActief) return;
+    }
+}
+
 void SGP30_Init(void) {
 	uint8_t cmd[2] = { 0x20, 0x03 };
 	HAL_I2C_Master_Transmit(&hi2c1, 0x58 << 1, cmd, 2, HAL_MAX_DELAY);
@@ -119,6 +152,18 @@ static void chase_tick(int step) {
 		if (i - 1 >= 0) WS2812B_SetLED(i - 1, 25, 0, 0);
 		if (i - 2 >= 0) WS2812B_SetLED(i - 2, 80, 0, 0);
     }
+}
+
+void RGB_Set(uint8_t r, uint8_t g, uint8_t b, uint8_t helderheid)
+{
+    // scale 0–255 brightness
+    uint16_t rr = (r * helderheid) / 255;
+    uint16_t gg = (g * helderheid) / 255;
+    uint16_t bb = (b * helderheid) / 255;
+
+    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, gg);
+    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, rr);
+    __HAL_TIM_SET_COMPARE(&htim16, TIM_CHANNEL_1, bb);
 }
 /* USER CODE END 0 */
 
@@ -156,11 +201,16 @@ int main(void)
   MX_TIM1_Init();
   MX_USART2_UART_Init();
   MX_CAN1_Init();
+  MX_TIM2_Init();
+  MX_TIM16_Init();
   /* USER CODE BEGIN 2 */
 	char startup[] = "STM32 gestart!\r\n";
 	HAL_UART_Transmit(&huart2, (uint8_t*) startup, strlen(startup), 1000);
 	SGP30_Init();
 	WS2812B_Init();
+	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); // Red
+	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2); // Green
+	HAL_TIM_PWM_Start(&htim16, TIM_CHANNEL_1); // Blue
 
 	for (int i = 0; i < WS2812B_NUM_LEDS; i++) {
 	    WS2812B_SetLED(i, 255, 255, 255);
@@ -222,11 +272,8 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	const char msg_beweging[] =
-			"Beweging gedetecteerd, verlichting gaat aan!\r\n";
+	const char msg_beweging[] = "Beweging gedetecteerd, verlichting gaat aan!\r\n";
 	const char msg_uit[] = "Lamp gaat uit!\r\n";
-	int chase_step = 0;
-	uint32_t last_chase_tick = 0;
 	while (1) {
 		if (HAL_GetTick() - last_sensor_tick >= 1000) {
 			last_sensor_tick = HAL_GetTick();
@@ -246,46 +293,30 @@ int main(void)
 					HAL_MAX_DELAY);
 		}
 
-		//led strip
-		if (HAL_GetTick() - last_chase_tick >= 150) {
-		    last_chase_tick = HAL_GetTick();
-//		    for (int i = 0; i < WS2812B_NUM_LEDS; i++) {
-//		        WS2812B_SetLED(i, 255, 255, 255);
-//		    }
-		}
 		static int step = 0;
 		chase_tick(step++);
-		HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-		HAL_Delay(60);
+		Safe_Delay(60);
+
+		if (!led_on) {
+			led_on_tick = HAL_GetTick();
+		}
 
 		if (button_pressed) {
-			button_pressed = 0;
 			HAL_UART_Transmit(&huart2, (uint8_t*) msg_beweging,
 					strlen(msg_beweging), HAL_MAX_DELAY);
-			switch (huidigeKleur) {
-			case 1:
-				HAL_GPIO_WritePin(GPIOA, RGB_Rood_Pin, GPIO_PIN_SET);
-				break;
-
-			case 2:
-				HAL_GPIO_WritePin(GPIOA, RGB_Groen_Pin, GPIO_PIN_SET);
-				break;
-
-			case 3:
-				HAL_GPIO_WritePin(GPIOA, RGB_Blauw_Pin, GPIO_PIN_SET);
-				break;
+			if (huidigeKleur < 16)
+			{
+			    Color c = mc_colors[huidigeKleur];
+			    RGB_Set(c.r, c.g, c.b, 255);   // brightness = 40 (your choice)
 			}
-			led_on_tick = HAL_GetTick();
 			led_on = 1;
 		}
 
-		if (led_on && (HAL_GetTick() - led_on_tick >= 5000)) {
-			HAL_GPIO_WritePin(GPIOA,
-					RGB_Groen_Pin | RGB_Blauw_Pin | RGB_Rood_Pin,
-					GPIO_PIN_RESET);
-			HAL_UART_Transmit(&huart2, (uint8_t*) msg_uit, strlen(msg_uit),
-					HAL_MAX_DELAY);
+		if (led_on && (HAL_GetTick() - led_on_tick >= 100000)) {
+			RGB_Set(0, 0, 0, 0);
+			HAL_UART_Transmit(&huart2, (uint8_t*) msg_uit, strlen(msg_uit), HAL_MAX_DELAY);
 			led_on = 0;
+			button_pressed = 0;
 		}
 
 		if (HAL_GetTick() - canbusTick >= 10000) {
@@ -520,6 +551,121 @@ static void MX_TIM1_Init(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 0;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 255;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+  HAL_TIM_MspPostInit(&htim2);
+
+}
+
+/**
+  * @brief TIM16 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM16_Init(void)
+{
+
+  /* USER CODE BEGIN TIM16_Init 0 */
+
+  /* USER CODE END TIM16_Init 0 */
+
+  TIM_OC_InitTypeDef sConfigOC = {0};
+  TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
+
+  /* USER CODE BEGIN TIM16_Init 1 */
+
+  /* USER CODE END TIM16_Init 1 */
+  htim16.Instance = TIM16;
+  htim16.Init.Prescaler = 124;
+  htim16.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim16.Init.Period = 255;
+  htim16.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim16.Init.RepetitionCounter = 0;
+  htim16.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim16) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim16) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
+  sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
+  if (HAL_TIM_PWM_ConfigChannel(&htim16, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
+  sBreakDeadTimeConfig.OffStateIDLEMode = TIM_OSSI_DISABLE;
+  sBreakDeadTimeConfig.LockLevel = TIM_LOCKLEVEL_OFF;
+  sBreakDeadTimeConfig.DeadTime = 0;
+  sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
+  sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
+  sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
+  if (HAL_TIMEx_ConfigBreakDeadTime(&htim16, &sBreakDeadTimeConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM16_Init 2 */
+
+  /* USER CODE END TIM16_Init 2 */
+  HAL_TIM_MspPostInit(&htim16);
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -588,9 +734,6 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, RGB_Rood_Pin|RGB_Blauw_Pin|RGB_Groen_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : Button_Input_Pin */
@@ -598,13 +741,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(Button_Input_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : RGB_Rood_Pin RGB_Blauw_Pin RGB_Groen_Pin */
-  GPIO_InitStruct.Pin = RGB_Rood_Pin|RGB_Blauw_Pin|RGB_Groen_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : LD3_Pin */
   GPIO_InitStruct.Pin = LD3_Pin;
@@ -641,16 +777,12 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 //  if (RxHeader.RTR == CAN_RTR_REMOTE && RxHeader.StdId == 0x112) {
 //	  RTRReceived = 1;
 //  }
-	if ((RxHeader.StdId == 0x100)) {
-		if (RxData[0] == 0x01) {
-			huidigeKleur = 1;
-		} else if (RxData[0] == 0x02) {
-			huidigeKleur = 2;
-		} else if (RxData[0] == 0x03) {
-			huidigeKleur = 3;
-		}
+	if (RxHeader.StdId == 0x100) {
+	    uint8_t value = RxData[0];
+	    if (value >= 0 && value <= 11) {
+	        huidigeKleur = value;
+	    }
 	}
-
 }
 
 void SendCanMessage(int dataLength, uint64_t data, uint16_t canID) {

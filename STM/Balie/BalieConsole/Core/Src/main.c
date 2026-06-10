@@ -663,11 +663,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 			UART_Print("Status Relaxstoel aan\r\n\r\n");
 			uint64_t AanBit = 0x01;
 			SendCanMessage(1, AanBit, 0x140);
+			ZetAan(GPIOB, RelaxstoelStatus_Pin);
+			relaxStoelStatus = 1;
 		} else if (relaxStoelStatus == 1) {
 			relaxStoelStatus = 0;
 			UART_Print("Status Relaxstoel uit\r\n\r\n");
 			uint64_t UitBit = 0x00;
 			SendCanMessage(1, UitBit, 0x140);
+            ZetUit(GPIOB, RelaxstoelStatus_Pin);
+            relaxStoelStatus = 0;
 		}
     }
 }

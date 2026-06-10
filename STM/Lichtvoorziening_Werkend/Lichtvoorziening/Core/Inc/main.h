@@ -59,19 +59,17 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define MCO_Pin GPIO_PIN_0
-#define MCO_GPIO_Port GPIOA
+#define RGB_Groen_Pin GPIO_PIN_0
+#define RGB_Groen_GPIO_Port GPIOA
+#define RGB_Rood_Pin GPIO_PIN_1
+#define RGB_Rood_GPIO_Port GPIOA
 #define VCP_TX_Pin GPIO_PIN_2
 #define VCP_TX_GPIO_Port GPIOA
 #define Button_Input_Pin GPIO_PIN_4
 #define Button_Input_GPIO_Port GPIOA
 #define Button_Input_EXTI_IRQn EXTI4_IRQn
-#define RGB_Rood_Pin GPIO_PIN_5
-#define RGB_Rood_GPIO_Port GPIOA
 #define RGB_Blauw_Pin GPIO_PIN_6
 #define RGB_Blauw_GPIO_Port GPIOA
-#define RGB_Groen_Pin GPIO_PIN_7
-#define RGB_Groen_GPIO_Port GPIOA
 #define SWDIO_Pin GPIO_PIN_13
 #define SWDIO_GPIO_Port GPIOA
 #define SWCLK_Pin GPIO_PIN_14
