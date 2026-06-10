@@ -13,6 +13,8 @@ void WiFiCommunication::begin() {
 }
 
 bool WiFiCommunication::connect(const char *ssid, const char *pass) {
+    _ssid = ssid;   // bewaar voor reconnect()
+    _pass = pass;
     WiFi.disconnect();
     delay(100);
     WiFi.mode(WIFI_STA);
@@ -38,6 +40,15 @@ bool WiFiCommunication::connect(const char *ssid, const char *pass) {
     }
     Serial.println(F("[WiFi] Verbinding mislukt!"));
     return false;
+}
+
+// Non-blocking herverbinding: start WiFi opnieuw zonder te wachten.
+// update() blijft doorlopen; isConnected() signaleert wanneer verbonden.
+void WiFiCommunication::reconnect() {
+    if (_ssid == nullptr) return;
+    Serial.println(F("[WiFi] Herverbinden (non-blocking)..."));
+    WiFi.disconnect();
+    WiFi.begin(_ssid, _pass);
 }
 
 bool WiFiCommunication::isConnected() {

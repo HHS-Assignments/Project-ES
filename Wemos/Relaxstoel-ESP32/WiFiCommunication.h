@@ -8,6 +8,7 @@ public:
 
     void begin()                                        override;
     bool connect(const char *ssid, const char *pass)   override;
+    void reconnect()                                    override;
     bool isConnected()                                  override;
     bool send(const char *data)                         override;
     bool receive(char *buf, size_t len)                 override;
@@ -18,6 +19,8 @@ private:
     const char *_piHost;
     int         _piPort;
     WiFiServer  _server;
+    const char *_ssid = nullptr;   // opgeslagen na eerste connect()
+    const char *_pass = nullptr;
 
     bool _readClientLine(WiFiClient *client, char *buf, size_t len);
 };
