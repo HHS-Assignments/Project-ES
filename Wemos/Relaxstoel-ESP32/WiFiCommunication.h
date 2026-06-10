@@ -19,8 +19,9 @@ private:
     const char *_piHost;
     int         _piPort;
     WiFiServer  _server;
-    const char *_ssid = nullptr;   // opgeslagen na eerste connect()
-    const char *_pass = nullptr;
+    const char *_ssid              = nullptr;
+    const char *_pass              = nullptr;
+    unsigned long _laatsHerverbind = 0;
 
     bool _readClientLine(WiFiClient *client, char *buf, size_t len);
 };

@@ -45,8 +45,9 @@ bool WiFiCommunication::connect(const char *ssid, const char *pass) {
 
 void WiFiCommunication::reconnect() {
     if (_ssid == nullptr) return;
-    wl_status_t st = WiFi.status();
-    if (st == WL_IDLE_STATUS) return;   // stack is al aan het verbinden
+    // Wacht 30 seconden tussen pogingen zodat de stack tijd krijgt te verbinden
+    if (millis() - _laatsHerverbind < 30000) return;
+    _laatsHerverbind = millis();
     Serial.println(F("[WiFi] Herverbinden (non-blocking)..."));
     WiFi.begin(_ssid, _pass);
 }
