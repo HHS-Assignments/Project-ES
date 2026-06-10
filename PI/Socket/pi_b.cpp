@@ -29,7 +29,7 @@
 // ---- Known Wemos targets (IP, web port). Web port matches what the Wemos `_server` listens on. ----
 struct Wemos { const char* name; const char* ip; uint16_t port; };
 static const std::vector<Wemos> kWemos = {
-    {"wemos_relaxstoel",  "192.168.1.85", 9001},
+    {"wemos_relaxstoel",  "10.42.0.10", 9001},
     {"wemos_lichtkrant",  "10.42.0.11", 9001},
 };
 
