@@ -14,10 +14,10 @@
 
 ### Balieconsole / Display
 - [ ] Logische en duidelijke teksten schrijven voor op de display van de balieconsole (Tom)
-- [ ] Display verplaatsen naar buiten (Iedereen)
+- [x] Display verplaatsen naar buiten (Iedereen)
 
 ### Documentatie & Presentatie
-- [ ] Plattegrond maken voor bij het assessment (Tom)
+- [x] Plattegrond maken voor bij het assessment (Max)
 
 ### Standaardfuncties
-- [ ] een .c file schrijven waar alle handige functies instaan zodat zo gelijk alles gebruikt kan worden (Max)
+- [x] een .c file schrijven waar alle handige functies instaan zodat zo gelijk alles gebruikt kan worden (Max)
