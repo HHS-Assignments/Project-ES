@@ -293,27 +293,31 @@ int main(void)
 					HAL_MAX_DELAY);
 		}
 
-		static int step = 0;
-		chase_tick(step++);
-		Safe_Delay(60);
-
 		if (!led_on) {
 			led_on_tick = HAL_GetTick();
+			for (int i = 0; i <= WS2812B_NUM_LEDS; i++) {
+				WS2812B_SetLED(i, 0, 0, 0);
+			}
 		}
 
 		if (button_pressed) {
-			HAL_UART_Transmit(&huart2, (uint8_t*) msg_beweging,
-					strlen(msg_beweging), HAL_MAX_DELAY);
-			if (huidigeKleur < 16)
-			{
-			    Color c = mc_colors[huidigeKleur];
-			    RGB_Set(c.r, c.g, c.b, 255);   // brightness = 40 (your choice)
-			}
-			led_on = 1;
+		    HAL_UART_Transmit(&huart2, (uint8_t*)msg_beweging, strlen(msg_beweging), HAL_MAX_DELAY);
+
+		    if (huidigeKleur < 12) {
+		        Color c = mc_colors[huidigeKleur];
+		        RGB_Set(c.r, c.g, c.b, helderheid);
+		        for (int i = 0; i < WS2812B_NUM_LEDS; i++) {
+		            WS2812B_SetLED(i, (c.r * helderheid) / 255, (c.g * helderheid) / 255, (c.b * helderheid) / 255);
+		        }
+		    }
+		    led_on = 1;
 		}
 
-		if (led_on && (HAL_GetTick() - led_on_tick >= 100000)) {
+		if (led_on && (HAL_GetTick() - led_on_tick >= 10000)) {
 			RGB_Set(0, 0, 0, 0);
+			for (int i = 0; i <= WS2812B_NUM_LEDS; i++) {
+				WS2812B_SetLED(i, 0, 0, 0);
+			}
 			HAL_UART_Transmit(&huart2, (uint8_t*) msg_uit, strlen(msg_uit), HAL_MAX_DELAY);
 			led_on = 0;
 			button_pressed = 0;
@@ -327,6 +331,11 @@ int main(void)
 			int t_int = (int) temp;
 			SendCanMessage(2, (uint64_t) eco2, 0x300);
 			SendCanMessage(1, (uint64_t) t_int, 0x310);
+		}
+		static int step = 0;
+		while (noodActief) {
+			chase_tick(step++);
+			HAL_Delay(60);
 		}
     /* USER CODE END WHILE */
 
@@ -777,10 +786,25 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 //  if (RxHeader.RTR == CAN_RTR_REMOTE && RxHeader.StdId == 0x112) {
 //	  RTRReceived = 1;
 //  }
+	if ((RxHeader.StdId == 0x001)) {
+		if (RxData[0] == 0x01) {
+			noodActief = 1;
+		}
+		if (RxData[0] == 0x00) {
+			noodActief = 0;
+		}
+	}
 	if (RxHeader.StdId == 0x100) {
 	    uint8_t value = RxData[0];
 	    if (value >= 0 && value <= 11) {
 	        huidigeKleur = value;
+	    }
+	}
+	if (RxHeader.StdId == 0x110) {
+	    uint8_t value = RxData[0];
+
+	    if (value <= 255) {
+	        helderheid = value;
 	    }
 	}
 }
