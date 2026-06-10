@@ -14,8 +14,8 @@ void WiFiCommunication::begin() {
 bool WiFiCommunication::connect(const char *ssid, const char *pass) {
     _ssid = ssid;
     _pass = pass;
-    WiFi.persistent(false);       // geen credentials naar flash schrijven
-    WiFi.setAutoReconnect(true);  // laat de stack zelf herverbinden
+    WiFi.persistent(false);  // geen credentials naar flash schrijven
+    WiFi.setAutoReconnect(false); // eigen reconnect() gebruiken; auto-reconnect gooit statisch IP weg
     WiFi.disconnect();
     delay(100);
     WiFi.mode(WIFI_STA);

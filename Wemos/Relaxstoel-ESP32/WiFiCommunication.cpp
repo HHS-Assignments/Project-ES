@@ -16,7 +16,7 @@ bool WiFiCommunication::connect(const char *ssid, const char *pass) {
     _ssid = ssid;   // bewaar voor reconnect()
     _pass = pass;
     WiFi.persistent(false);       // geen credentials naar NVS schrijven
-    WiFi.setAutoReconnect(true);  // laat de stack zelf herverbinden
+    WiFi.setAutoReconnect(false); // eigen reconnect() gebruiken; auto-reconnect gooit statisch IP weg
     WiFi.disconnect();
     delay(100);
     WiFi.mode(WIFI_STA);
