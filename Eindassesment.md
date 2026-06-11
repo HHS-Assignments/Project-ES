@@ -13,7 +13,7 @@
 - [ ] Afmaken wifi integratie Relaxhoek
 
 ### Balieconsole / Display
-- [ ] Logische en duidelijke teksten schrijven voor op de display van de balieconsole (Tom)
+- [x] Logische en duidelijke teksten schrijven voor op de display van de balieconsole (Tom)
 - [x] Display verplaatsen naar buiten (Iedereen)
 
 ### Documentatie & Presentatie
