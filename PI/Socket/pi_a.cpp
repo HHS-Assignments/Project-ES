@@ -32,7 +32,7 @@ static std::atomic<bool> g_run{true};
 // CAN IDs whose data bytes are ASCII text (bytes 0..dlc-2) + More flag (byte dlc-1)
 static bool isTextId(uint32_t id) {
     return id == 0x150 || id == 0x160 || id == 0x170 ||
-           id == 0x180 || id == 0x190 || id == 0x101;
+           id == 0x180 || id == 0x190 || id == 0x191;
 }
 
 // Parse Wemos-format JSON: {"CAN_ID":"0xHEX","Data":INT}
