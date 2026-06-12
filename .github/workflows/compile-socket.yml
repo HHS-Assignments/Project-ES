@@ -111,22 +111,16 @@ jobs:
           mkdir -p PI/Socket-OOP-A/build/${{ matrix.target }}
           mkdir -p PI/Socket-OOP-B/build/${{ matrix.target }}
 
+          # Alle .cpp-bestanden in de map worden meegecompileerd, zodat
+          # nieuwe klassen niet handmatig toegevoegd hoeven te worden.
           echo "Compiling PI/Socket-OOP-A -> PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A"
           $CXX $CXXFLAGS \
-            PI/Socket-OOP-A/main.cpp \
-            PI/Socket-OOP-A/CAN.cpp \
-            PI/Socket-OOP-A/PiSocketServer.cpp \
-            PI/Socket-OOP-A/DataParser.cpp \
-            PI/Socket-OOP-A/CanGatewayController.cpp \
+            PI/Socket-OOP-A/*.cpp \
             -o PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A
 
           echo "Compiling PI/Socket-OOP-B -> PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B"
           $CXX $CXXFLAGS \
-            PI/Socket-OOP-B/main.cpp \
-            PI/Socket-OOP-B/PiSocketClient.cpp \
-            PI/Socket-OOP-B/WemosCommunication.cpp \
-            PI/Socket-OOP-B/DataParser.cpp \
-            PI/Socket-OOP-B/WemosGatewayController.cpp \
+            PI/Socket-OOP-B/*.cpp \
             -o PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B
 
           cp PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A-oop-${{ matrix.target }}
