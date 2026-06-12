@@ -4,7 +4,7 @@
 #include "LichtkrantController.h"
 
 ParolaDisplay     display(MD_MAX72XX::FC16_HW, D8, 4);
-WiFiCommunication wifi("10.42.0.1", 9000, 9001);
+WiFiCommunication wifi("10.42.0.103", 9000, 9001);   // RPIB
 
 void setup() {
     LichtkrantController::getInstance().init(&display, &wifi);

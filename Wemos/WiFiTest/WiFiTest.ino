@@ -13,11 +13,11 @@
 #include "secrets.h"
 
 // ---- Instellingen ----
-static const char *PI_HOST   = "10.42.0.1";
+static const char *PI_HOST   = "10.42.0.103";
 static const uint16_t PI_PORT_OUT = 9000;
 static const uint16_t MY_PORT_IN  = 9001;
 
-// Statisch IP — false = DHCP (test dit eerst!), true = 10.42.0.10
+// Statisch IP — false = DHCP (test dit eerst!), true = 10.42.0.101 (Relaxstoel)
 #define USE_STATIC_IP false
 
 WiFiServer server(MY_PORT_IN);
@@ -52,8 +52,8 @@ void setup() {
     Serial.println(F("\n\n=== WiFiTest ==="));
 
 #if USE_STATIC_IP
-    Serial.println(F("[WiFi] Statisch IP: 10.42.0.10"));
-    IPAddress ip(10, 42, 0, 10);
+    Serial.println(F("[WiFi] Statisch IP: 10.42.0.101"));
+    IPAddress ip(10, 42, 0, 101);
     IPAddress gw(10, 42, 0, 1);
     IPAddress sn(255, 255, 255, 0);
     IPAddress dns(10, 42, 0, 1);
