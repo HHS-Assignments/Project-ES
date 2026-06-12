@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="15.1">
+  <zoom_level>7</zoom_level>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>462</x>
+      <y>441</y>
+      <w>154</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>«abstract»
+Motor
+--
++ begin(): void = 0
++ setSpeed(pct: uint8_t): void = 0</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>637</x>
+      <y>441</y>
+      <w>154</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>«abstract»
+Lamp
+--
++ begin(): void = 0
++ setAan(): void = 0
++ setUit(): void = 0</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>812</x>
+      <y>441</y>
+      <w>154</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>«abstract»
+Lichtsensor
+--
++ begin(): void = 0
++ getWaarde(): int = 0</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>987</x>
+      <y>441</y>
+      <w>175</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>«abstract»
+Communication
+--
++ begin(): void = 0
++ send(data: char*): bool = 0
++ receive(buf: char*, len: size_t): bool = 0</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>987</x>
+      <y>609</y>
+      <w>175</w>
+      <h>77</h>
+    </coordinates>
+    <panel_attributes>«abstract»
+WirelessCommunication
+--
++ connect(ssid: char*, pass: char*): bool = 0
++ isConnected(): bool = 0</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>462</x>
+      <y>609</y>
+      <w>154</w>
+      <h>77</h>
+    </coordinates>
+    <panel_attributes>Vibratiemotor
+--
+- _pin: uint8_t
+--
++ begin(): void
++ setSpeed(pct: uint8_t): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>637</x>
+      <y>609</y>
+      <w>154</w>
+      <h>77</h>
+    </coordinates>
+    <panel_attributes>Schemerlamp
+--
+- _pin: uint8_t
+--
++ begin(): void
++ setAan(): void
++ setUit(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>812</x>
+      <y>609</y>
+      <w>154</w>
+      <h>77</h>
+    </coordinates>
+    <panel_attributes>LDR
+--
+- _pin: uint8_t
+--
++ begin(): void
++ getWaarde(): int</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>980</x>
+      <y>784</y>
+      <w>203</w>
+      <h>133</h>
+    </coordinates>
+    <panel_attributes>WiFiCommunication
+--
+- _piHost: char*
+- _piPort: int
+- _server: WiFiServer
+--
++ begin(): void
++ connect(ssid: char*, pass: char*): bool
++ isConnected(): bool
++ send(data: char*): bool
++ receive(buf: char*, len: size_t): bool
++ sendCanJson(canId: char*, data: int): bool</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>623</x>
+      <y>42</y>
+      <w>336</w>
+      <h>154</h>
+    </coordinates>
+    <panel_attributes>RelaxstoelController
+--
+- _motor: Motor*
+- _lamp: Lamp*
+- _sensor: Lichtsensor*
+- _comm: WiFiCommunication*
+- _motorAan: bool
+- _ldrDrempel: int
+- _vorigeLdrTijd: unsigned long
+- _vorigeWifiCheck: unsigned long
+--
++ begin(): void
++ update(): void
+- _verwerkCommando(incoming: char*): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>525</x>
+      <y>189</y>
+      <w>140</w>
+      <h>266</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;
+m2=1</panel_attributes>
+    <additional_attributes>180.0;10.0;10.0;360.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>700</x>
+      <y>189</y>
+      <w>28</w>
+      <h>266</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;
+m2=1</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;360.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>861</x>
+      <y>189</y>
+      <w>28</w>
+      <h>266</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;
+m2=1</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;360.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>945</x>
+      <y>189</y>
+      <w>77</w>
+      <h>266</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;
+m2=1</panel_attributes>
+    <additional_attributes>10.0;10.0;90.0;360.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>532</x>
+      <y>504</y>
+      <w>21</w>
+      <h>119</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;150.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>735</x>
+      <y>504</y>
+      <w>21</w>
+      <h>119</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;150.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>917</x>
+      <y>504</y>
+      <w>21</w>
+      <h>119</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;150.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1064</x>
+      <y>504</y>
+      <w>21</w>
+      <h>119</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;150.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1071</x>
+      <y>679</y>
+      <w>21</w>
+      <h>119</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;150.0</additional_attributes>
+  </element>
+</diagram>
