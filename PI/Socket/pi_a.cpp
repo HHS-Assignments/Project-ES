@@ -222,7 +222,7 @@ static void canReader(int canFd) {
             std::snprintf(buf, sizeof(buf),
                 "{\"CAN_ID\":\"%s\",\"Data\":\"%s\"}", hexId, text);
         } else {
-            int val = (f.can_dlc > 0) ? (int)f.data[0] : 0;
+            int val = frameWaarde(f.data, f.can_dlc);
             std::snprintf(buf, sizeof(buf), "{\"CAN_ID\":\"%s\",\"Data\":%d}", hexId, val);
         }
 

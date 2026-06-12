@@ -30,6 +30,6 @@ inline void laadAutomatiseringen(AutomationEngine &engine) {
     engine.addCanActie(0x310,   Vergelijking::Groter, 25,     0x120, 1,   "temp_deuren_open");
 
     // deur sluiten
-    engine.addCanActie(0x300,   Vergelijking::Kleiner, 600,     0x120, 0,   "co2_deuren_open");
-    engine.addCanActie(0x310,   Vergelijking::Kleiner, 25,     0x120, 0,   "temp_deuren_open");
+    engine.addCanActie(0x300,   Vergelijking::Kleiner, 600,     0x120, 0,   "co2_deuren_dicht");
+    engine.addCanActie(0x310,   Vergelijking::Kleiner, 25,     0x120, 0,   "temp_deuren_dicht");
 }

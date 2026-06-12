@@ -138,13 +138,15 @@ static void handleWemosConn(int cfd, sockaddr_in cli) {
             if (!line.empty() && line.back() == '\r') line.pop_back();
             if (line.empty()) continue;
             std::cout << "[B] wemos@" << ip << " -> " << line << "\n";
-            // Forward to Pi A
-            int pi;
-            { std::lock_guard<std::mutex> lk(g_piMu); pi = g_piFd; }
-            if (pi >= 0) {
-                if (!sendLine(pi, line)) std::cerr << "[B] Pi A write failed\n";
-            } else {
-                std::cerr << "[B] Pi A not connected; dropping\n";
+            // Forward to Pi A (lock vasthouden tijdens de hele send zodat
+            // gelijktijdige Wemos-verbindingen geen bytes door elkaar schrijven)
+            {
+                std::lock_guard<std::mutex> lk(g_piMu);
+                if (g_piFd >= 0) {
+                    if (!sendLine(g_piFd, line)) std::cerr << "[B] Pi A write failed\n";
+                } else {
+                    std::cerr << "[B] Pi A not connected; dropping\n";
+                }
             }
             // ACK back to wemos (mirrors wemos's expectation)
             sendAll(cfd, "ACK\n", 4);

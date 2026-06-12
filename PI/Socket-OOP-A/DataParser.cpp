@@ -31,7 +31,9 @@ std::string DataParser::messageToJson(const CanMessage &msg) const {
         for (int i = 0; i < len; i++) text[i] = (char)msg.data[i];
         std::snprintf(buf, sizeof(buf), "{\"CAN_ID\":\"%s\",\"Data\":\"%s\"}", hexId, text);
     } else {
-        int val = (msg.len > 0) ? (int)msg.data[0] : 0;
+        // 16-bit big-endian bij 2+ bytes (conventie 0x300/0x400), anders byte 0
+        int val = (msg.len >= 2) ? ((msg.data[0] << 8) | msg.data[1])
+                                 : ((msg.len == 1) ? (int)msg.data[0] : 0);
         std::snprintf(buf, sizeof(buf), "{\"CAN_ID\":\"%s\",\"Data\":%d}", hexId, val);
     }
     return std::string(buf);

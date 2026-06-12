@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <cstdint>
 #include <mutex>
 #include "Communication.h"
@@ -20,7 +21,7 @@ private:
     int         _fd = -1;
     std::mutex  _mu;          // beschermt _fd bij gelijktijdig zenden/sluiten
     std::string _acc;         // ontvangstbuffer voor onvolledige regels
-    bool        _stopped = false;
+    std::atomic<bool> _stopped{false};
 
     bool _connect();
     void _drop();
