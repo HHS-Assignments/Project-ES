@@ -21,7 +21,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -49,19 +51,45 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 CAN_TxHeaderTypeDef TxHeader;
 CAN_RxHeaderTypeDef RxHeader;
+
 uint8_t TxData[8];
 uint8_t RxData[8];
+
 uint32_t TxMailbox;
+uint8_t rxByte; //usart recieving
+
 uint8_t datacheck = 0;
 uint8_t RTRReceived = 0;
 
-static uint8_t  noodActief = 0;
+volatile uint8_t noodActief = 0;
 volatile uint8_t relaxStoelStatus = 0;
-volatile uint8_t co2High = 0;
-volatile uint8_t tempHigh = 0;
+volatile uint8_t co2High = 1;
+volatile uint8_t tempHigh = 1;
 volatile uint8_t timeOfDay = 0;
 
-uint8_t rxByte;
+/* debounce timers */
+volatile uint32_t db_Deuren = 0;
+volatile uint32_t db_Nood   = 0;
+volatile uint32_t db_Cyclus = 0;
+volatile uint32_t db_Relax  = 0;
+
+// print usart output variables:
+#define MAX_MSGS 5
+#define MSG_LEN  32
+
+char meldingen[MAX_MSGS][MSG_LEN];
+uint8_t msgIndex = 0;
+uint32_t lastRefresh = 0;
+volatile uint8_t screenUpdateFlag = 1;
+volatile uint16_t co2 = 0;
+volatile uint8_t temp = 0;
+volatile uint8_t menuState = 0;
+// 0 = main menu
+// 1 = color menu
+// 2 = brightness menu
+// 3 = combo menu
+char uartBuf[25];
+uint8_t uartIdx = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -76,6 +104,15 @@ void SendCanMessage(int dataLength, uint64_t data, uint16_t canID);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+
+void Safe_Delay(int ms)
+{
+    uint32_t start = HAL_GetTick();
+    while (HAL_GetTick() - start < ms) {
+        if (noodActief) return;
+    }
+}
 
 void ZetAan(GPIO_TypeDef* GPIO, uint16_t pin) {
     HAL_GPIO_WritePin(GPIO, pin, GPIO_PIN_SET);
@@ -94,8 +131,360 @@ void UART_Print(const char* str)
     }
 }
 
-void Test(){
-	UART_Print("Test");
+void AddMelding(const char *msg)
+{
+    // shift older messages down
+    for (int i = MAX_MSGS - 1; i > 0; i--)
+    {
+        strncpy(meldingen[i], meldingen[i - 1], MSG_LEN);
+    }
+
+    // insert newest at top
+    strncpy(meldingen[0], msg, MSG_LEN - 1);
+    meldingen[0][MSG_LEN - 1] = '\0';
+}
+
+void SendColor(uint8_t color)
+{
+    TxHeader.StdId = 0x100;
+    TxHeader.DLC = 1;
+
+    TxData[0] = color;
+
+    HAL_CAN_AddTxMessage(&hcan1, &TxHeader, TxData, &TxMailbox);
+}
+
+void SendBrightness(uint8_t percent)
+{
+    if (percent > 100) percent = 100;
+
+    uint8_t value = (percent * 255) / 100;
+
+    TxHeader.StdId = 0x110;
+    TxHeader.DLC = 1;
+
+    TxData[0] = value;
+
+    HAL_CAN_AddTxMessage(&hcan1, &TxHeader, TxData, &TxMailbox);
+}
+
+void HandleCommand(char *cmd)
+{
+    // MAIN MENU
+    if (menuState == 0)
+    {
+        if (cmd[0] == '1')
+        {
+            menuState = 1;
+            UART_Print("\r\nKleur kiezen (0-11):\r\n");
+            UART_Print("0: Blauw\r\n");
+            UART_Print("1: Groen\r\n");
+            UART_Print("2: Aqua\r\n");
+            UART_Print("3: Rood\r\n");
+            UART_Print("4: Paars\r\n");
+            UART_Print("5: Amber\r\n");
+            UART_Print("6: Licht Blauw\r\n");
+            UART_Print("7: Mint groen\r\n");
+            UART_Print("8: Roze\r\n");
+            UART_Print("9: Licht paars\r\n");
+            UART_Print("10: Licht Geel\r\n");
+            UART_Print("11: Wit\r\n");
+            UART_Print("Selected color: ");
+        }
+        else if (cmd[0] == '2')
+        {
+            menuState = 2;
+            UART_Print("\r\nHelderheid kiezen (0-100):\r\n");
+        }
+        else if (cmd[0] == '3')
+        {
+            menuState = 3;
+            UART_Print("\r\nCombo: kleur + helderheid (bv: 5 80)\r\n");
+            UART_Print("0: Blauw\r\n");
+            UART_Print("1: Groen\r\n");
+            UART_Print("2: Aqua\r\n");
+            UART_Print("3: Rood\r\n");
+            UART_Print("4: Paars\r\n");
+            UART_Print("5: Amber\r\n");
+            UART_Print("6: Licht Blauw\r\n");
+            UART_Print("7: Mint groen\r\n");
+            UART_Print("8: Roze\r\n");
+            UART_Print("9: Licht paars\r\n");
+            UART_Print("10: Licht Geel\r\n");
+            UART_Print("11: Wit\r\n");
+        }
+        else if (cmd[0] == '4')
+        {
+            menuState = 4;
+            uartIdx = 0; // reset buffer
+
+            UART_Print("\r\nTyp tekst voor lichtkrant (max 24 chars):\r\n");
+            UART_Print("> ");
+            return;
+        }
+        else if (cmd[0] == '5')
+        {
+            menuState = 5;
+            uartIdx = 0;
+
+            UART_Print("\r\nNOODTEKST MODE (max 24 chars)\r\n");
+            UART_Print("Typ noodbericht:\r\n> ");
+            return;
+        }
+        else if (cmd[0] == '6')
+        {
+            menuState = 6;
+            uartIdx = 0;
+
+            UART_Print("\r\nDag/Nacht tijd instellen\r\n");
+            UART_Print("Formaat: 0800 1700\r\n");
+            UART_Print("Typ: <dagtijd> <nachtijd>\r\n> ");
+            return;
+        }
+        return;
+    }
+
+    // COLOR MENU
+    if (menuState == 1)
+    {
+        int color = atoi(cmd);
+
+        if (color >= 0 && color <= 11)
+        {
+            SendColor((uint8_t)color);
+
+            screenUpdateFlag = 1;
+        }
+
+        menuState = 0;
+        return;
+    }
+
+    // BRIGHTNESS MENU
+    if (menuState == 2)
+    {
+        int percent = atoi(cmd);
+
+        if (percent < 0) percent = 0;
+        if (percent > 100) percent = 100;
+
+        SendBrightness((uint8_t)percent);
+        screenUpdateFlag = 1;
+
+        menuState = 0;
+        return;
+    }
+
+    // COMBO MENU
+    if (menuState == 3)
+    {
+        int color, brightness;
+
+        if (sscanf(cmd, "%d %d", &color, &brightness) == 2)
+        {
+            if (color >= 0 && color <= 11)
+                SendColor((uint8_t)color);
+
+            if (brightness < 0) brightness = 0;
+            if (brightness > 100) brightness = 100;
+
+            SendBrightness((uint8_t)brightness);
+
+            UART_Print("Combo sent\r\n");
+            screenUpdateFlag = 1;
+        }
+        else
+        {
+            UART_Print("Format: <color> <brightness>\r\n");
+        }
+
+        menuState = 0;
+        return;
+    }
+
+    if (menuState == 4)
+    {
+        int len = strlen(cmd);
+
+        if (len == 0)
+        {
+            menuState = 0;
+            return;
+        }
+
+        if (len > 24)
+        {
+            UART_Print("\r\nTe lang! Max 24 karakters.\r\n");
+            len = 24;
+        }
+
+        UART_Print("\r\nVersturen...\r\n");
+
+        uint8_t frame1[8] = {0};
+        uint8_t frame2[8] = {0};
+        uint8_t frame3[8] = {0};
+
+        // ----------------------------
+        // Split string into 3 CAN frames
+        // ----------------------------
+        for (int i = 0; i < 8; i++)
+        {
+            frame1[i] = (i < len) ? cmd[i] : 0x00;
+            frame2[i] = ((i + 8) < len) ? cmd[i + 8] : 0x00;
+            frame3[i] = ((i + 16) < len) ? cmd[i + 16] : 0x00;
+        }
+
+        // ----------------------------
+        // PACK FRAME 1
+        // ----------------------------
+        uint64_t pack1 = 0;
+        uint64_t pack2 = 0;
+        uint64_t pack3 = 0;
+
+        for (int i = 0; i < 8; i++)
+        {
+            pack1 |= ((uint64_t)frame1[i]) << (8 * (7 - i));
+            pack2 |= ((uint64_t)frame2[i]) << (8 * (7 - i));
+            pack3 |= ((uint64_t)frame3[i]) << (8 * (7 - i));
+        }
+
+        // ----------------------------
+        // SEND FRAMES
+        // ----------------------------
+        SendCanMessage(8, pack1, 0x180);
+        SendCanMessage(8, pack2, 0x190);
+        SendCanMessage(8, pack3, 0x191);
+
+        UART_Print("Klaar met versturen\r\n");
+
+        menuState = 0;
+        screenUpdateFlag = 1;
+        return;
+    }
+    if (menuState == 5)
+    {
+        int len = strlen(cmd);
+
+        if (len == 0)
+        {
+            menuState = 0;
+            return;
+        }
+
+        if (len > 24)
+        {
+            UART_Print("\r\nTe lang! Max 24 karakters.\r\n");
+            len = 24;
+        }
+
+        UART_Print("\r\nNOODTEKST WORDT VERSTUURD...\r\n");
+
+        uint8_t frame1[8] = {0};
+        uint8_t frame2[8] = {0};
+        uint8_t frame3[8] = {0};
+
+        // ----------------------------
+        // Split into 3 CAN frames
+        // ----------------------------
+        for (int i = 0; i < 8; i++)
+        {
+            frame1[i] = (i < len) ? cmd[i] : 0x00;
+            frame2[i] = ((i + 8) < len) ? cmd[i + 8] : 0x00;
+            frame3[i] = ((i + 16) < len) ? cmd[i + 16] : 0x00;
+        }
+
+        // ----------------------------
+        // PACK INTO uint64_t SAFELY
+        // ----------------------------
+        uint64_t pack1 = 0;
+        uint64_t pack2 = 0;
+        uint64_t pack3 = 0;
+
+        for (int i = 0; i < 8; i++)
+        {
+            pack1 |= ((uint64_t)frame1[i]) << (8 * (7 - i));
+            pack2 |= ((uint64_t)frame2[i]) << (8 * (7 - i));
+            pack3 |= ((uint64_t)frame3[i]) << (8 * (7 - i));
+        }
+
+        // ----------------------------
+        // SEND ALL FRAMES
+        // ----------------------------
+        SendCanMessage(8, pack1, 0x150);
+        SendCanMessage(8, pack2, 0x160);
+        SendCanMessage(8, pack3, 0x170);
+
+        UART_Print("NOODTEKST verzonden\r\n");
+
+        menuState = 0;
+        screenUpdateFlag = 1;
+        return;
+    }
+    if (menuState == 6)
+    {
+        int day, night;
+
+        if (strlen(cmd) == 0)
+        {
+            menuState = 0;
+            return;
+        }
+
+        // Expect: 0800 1700
+        if (sscanf(cmd, "%d %d", &day, &night) != 2)
+        {
+            UART_Print("\r\n? Fout formaat!\r\nGebruik: 0800 1700\r\n");
+            menuState = 0;
+            return;
+        }
+
+        int dayHH = day / 100;
+        int dayMM = day % 100;
+        int nightHH = night / 100;
+        int nightMM = night % 100;
+
+        if (dayHH > 23 || nightHH > 23 || dayMM > 59 || nightMM > 59)
+        {
+            UART_Print("\r\n? Ongeldige tijd!\r\n");
+            menuState = 0;
+            return;
+        }
+
+        UART_Print("\r\nTijd versturen...\r\n");
+
+        uint8_t frame[8] = {0};
+
+        // same layout you wanted:
+        // 0x00 08 00 00 01 07 00 00
+
+        frame[0] = 0x00;
+        frame[1] = (uint8_t)dayHH;
+        frame[2] = (uint8_t)dayMM;
+        frame[3] = 0x00;
+
+        frame[4] = 0x00;
+        frame[5] = (uint8_t)nightHH;
+        frame[6] = (uint8_t)nightMM;
+        frame[7] = 0x00;
+
+        // ----------------------------
+        // PACK USING SAME METHOD AS MENU 5
+        // ----------------------------
+        uint64_t pack = 0;
+
+        for (int i = 0; i < 8; i++)
+        {
+            pack |= ((uint64_t)frame[i]) << (8 * (7 - i));
+        }
+
+        SendCanMessage(8, pack, 0x192);
+
+        UART_Print("OK: tijd verzonden (0x192)\r\n");
+
+        menuState = 0;
+        screenUpdateFlag = 1;
+        return;
+    }
 }
 /* USER CODE END 0 */
 
@@ -208,26 +597,87 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+	while (1)
+	{
+	    uint32_t now = HAL_GetTick();
 
+	    if (((now - lastRefresh) >= 10000 || screenUpdateFlag) && menuState == 0)
+	    {
+	        lastRefresh = now;
+	        screenUpdateFlag = 0;
 
-	  if(1){
-//		  ZetAan(GPIOB, Dag_Nacht_Pin);
-	  }
+	        char buf[128];
 
-	  if(1){
-//		  ZetAan(GPIOB, TemperatuurOverGrens_Pin);
-	  }
+	        /* Push old content away */
+	        for (int i = 0; i < 40; i++)
+	        {
+	            UART_Print("\r\n");
+	        }
+	        UART_Print("\r\n==================================================\r\n");
 
-	  if(1){
-//		  ZetAan(GPIOB, RelaxstoelStatus_Pin);
-	  }
+	        UART_Print("           SYSTEEM STATUS OVERVIEW\r\n");
+	        UART_Print("==================================================\r\n\r\n");
 
-	  if(1){
-//		  ZetAan(GPIOB, CO2OverGrens_Pin);
-	  }
+	        /* ================= KLIMAAT ================= */
+	        snprintf(buf, sizeof(buf),
+	            "[Klimaat]\r\n"
+	            "  CO2  : %d ppm\r\n"
+	            "  Temp : %d C\r\n"
+	            "  LDR  : %d\r\n\r\n",
+	            co2, temp, 0
+	        );
+	        UART_Print(buf);
 
+	        /* ================= STATUS ================= */
+	        snprintf(buf, sizeof(buf),
+	            "[Status]\r\n"
+	            "  Dag/Nacht : %s\r\n"
+	            "  CO2       : %s\r\n"
+	            "  Temp      : %s\r\n\r\n",
+	            timeOfDay ? "Nacht" : "Dag",
+	            co2High ? "WARN" : "OK",
+	            tempHigh ? "WARN" : "OK"
+	        );
+	        UART_Print(buf);
+
+	        /* ================= MELDINGEN ================= */
+	        UART_Print("[Meldingen]\r\n");
+
+	        int hasMsg = 0;
+
+	        for (int i = 0; i < MAX_MSGS; i++)
+	        {
+	            if (meldingen[i][0] != '\0')
+	            {
+	                hasMsg = 1;
+
+	                snprintf(buf, sizeof(buf),
+	                    "  %d) %s",
+	                    i + 1,
+	                    meldingen[i]
+	                );
+
+	                UART_Print(buf);
+	            }
+	        }
+
+	        if (!hasMsg)
+	        {
+	            UART_Print("  (geen meldingen)\r\n");
+	        }
+
+	        UART_Print("\r\n==================================================\r\n");
+	        UART_Print("MENU\r\n");
+	        UART_Print("==================================================\r\n");
+
+	        UART_Print("1 - LED kleur instellen\r\n");
+	        UART_Print("2 - LED helderheid instellen\r\n");
+	        UART_Print("3 - LED kleur + helderheid\r\n");
+	        UART_Print("4 - Lichtkrant tekst\r\n");
+	        UART_Print("5 - NOODTEKST (prioriteit)\r\n");
+	        UART_Print("6 - Stuur dag/nacht tijd\r\n");
+	        UART_Print("\r\n==================================================\r\n");
+	    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -319,7 +769,7 @@ static void MX_CAN1_Init(void)
   hcan1.Init.TimeTriggeredMode = DISABLE;
   hcan1.Init.AutoBusOff = DISABLE;
   hcan1.Init.AutoWakeUp = DISABLE;
-  hcan1.Init.AutoRetransmission = DISABLE;
+  hcan1.Init.AutoRetransmission = ENABLE;
   hcan1.Init.ReceiveFifoLocked = DISABLE;
   hcan1.Init.TransmitFifoPriority = DISABLE;
   if (HAL_CAN_Init(&hcan1) != HAL_OK)
@@ -496,22 +946,29 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
     if (huart->Instance == USART2)
     {
-        // Echo back (so you see what you type)
         HAL_UART_Transmit(&huart2, &rxByte, 1, HAL_MAX_DELAY);
 
-        // Process character here
-        if (rxByte == '1') {
-            UART_Print("You typed 1\r\n");
+        if (rxByte == '\r' || rxByte == '\n')
+        {
+            uartBuf[uartIdx] = '\0';
+            uartIdx = 0;
+
+            HandleCommand(uartBuf);
+        }
+        else
+        {
+            if (uartIdx < sizeof(uartBuf) - 1)
+                uartBuf[uartIdx++] = rxByte;
         }
 
-        // Restart reception (VERY IMPORTANT)
         HAL_UART_Receive_IT(&huart2, &rxByte, 1);
     }
 }
 
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
+	screenUpdateFlag = 1;
+
 	if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK) {
-		Error_Handler();
 	}
 
 //	char msg[] = "CAN ontvangen!\r\n";
@@ -530,12 +987,12 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 	if ((RxHeader.StdId == 0x001)) {
 		if (RxData[0] == 0x01) {
 			noodActief = 1;
-			UART_Print("Noodknop aan!\r\n\r\n");
+			AddMelding("Noodknop aan!\r\n\r\n");
 			ZetAan(GPIOB, NoodknopLed_Pin);
 		}
 		if (RxData[0] == 0x00) {
 			noodActief = 0;
-			UART_Print("Noodstand uit!\r\n\r\n");
+			AddMelding("Noodstand uit!\r\n\r\n");
 			ZetUit(GPIOB, NoodknopLed_Pin);
 		}
 	}
@@ -543,95 +1000,94 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 	    uint16_t value = ((uint16_t)RxData[0] << 8) | RxData[1];
 	    if (value >= 600) {
 	        if (!co2High) {
-	            UART_Print("CO2 te hoog\r\n\r\n");
+	        	AddMelding("CO2 te hoog\r\n\r\n");
 	            ZetAan(GPIOB, CO2OverGrens_Pin);
 	            co2High = 1;
 	        }
 	    } else {
 	        if (co2High) {
-	            UART_Print("CO2 normaal\r\n\r\n");
+	        	AddMelding("CO2 normaal\r\n\r\n");
 	            ZetUit(GPIOB, CO2OverGrens_Pin);
 	            co2High = 0;
 	        }
 	    }
+	    co2 = value;
 	}
 	if (RxHeader.StdId == 0x310) {
 	    if (RxData[0] >= 25) {
 	    	if (!tempHigh) {
-	            UART_Print("Temperatuur te hoog\r\n\r\n");
+	    		AddMelding("Temperatuur te hoog\r\n\r\n");
 	            ZetAan(GPIOB, TemperatuurOverGrens_Pin);
 	            tempHigh = 1;
 	    	}
 	    } else {
 	    	if (tempHigh) {
-	            UART_Print("Temperatuur normaal\r\n\r\n");
+	    		AddMelding("Temperatuur normaal\r\n\r\n");
 	            ZetUit(GPIOB, TemperatuurOverGrens_Pin);
 	            tempHigh = 0;
 	    	}
 	    }
+	    temp = RxData[0];
 	}
 	if (RxHeader.StdId == 0x430) {
 	    if (RxData[0] == 0x01) {
-	            UART_Print("RelaxStoel aan\r\n\r\n");
-	            ZetAan(GPIOB, RelaxstoelStatus_Pin);
-	            relaxStoelStatus = 1;
+	    	AddMelding("RelaxStoel aan\r\n\r\n");
+	    	ZetAan(GPIOB, RelaxstoelStatus_Pin);
+	    	relaxStoelStatus = 1;
 	    }
 	    else if (RxData[0] == 0x00) {
-	            UART_Print("RelaxStoel uit\r\n\r\n");
-	            ZetUit(GPIOB, RelaxstoelStatus_Pin);
-	            relaxStoelStatus = 0;
+	    	AddMelding("RelaxStoel uit\r\n\r\n");
+	    	ZetUit(GPIOB, RelaxstoelStatus_Pin);
+	    	relaxStoelStatus = 0;
 	    }
 	}
 	if (RxHeader.StdId == 0x410) {
-		UART_Print("Het is dag\r\n\r\n");
+		AddMelding("Het is dag\r\n\r\n");
 		timeOfDay = 0;
 	}
 	if (RxHeader.StdId == 0x420) {
-		UART_Print("Het is nacht\r\n\r\n");
+		AddMelding("Het is nacht\r\n\r\n");
 		timeOfDay = 1;
 	}
 }
 
-void SendCanMessage(int dataLength, uint64_t data, uint16_t canID) {
-	uint8_t tempData[8] = { data, data >> 8, data >> 16, data >> 24, data >> 32,
-			data >> 40, data >> 48, data >> 56 };
-	int y = 0;
-	for (int i = dataLength - 1; i >= 0; i--) {
-		TxData[i] = tempData[y];
-		y++;
-	}
-	TxHeader.DLC = dataLength;
-	TxHeader.StdId = canID;
+void SendCanMessage(int dataLength, uint64_t data, uint16_t canID)
+{
+    uint8_t TxData[8] = {0};
 
-	if (HAL_CAN_AddTxMessage(&hcan1, &TxHeader, TxData, &TxMailbox) != HAL_OK) {
-		Error_Handler();
-	}
+    // Extract bytes in BIG-ENDIAN order from uint64_t
+    for (int i = 0; i < dataLength; i++) {
+        TxData[i] = (data >> (8 * (dataLength - 1 - i))) & 0xFF;
+    }
+
+    TxHeader.DLC = dataLength;
+    TxHeader.StdId = canID;
+
+    HAL_StatusTypeDef status =
+        HAL_CAN_AddTxMessage(&hcan1, &TxHeader, TxData, &TxMailbox);
+
+    if (status != HAL_OK) {
+        UART_Print("CAN TX failed\r\n");
+    }
 }
 
-static uint32_t db_Deuren = 0;
-static uint32_t db_Nood   = 0;
-static uint32_t db_Cyclus = 0;
-static uint32_t db_Relax  = 0;
-
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
     uint32_t nu = HAL_GetTick();
-
     // Noodknop altijd verwerken, ongeacht noodActief
-    if (GPIO_Pin == Noodstatusknop_Pin && (nu - db_Nood) >= 300)
-    {
+    if (GPIO_Pin == Noodstatusknop_Pin && (nu - db_Nood) >= 300) {
         db_Nood = nu;
+        screenUpdateFlag = 1;
         noodActief = !noodActief;
         if (noodActief)
         {
-            UART_Print("Noodknop ingedrukt!\r\n\r\n");
+        	AddMelding("Noodknop aan!\r\n\r\n");
             ZetAan(GPIOB, NoodknopLed_Pin);
 			uint64_t NoodknopAan = 0x01;
 			SendCanMessage(1, NoodknopAan, 0x001);
         }
         else
         {
-            UART_Print("Noodstand uit!\r\n\r\n");
+        	AddMelding("Noodstand uit!\r\n\r\n");
             ZetUit(GPIOB, NoodknopLed_Pin);
 			uint64_t NoodknopUit = 0x00;
 			SendCanMessage(1, NoodknopUit, 0x001);
@@ -643,31 +1099,34 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
     if (GPIO_Pin == AlleDeurenOpen_Pin && (nu - db_Deuren) >= 300)
     {
+    	screenUpdateFlag = 1;
         db_Deuren = nu;
-        UART_Print("Alle Deuren gaan open\r\n\r\n");
+        AddMelding("Alle Deuren gaan open\r\n\r\n");
 		uint64_t StuurNiks = 0x00;
 		SendCanMessage(1, StuurNiks, 0x120);
     }
     else if (GPIO_Pin == DeurCyclus_Pin && (nu - db_Cyclus) >= 300)
     {
+    	screenUpdateFlag = 1;
         db_Cyclus = nu;
-        UART_Print("Deurcyclus wordt gestart\r\n\r\n");
+        AddMelding("Deurcyclus wordt gestart\r\n\r\n");
 		uint64_t StuurNiks = 0x00;
 		SendCanMessage(1, StuurNiks, 0x130);
     }
     else if (GPIO_Pin == SwitchRelaxstoelStatus_Pin && (nu - db_Relax) >= 300)
     {
+    	screenUpdateFlag = 1;
         db_Relax = nu;
 		if (relaxStoelStatus == 0) {
 			relaxStoelStatus = 1;
-			UART_Print("Status Relaxstoel aan\r\n\r\n");
+			AddMelding("Status Relaxstoel aan\r\n\r\n");
 			uint64_t AanBit = 0x01;
 			SendCanMessage(1, AanBit, 0x140);
 			ZetAan(GPIOB, RelaxstoelStatus_Pin);
 			relaxStoelStatus = 1;
 		} else if (relaxStoelStatus == 1) {
 			relaxStoelStatus = 0;
-			UART_Print("Status Relaxstoel uit\r\n\r\n");
+			AddMelding("Status Relaxstoel uit\r\n\r\n");
 			uint64_t UitBit = 0x00;
 			SendCanMessage(1, UitBit, 0x140);
             ZetUit(GPIOB, RelaxstoelStatus_Pin);
