@@ -239,8 +239,15 @@ static void peerReader(int peerFd, int canFd) {
             can_frame f{};
             f.can_id = id;
             if (id > 0x7FF) f.can_id |= CAN_EFF_FLAG;
-            f.data[0] = (uint8_t)(dataVal & 0xFF);
-            f.can_dlc = 1;
+            if (id == 0x400) {
+                // LDR-waarde (0-1023): 2 bytes big-endian, zelfde conventie als 0x300
+                f.data[0] = (uint8_t)((dataVal >> 8) & 0xFF);
+                f.data[1] = (uint8_t)(dataVal & 0xFF);
+                f.can_dlc = 2;
+            } else {
+                f.data[0] = (uint8_t)(dataVal & 0xFF);
+                f.can_dlc = 1;
+            }
             if (::write(canFd, &f, sizeof(f)) != (ssize_t)sizeof(f)) {
                 perror("write(CAN)");
             } else {

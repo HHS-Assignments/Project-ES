@@ -68,7 +68,14 @@ bool DataParser::jsonToMessage(const std::string &line, CanMessage &msg) const {
         catch (...) { return false; }
     }
 
-    msg.data[0] = (uint8_t)(dataVal & 0xFF);
-    msg.len     = 1;
+    if (msg.id == 0x400) {
+        // LDR-waarde (0-1023): 2 bytes big-endian, zelfde conventie als 0x300
+        msg.data[0] = (uint8_t)((dataVal >> 8) & 0xFF);
+        msg.data[1] = (uint8_t)(dataVal & 0xFF);
+        msg.len     = 2;
+    } else {
+        msg.data[0] = (uint8_t)(dataVal & 0xFF);
+        msg.len     = 1;
+    }
     return true;
 }
