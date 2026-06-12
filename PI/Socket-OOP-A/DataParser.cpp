@@ -6,13 +6,16 @@ bool DataParser::isTextId(uint32_t id) {
            id == 0x180 || id == 0x190 || id == 0x191;
 }
 
+// Layout per 4-byte helft: [00][uur][min][00]
+//   byte 1 = dag-uur, byte 2 = dag-minuut, byte 5 = nacht-uur, byte 6 = nacht-minuut
+// (voorbeeld: 08:00/14:50 -> 00 08 00 00 00 0E 32 00)
 bool DataParser::parseTijdConfig(const CanMessage &msg,
                                  int &dagH, int &dagM, int &nachtH, int &nachtM) {
     if (msg.len != 8) return false;
-    dagH   = (msg.data[0] << 8) | msg.data[1];
-    dagM   = (msg.data[2] << 8) | msg.data[3];
-    nachtH = (msg.data[4] << 8) | msg.data[5];
-    nachtM = (msg.data[6] << 8) | msg.data[7];
+    dagH   = msg.data[1];
+    dagM   = msg.data[2];
+    nachtH = msg.data[5];
+    nachtM = msg.data[6];
     return dagH < 24 && dagM < 60 && nachtH < 24 && nachtM < 60;
 }
 

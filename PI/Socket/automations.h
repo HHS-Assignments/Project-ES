@@ -29,15 +29,17 @@ static const int kNumAutomations = 2;
 
 static std::mutex g_autoMu;   // beschermt g_automations (0x192-handler vs. automation-thread)
 
-// Parseert de 0x192-payload: 4x 16-bit big-endian [dagUur][dagMin][nachtUur][nachtMin].
+// Parseert de 0x192-payload. Layout per 4-byte helft: [00][uur][min][00]
+//   byte 1 = dag-uur, byte 2 = dag-minuut, byte 5 = nacht-uur, byte 6 = nacht-minuut
+// (voorbeeld: 08:00/14:50 -> 00 08 00 00 00 0E 32 00)
 // Geeft false bij ongeldige lengte of tijden.
 inline bool parseTijdConfig(const uint8_t *data, uint8_t len,
                             int &dagH, int &dagM, int &nachtH, int &nachtM) {
     if (len != 8) return false;
-    dagH   = (data[0] << 8) | data[1];
-    dagM   = (data[2] << 8) | data[3];
-    nachtH = (data[4] << 8) | data[5];
-    nachtM = (data[6] << 8) | data[7];
+    dagH   = data[1];
+    dagM   = data[2];
+    nachtH = data[5];
+    nachtM = data[6];
     return dagH < 24 && dagM < 60 && nachtH < 24 && nachtM < 60;
 }
 
