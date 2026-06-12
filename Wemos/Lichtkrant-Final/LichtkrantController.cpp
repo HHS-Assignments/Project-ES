@@ -37,7 +37,7 @@ void LichtkrantController::update() {
     }
 
     unsigned long nu = millis();
-    if (nu - _vorigeWifiCheck >= 5000) {
+    if (nu - _vorigeWifiCheck >= 30000) {
         _vorigeWifiCheck = nu;
         if (!_comm->isConnected()) {
             Serial.println(F("[WiFi] Verbinding verloren, opnieuw verbinden..."));

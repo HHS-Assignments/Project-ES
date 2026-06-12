@@ -3,7 +3,11 @@
 #include <MD_MAX72xx.h>
 #include <SPI.h>
 #include <string.h>
-#include "secrets.h"
+ #if __has_include("secrets.h")
+ #include "secrets.h"
+ #else
+ #error "Missing secrets.h. Create Wemos/Lichtkrant/secrets.h (or copy from a secrets.h.example) and set WIFI_SSID/WIFI_PASSWORD/WIFI_MAX_ATTEMPTS."
+ #endif
 
 // Display hardware
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
@@ -50,10 +54,13 @@ void verwerk_tekst_deel(const char *incoming, char *doelBuffer, char *doelTekst,
     // Zoek het sluitende aanhalingsteken
     const char *einde = strchr(dataPtr, '"');
     if (einde == nullptr) return;
-
-    // Plak dit deel aan de buffer
-    size_t len = einde - dataPtr;
-    strncat(doelBuffer, dataPtr, len);
+	
+     // Plak dit deel aan de buffer (met bounds check)
+     size_t len = (size_t)(einde - dataPtr);
+     size_t used = strlen(doelBuffer);
+     size_t space = (used < 127) ? (127 - used) : 0;
+     if (len > space) len = space;
+     strncat(doelBuffer, dataPtr, len);
 
     // Controleer of er een vervolg komt
     const char *morePtr = strstr(incoming, "\"More\":");
@@ -126,7 +133,7 @@ static void verwerk_commando(const char *incoming) {
         verwerk_tekst_deel(incoming, normaalBuffer, normaleTekst, false);
         return;
     }
-    if (strstr(incoming, "0x190") || strstr(incoming, "0x101")) {
+    if (strstr(incoming, "0x190") || strstr(incoming, "0x191")) {
         verwerk_tekst_deel(incoming, normaalBuffer, normaleTekst, false);
         return;
     }

@@ -53,8 +53,11 @@ void RelaxstoelController::update() {
 
     // Fysieke knop: toggle bij neergaande flank (INPUT_PULLUP: HIGH=los, LOW=ingedrukt)
     if (_knopPin != 255) {
+        static unsigned long lastKnopMs = 0;
+        const unsigned long debounceMs = 50;
         bool huidig = digitalRead(_knopPin);
-        if (_vorigeKnopStaat == HIGH && huidig == LOW) {
+        if (_vorigeKnopStaat == HIGH && huidig == LOW && (millis() - lastKnopMs) >= debounceMs) {
+            lastKnopMs = millis();
             // Knop net ingedrukt
             _setMotor(!_motorAan);
             Serial.println(F("[Knop] Toggle relaxstoel"));

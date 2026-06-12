@@ -10,7 +10,11 @@
   #include <ESP8266WiFi.h>
 #endif
 
-#include "secrets.h"
+ #if __has_include("secrets.h")
+ #include "secrets.h"
+ #else
+ #error "Missing secrets.h. Create Wemos/WiFiTest/secrets.h (or copy from an example) and set WIFI_SSID/WIFI_PASSWORD."
+ #endif
 
 // ---- Instellingen ----
 static const char *PI_HOST   = "10.42.0.103";

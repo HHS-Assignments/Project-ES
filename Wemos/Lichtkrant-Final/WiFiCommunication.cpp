@@ -27,6 +27,7 @@ bool WiFiCommunication::connect(const char *ssid, const char *pass) {
     Serial.print(F("[WiFi] Vrij geheugen voor verbinden: "));
     Serial.print(ESP.getFreeHeap()); Serial.println(F(" bytes"));
 
+#if defined(WIFI_DEBUG_SCAN)
     Serial.println(F("[WiFi] Netwerken scannen..."));
     int n = WiFi.scanNetworks();
     for (int i = 0; i < n; i++) {
@@ -38,6 +39,7 @@ bool WiFiCommunication::connect(const char *ssid, const char *pass) {
         Serial.println(WiFi.RSSI(i));
     }
     WiFi.scanDelete();
+ #endif
 
     WiFi.begin(ssid, pass);
     int attempts = 0;

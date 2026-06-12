@@ -40,7 +40,7 @@
 #define INCOMING_BUF_SIZE 256
 
 /** @brief Pi-1 TCP receiver hostname (updated to match project network) */
-const char *const piHost = "10.42.0.1";
+const char *const piHost = "10.42.0.103";
 /** @brief Pi-1 TCP receiver port number */
 const int piPort = 9000;
 /** @brief TCP port where the WeMos listens for inbound commands */
@@ -189,7 +189,7 @@ bool SendJsonToPi_int(const char *device, const char *sensor, int data) {
  */
 void setup() {
   /** @brief Button pin number (WeMos D1 Mini D2 = GPIO4) */
-  const int BUTTON_PIN = 2;
+  const int BUTTON_PIN = D2;
 
   // Initialize serial communication at 9600 baud
   Serial.begin(9600);
