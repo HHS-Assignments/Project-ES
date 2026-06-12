@@ -62,12 +62,17 @@ void RelaxstoelController::update() {
         _vorigeKnopStaat = huidig;
     }
 
-    // Lamp automatisch aansturen op basis van LDR
-    int ldr = _sensor->getWaarde();
-    if (ldr < _ldrDrempel) _lamp->setAan();
-    else                   _lamp->setUit();
-
     unsigned long nu = millis();
+
+    // LDR maximaal 5x per seconde uitlezen: voorkomt onnodige ADC-belasting
+    // (op ESP8266 verstoort continu analogRead() zelfs de WiFi-radio)
+    if (nu - _vorigeLdrLees >= 200) {
+        _vorigeLdrLees = nu;
+        _laatsteLdr = _sensor->getWaarde();
+        if (_laatsteLdr < _ldrDrempel) _lamp->setAan();
+        else                           _lamp->setUit();
+    }
+    int ldr = _laatsteLdr;
 
     // Stuur LDR waarde elke 10 seconden als CAN 0x400
     if (nu - _vorigeLdrTijd >= 10000) {
