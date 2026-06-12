@@ -81,7 +81,7 @@ sequenceDiagram
     rect rgba(230, 200, 255, 0.25)
     Note over RS,Balie: Scenario 5 — LDR-meting van de relaxhoek
     loop elke 10 seconden
-        RS->>RS: LDR lezen; schemerlamp aan onder drempel
+        RS->>RS: LDR lezen, schemerlamp aan onder drempel
         RS->>PiB: JSON 0x400 LDR-waarde
         PiB->>PiA: JSON 0x400 (doorsturen)
         PiA->>Balie: CAN 0x400 (2 bytes BE)
