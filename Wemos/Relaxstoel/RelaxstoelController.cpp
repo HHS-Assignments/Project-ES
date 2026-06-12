@@ -26,7 +26,7 @@ void RelaxstoelController::init(Motor *motor, Lamp *lamp,
 }
 
 void RelaxstoelController::begin() {
-    Serial.begin(9600);
+    Serial.begin(115200);
     delay(100);
     _motor->begin();
     _lamp->begin();

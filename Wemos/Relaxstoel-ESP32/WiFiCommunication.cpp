@@ -16,17 +16,10 @@ bool WiFiCommunication::connect(const char *ssid, const char *pass) {
     _ssid = ssid;   // bewaar voor reconnect()
     _pass = pass;
 
-    // Zelfde volgorde als de werkende WiFiTest sketch:
-    // config -> persistent -> autoReconnect -> mode -> begin
-    // (geen WiFi.disconnect() vooraf; die verstoort de verbinding)
-    IPAddress ip(10, 42, 0, 10);
-    IPAddress gateway(10, 42, 0, 1);
-    IPAddress subnet(255, 255, 255, 0);
-    IPAddress dns(10, 42, 0, 1);
-    WiFi.config(ip, gateway, subnet, dns);
-
-    WiFi.persistent(false);       // geen credentials naar NVS schrijven
-    WiFi.setAutoReconnect(false); // eigen reconnect() gebruiken
+    // Letterlijk overgenomen van de werkende WiFiTest sketch: DHCP,
+    // persistent -> autoReconnect -> mode -> begin
+    WiFi.persistent(false);
+    WiFi.setAutoReconnect(false);
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, pass);
 
