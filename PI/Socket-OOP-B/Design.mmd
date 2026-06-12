@@ -66,16 +66,42 @@ classDiagram
         +messageToJson(msg: CanMessage) string
         +jsonToMessage(line: string, msg: CanMessage) bool
         +isTextId(id: uint32_t) bool$
+        +parseTijdConfig(msg: CanMessage, dagH: int, dagM: int, nachtH: int, nachtM: int) bool$
+    }
+
+    class TimeAction {
+        +hour: int
+        +minute: int
+        +canId: uint32_t
+        +data: uint8_t
+        +name: string
+        +lastFiredDay: int
+    }
+
+    class AutomationEngine {
+        -_actions: vector~TimeAction~
+        -_mu: mutex
+        -_running: atomic~bool~
+        -_thread: thread
+        -_fire: function~void(uint32_t, uint8_t)~
+        +addAction(a: TimeAction) void
+        +setDagNachtTijden(dagH: int, dagM: int, nachtH: int, nachtM: int) void
+        +evalueerNu() void
+        +start(fire: function) void
+        +stop() void
+        -_loop() void
+        -_huidigeModus() int
     }
 
     class CanGatewayController {
         -_bus: BusCommunication*
         -_socket: Communication*
         -_parser: DataParserA*
+        -_automation: AutomationEngine*
         -_running: atomic~bool~
         -_busThread: thread
         +getInstance() CanGatewayController$
-        +init(bus: BusCommunication*, socket: Communication*, parser: DataParserA*) void
+        +init(bus: BusCommunication*, socket: Communication*, parser: DataParserA*, automation: AutomationEngine*) void
         +begin() bool
         +run() void
         +stop() void
@@ -132,6 +158,7 @@ classDiagram
 
     %% ============ RELATIONSHIPS ============
     %% Interface implementations
+    Communication <|-- BusCommunication : extends
     Communication <|.. PiSocketServer : implements
     Communication <|.. PiSocketClient : implements
     Communication <|.. WemosCommunication : implements
@@ -141,7 +168,9 @@ classDiagram
     CanGatewayController --> BusCommunication : orchestrates
     CanGatewayController --> Communication : orchestrates
     CanGatewayController --> DataParserA : uses
+    CanGatewayController --> AutomationEngine : orchestrates
     CanGatewayController --> "1" CanMessage : processes
+    AutomationEngine --> "*" TimeAction : schedules
     CAN --> CanMessage : converts
 
     DataParserA --> CanMessage : converts

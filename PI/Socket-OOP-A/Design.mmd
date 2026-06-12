@@ -30,6 +30,15 @@ classDiagram
         +len: uint8_t
     }
 
+    class TimeAction {
+        +hour: int
+        +minute: int
+        +canId: uint32_t
+        +data: uint8_t
+        +name: string
+        +lastFiredDay: int
+    }
+
     %% Concrete implementations
     class CAN {
         -_iface: string
@@ -60,16 +69,33 @@ classDiagram
         +messageToJson(msg: CanMessage) string
         +jsonToMessage(line: string, msg: CanMessage) bool
         +isTextId(id: uint32_t) bool$
+        +parseTijdConfig(msg: CanMessage, dagH: int, dagM: int, nachtH: int, nachtM: int) bool$
+    }
+
+    class AutomationEngine {
+        -_actions: vector~TimeAction~
+        -_mu: mutex
+        -_running: atomic~bool~
+        -_thread: thread
+        -_fire: function~void(uint32_t, uint8_t)~
+        +addAction(a: TimeAction) void
+        +setDagNachtTijden(dagH: int, dagM: int, nachtH: int, nachtM: int) void
+        +evalueerNu() void
+        +start(fire: function) void
+        +stop() void
+        -_loop() void
+        -_huidigeModus() int
     }
 
     class CanGatewayController {
         -_bus: BusCommunication*
         -_socket: Communication*
         -_parser: DataParser*
+        -_automation: AutomationEngine*
         -_running: atomic~bool~
         -_busThread: thread
         +getInstance() CanGatewayController$
-        +init(bus: BusCommunication*, socket: Communication*, parser: DataParser*) void
+        +init(bus: BusCommunication*, socket: Communication*, parser: DataParser*, automation: AutomationEngine*) void
         +begin() bool
         +run() void
         +stop() void
@@ -78,11 +104,20 @@ classDiagram
     }
 
     %% Relationships
+    Communication <|-- BusCommunication : extends
     Communication <|.. PiSocketServer : implements
     BusCommunication <|.. CAN : implements
     BusCommunication --> CanMessage : uses
     DataParser --> CanMessage : converts
+    AutomationEngine --> "*" TimeAction : schedules
     CanGatewayController --> BusCommunication : orchestrates
     CanGatewayController --> Communication : orchestrates
     CanGatewayController --> DataParser : uses
+    CanGatewayController --> AutomationEngine : orchestrates
     CanGatewayController --> "1" CanMessage : processes
+
+    note for AutomationEngine "Acties geladen via AutomationConfig.h
+(laadAutomatiseringen): ALS tijd == hh:mm
+DAN stuur CAN id + data.
+[0]=dag (0x410), [1]=nacht (0x420).
+Tijden runtime configureerbaar via CAN 0x192."
