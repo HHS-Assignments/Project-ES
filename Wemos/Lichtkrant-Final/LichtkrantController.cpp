@@ -51,8 +51,8 @@ void LichtkrantController::_setModus(bool nood) {
     _display->toonTekst(_noodModus ? _noodTekst : _normaleTekst);
 }
 
-void LichtkrantController::_verwerkTekstDeel(const char *incoming, char *assembly,
-                                              char *doelTekst, bool isNood) {
+void LichtkrantController::_verwerkTekstDeel(const char *incoming, char delen[3][64],
+                                              int index, char *doelTekst, bool isNood) {
     const char *dataPtr = strstr(incoming, "\"Data\":\"");
     if (dataPtr == nullptr) return;
     dataPtr += 8; // sla "Data":" over
@@ -60,20 +60,26 @@ void LichtkrantController::_verwerkTekstDeel(const char *incoming, char *assembl
     const char *einde = strchr(dataPtr, '"');
     if (einde == nullptr) return;
 
+    // Deel 1 start een nieuwe tekst: maak de oude delen 2 en 3 leeg
+    if (index == 0) {
+        delen[1][0] = '\0';
+        delen[2][0] = '\0';
+    }
+
+    // Tekst in het vaste slot van dit CAN ID zetten
     size_t len = (size_t)(einde - dataPtr);
-    strncat(assembly, dataPtr, len);
+    if (len > 63) len = 63;
+    memcpy(delen[index], dataPtr, len);
+    delen[index][len] = '\0';
 
-    const char *morePtr = strstr(incoming, "\"More\":");
-    int more = (morePtr != nullptr) ? atoi(morePtr + 7) : 0;
+    // Tekst opnieuw samenstellen uit alle slots (More-vlag wordt genegeerd)
+    doelTekst[0] = '\0';
+    for (int i = 0; i < 3; i++) {
+        strncat(doelTekst, delen[i], 127 - strlen(doelTekst));
+    }
 
-    if (more == 0) {
-        // Laatste deel ontvangen: kopieer naar doeltekst en refresh display
-        strncpy(doelTekst, assembly, 127);
-        doelTekst[127]  = '\0';
-        assembly[0]     = '\0';
-        if (isNood == _noodModus) {
-            _setModus(_noodModus);
-        }
+    if (isNood == _noodModus) {
+        _setModus(_noodModus);
     }
 }
 
@@ -86,27 +92,13 @@ void LichtkrantController::_verwerkCommando(const char *incoming) {
         return;
     }
 
-    // Noodtekst deel 1 — reset assembly buffer
-    if (strstr(incoming, "0x150")) {
-        _noodAssembly[0] = '\0';
-        _verwerkTekstDeel(incoming, _noodAssembly, _noodTekst, true);
-        return;
-    }
-    // Noodtekst deel 2 of 3
-    if (strstr(incoming, "0x160") || strstr(incoming, "0x170")) {
-        _verwerkTekstDeel(incoming, _noodAssembly, _noodTekst, true);
-        return;
-    }
+    // Noodtekst: 0x150 = deel 1, 0x160 = deel 2, 0x170 = deel 3
+    if (strstr(incoming, "0x150")) { _verwerkTekstDeel(incoming, _noodDelen, 0, _noodTekst, true); return; }
+    if (strstr(incoming, "0x160")) { _verwerkTekstDeel(incoming, _noodDelen, 1, _noodTekst, true); return; }
+    if (strstr(incoming, "0x170")) { _verwerkTekstDeel(incoming, _noodDelen, 2, _noodTekst, true); return; }
 
-    // Normale tekst deel 1 — reset assembly buffer
-    if (strstr(incoming, "0x180")) {
-        _normaalAssembly[0] = '\0';
-        _verwerkTekstDeel(incoming, _normaalAssembly, _normaleTekst, false);
-        return;
-    }
-    // Normale tekst deel 2 of 3
-    if (strstr(incoming, "0x190") || strstr(incoming, "0x101")) {
-        _verwerkTekstDeel(incoming, _normaalAssembly, _normaleTekst, false);
-        return;
-    }
+    // Normale tekst: 0x180 = deel 1, 0x190 = deel 2, 0x191 = deel 3
+    if (strstr(incoming, "0x180")) { _verwerkTekstDeel(incoming, _normaalDelen, 0, _normaleTekst, false); return; }
+    if (strstr(incoming, "0x190")) { _verwerkTekstDeel(incoming, _normaalDelen, 1, _normaleTekst, false); return; }
+    if (strstr(incoming, "0x191")) { _verwerkTekstDeel(incoming, _normaalDelen, 2, _normaleTekst, false); return; }
 }
