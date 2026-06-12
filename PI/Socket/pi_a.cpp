@@ -3,7 +3,7 @@
 // Usage:  ./pi_a <listen_port> [can_iface]
 // Wire protocol (line-delimited JSON, Wemos format):
 //   CAN->TCP: {"CAN_ID":"0x001","Data":1}
-//   CAN->TCP (text IDs): {"CAN_ID":"0x150","Data":"Hello","More":0}
+//   CAN->TCP (text IDs): {"CAN_ID":"0x150","Data":"Hello"}
 //   TCP->CAN: {"CAN_ID":"0x400","Data":42}
 //
 // Build:  g++ -O2 -std=c++17 -pthread pi_a.cpp -o pi_a
@@ -29,7 +29,7 @@ static std::atomic<bool> g_run{true};
 
 // ---------- helpers ----------
 
-// CAN IDs whose data bytes are ASCII text (bytes 0..dlc-2) + More flag (byte dlc-1)
+// CAN IDs whose data bytes are ASCII text (all 8 bytes, zero-padded)
 static bool isTextId(uint32_t id) {
     return id == 0x150 || id == 0x160 || id == 0x170 ||
            id == 0x180 || id == 0x190 || id == 0x191;
@@ -120,17 +120,12 @@ static void canReader(int canFd) {
 
         char buf[256];
         if (isTextId(id)) {
-            // bytes 0..(dlc-2) = ASCII text, byte (dlc-1) = More flag
-            char text[8] = {};
-            int more = 0;
-            if (f.can_dlc >= 1) {
-                more = f.data[f.can_dlc - 1];
-                int txtLen = (int)f.can_dlc - 1;
-                if (txtLen > 7) txtLen = 7;
-                for (int i = 0; i < txtLen; i++) text[i] = (char)f.data[i];
-            }
+            // all dlc bytes are ASCII text, zero-padded; NUL padding ends the string
+            char text[9] = {};
+            int txtLen = (f.can_dlc > 8) ? 8 : (int)f.can_dlc;
+            for (int i = 0; i < txtLen; i++) text[i] = (char)f.data[i];
             std::snprintf(buf, sizeof(buf),
-                "{\"CAN_ID\":\"%s\",\"Data\":\"%s\",\"More\":%d}", hexId, text, more);
+                "{\"CAN_ID\":\"%s\",\"Data\":\"%s\"}", hexId, text);
         } else {
             int val = (f.can_dlc > 0) ? (int)f.data[0] : 0;
             std::snprintf(buf, sizeof(buf), "{\"CAN_ID\":\"%s\",\"Data\":%d}", hexId, val);
