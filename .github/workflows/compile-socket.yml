@@ -1,12 +1,14 @@
 # Compile Socket Binaries
 #
-# Compiles both the legacy pi_a.cpp / pi_b.cpp socket code and the new
-# OOP socket implementations for linux-x86_64 (native) and linux-aarch64
-# (Raspberry Pi).
+# Compiles the socket code for linux-x86_64 (native) and linux-aarch64
+# (Raspberry Pi). Each group (legacy, oop-a, oop-b) is only recompiled
+# when its own sources changed (or on manual dispatch).
 #
-# The legacy linux-x86_64 build keeps the historic artifact name so the
-# socket test workflow can keep downloading it unchanged. The workflow
-# also publishes 8 release assets: 2 binaries x 2 targets x 2 variants.
+# The legacy binaries are still compiled for the socket test workflow
+# (which downloads the historic socket-binaries-linux-x86_64 artifact),
+# but they are NO LONGER published to the release. The publish job also
+# removes any previously published legacy assets from the release, and
+# only publishes the 4 OOP release assets: 2 binaries x 2 targets.
 #
 # Triggered when any C/C++ source or header in the socket directories
 # changes. Can also be triggered manually from the Actions tab.
@@ -36,46 +38,89 @@ permissions:
   contents: write   # needed to publish a Release
 
 jobs:
-  compile:
-    name: Compile (${{ matrix.variant }} / ${{ matrix.target }})
+  changes:
+    name: Detect changed sources
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        include:
-          - target: linux-x86_64
-            variant: legacy
-            cxx: g++
-            apt_pkgs: build-essential
-            artifact_name: socket-binaries-linux-x86_64
-          - target: linux-aarch64
-            variant: legacy
-            cxx: aarch64-linux-gnu-g++
-            apt_pkgs: build-essential g++-aarch64-linux-gnu
-            artifact_name: socket-binaries-linux-aarch64
-          - target: linux-x86_64
-            variant: oop
-            cxx: g++
-            apt_pkgs: build-essential
-            artifact_name: socket-binaries-oop-linux-x86_64
-          - target: linux-aarch64
-            variant: oop
-            cxx: aarch64-linux-gnu-g++
-            apt_pkgs: build-essential g++-aarch64-linux-gnu
-            artifact_name: socket-binaries-oop-linux-aarch64
-
+    outputs:
+      legacy: ${{ steps.filter.outputs.legacy }}
+      oop-a: ${{ steps.filter.outputs.oop-a }}
+      oop-b: ${{ steps.filter.outputs.oop-b }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Filter changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            legacy:
+              - 'PI/Socket/**'
+              - 'Code-Tests/**'
+              - '.github/workflows/**'
+            oop-a:
+              - 'PI/Socket-OOP-A/**'
+              - '.github/workflows/**'
+            oop-b:
+              - 'PI/Socket-OOP-B/**'
+              - '.github/workflows/**'
+
+  compile:
+    name: Compile (${{ matrix.group }} / ${{ matrix.target }})
+    runs-on: ubuntu-latest
+    needs: changes
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: legacy
+            target: linux-x86_64
+            cxx: g++
+            apt_pkgs: build-essential
+            artifact_name: socket-binaries-linux-x86_64
+          - group: legacy
+            target: linux-aarch64
+            cxx: aarch64-linux-gnu-g++
+            apt_pkgs: build-essential g++-aarch64-linux-gnu
+            artifact_name: socket-binaries-linux-aarch64
+          - group: oop-a
+            target: linux-x86_64
+            cxx: g++
+            apt_pkgs: build-essential
+            artifact_name: socket-binaries-oop-a-linux-x86_64
+          - group: oop-a
+            target: linux-aarch64
+            cxx: aarch64-linux-gnu-g++
+            apt_pkgs: build-essential g++-aarch64-linux-gnu
+            artifact_name: socket-binaries-oop-a-linux-aarch64
+          - group: oop-b
+            target: linux-x86_64
+            cxx: g++
+            apt_pkgs: build-essential
+            artifact_name: socket-binaries-oop-b-linux-x86_64
+          - group: oop-b
+            target: linux-aarch64
+            cxx: aarch64-linux-gnu-g++
+            apt_pkgs: build-essential g++-aarch64-linux-gnu
+            artifact_name: socket-binaries-oop-b-linux-aarch64
+
+    env:
+      # Build when this group's sources changed, or on manual dispatch.
+      SHOULD_BUILD: ${{ needs.changes.outputs[matrix.group] == 'true' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - name: Checkout code
+        if: env.SHOULD_BUILD == 'true'
+        uses: actions/checkout@v4
+
       - name: Install build tools
+        if: env.SHOULD_BUILD == 'true'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq ${{ matrix.apt_pkgs }}
 
       - name: Compile legacy Pi A and Pi B
-        if: matrix.variant == 'legacy'
+        if: env.SHOULD_BUILD == 'true' && matrix.group == 'legacy'
         working-directory: PI/Socket
         run: |
           set -euo pipefail
@@ -90,26 +135,21 @@ jobs:
           echo "Compiling pi_b.cpp -> $OUT/RPi_B"
           $CXX $CXXFLAGS pi_b.cpp -o "$OUT/RPi_B"
 
-          cp "$OUT/RPi_A" "$OUT/RPi_A-legacy-${{ matrix.target }}"
-          cp "$OUT/RPi_B" "$OUT/RPi_B-legacy-${{ matrix.target }}"
-
           if [ "${{ matrix.target }}" = "linux-x86_64" ]; then
             cp "$OUT/RPi_A" build/RPi_A
             cp "$OUT/RPi_B" build/RPi_B
           fi
 
           file "$OUT/RPi_A" "$OUT/RPi_B"
-          file "$OUT/RPi_A-legacy-${{ matrix.target }}" "$OUT/RPi_B-legacy-${{ matrix.target }}"
 
-      - name: Compile OOP Pi A and Pi B
-        if: matrix.variant == 'oop'
+      - name: Compile OOP Pi A
+        if: env.SHOULD_BUILD == 'true' && matrix.group == 'oop-a'
         run: |
           set -euo pipefail
           CXX="${{ matrix.cxx }}"
           CXXFLAGS="-O2 -std=c++17 -pthread -Wall -Wextra"
 
           mkdir -p PI/Socket-OOP-A/build/${{ matrix.target }}
-          mkdir -p PI/Socket-OOP-B/build/${{ matrix.target }}
 
           # Alle .cpp-bestanden in de map worden meegecompileerd, zodat
           # nieuwe klassen niet handmatig toegevoegd hoeven te worden.
@@ -118,22 +158,30 @@ jobs:
             PI/Socket-OOP-A/*.cpp \
             -o PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A
 
+          cp PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A-oop-${{ matrix.target }}
+          file PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A-oop-${{ matrix.target }}
+
+      - name: Compile OOP Pi B
+        if: env.SHOULD_BUILD == 'true' && matrix.group == 'oop-b'
+        run: |
+          set -euo pipefail
+          CXX="${{ matrix.cxx }}"
+          CXXFLAGS="-O2 -std=c++17 -pthread -Wall -Wextra"
+
+          mkdir -p PI/Socket-OOP-B/build/${{ matrix.target }}
+
+          # Alle .cpp-bestanden in de map worden meegecompileerd, zodat
+          # nieuwe klassen niet handmatig toegevoegd hoeven te worden.
           echo "Compiling PI/Socket-OOP-B -> PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B"
           $CXX $CXXFLAGS \
             PI/Socket-OOP-B/*.cpp \
             -o PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B
 
-          cp PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A-oop-${{ matrix.target }}
           cp PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B-oop-${{ matrix.target }}
-
-          file \
-            PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A \
-            PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B \
-            PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A-oop-${{ matrix.target }} \
-            PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B-oop-${{ matrix.target }}
+          file PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B-oop-${{ matrix.target }}
 
       - name: Upload legacy x86_64 artifacts
-        if: matrix.variant == 'legacy' && matrix.target == 'linux-x86_64'
+        if: env.SHOULD_BUILD == 'true' && matrix.group == 'legacy' && matrix.target == 'linux-x86_64'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
@@ -142,98 +190,89 @@ jobs:
             PI/Socket/build/RPi_B
             PI/Socket/build/${{ matrix.target }}/RPi_A
             PI/Socket/build/${{ matrix.target }}/RPi_B
-            PI/Socket/build/${{ matrix.target }}/RPi_A-legacy-${{ matrix.target }}
-            PI/Socket/build/${{ matrix.target }}/RPi_B-legacy-${{ matrix.target }}
           if-no-files-found: error
 
       - name: Upload legacy aarch64 artifacts
-        if: matrix.variant == 'legacy' && matrix.target == 'linux-aarch64'
+        if: env.SHOULD_BUILD == 'true' && matrix.group == 'legacy' && matrix.target == 'linux-aarch64'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: |
             PI/Socket/build/${{ matrix.target }}/RPi_A
             PI/Socket/build/${{ matrix.target }}/RPi_B
-            PI/Socket/build/${{ matrix.target }}/RPi_A-legacy-${{ matrix.target }}
-            PI/Socket/build/${{ matrix.target }}/RPi_B-legacy-${{ matrix.target }}
           if-no-files-found: error
 
-      - name: Upload OOP x86_64 artifacts
-        if: matrix.variant == 'oop' && matrix.target == 'linux-x86_64'
+      - name: Upload OOP Pi A artifacts
+        if: env.SHOULD_BUILD == 'true' && matrix.group == 'oop-a'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: |
-            PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A
-            PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B
-            PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A-oop-${{ matrix.target }}
-            PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B-oop-${{ matrix.target }}
+          path: PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A-oop-${{ matrix.target }}
           if-no-files-found: error
 
-      - name: Upload OOP aarch64 artifacts
-        if: matrix.variant == 'oop' && matrix.target == 'linux-aarch64'
+      - name: Upload OOP Pi B artifacts
+        if: env.SHOULD_BUILD == 'true' && matrix.group == 'oop-b'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: |
-            PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A
-            PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B
-            PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A-oop-${{ matrix.target }}
-            PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B-oop-${{ matrix.target }}
+          path: PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B-oop-${{ matrix.target }}
           if-no-files-found: error
 
   publish:
     name: Publish release assets
     runs-on: ubuntu-latest
-    needs: compile
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: [changes, compile]
+    if: >-
+      !cancelled() &&
+      needs.compile.result == 'success' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
 
     steps:
-      - name: Download all compiled socket artifacts
+      # Verwijder de oude legacy-assets uit de release zodat alleen de
+      # OOP-binaries zichtbaar blijven in het Releases-tabblad.
+      - name: Remove legacy assets from release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for asset in \
+            RPi_A-legacy-linux-x86_64 \
+            RPi_B-legacy-linux-x86_64 \
+            RPi_A-legacy-linux-aarch64 \
+            RPi_B-legacy-linux-aarch64; do
+            gh release delete-asset latest-build "$asset" --yes --repo "$GITHUB_REPOSITORY" || true
+          done
+
+      # Alleen de OOP-artifacts worden gepubliceerd. Bij selectieve builds
+      # zijn niet alle artifacts aanwezig: bestaande release-assets met
+      # dezelfde naam blijven dan gewoon staan (alleen gewijzigde binaries
+      # worden overschreven).
+      - name: Download compiled OOP artifacts
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
-          pattern: socket-binaries-*
+          pattern: socket-binaries-oop-*
           path: .
           merge-multiple: true
 
       - name: Collect release assets
+        id: collect
         run: |
           set -euo pipefail
           mkdir -p release-assets
-
-          collect_one() {
-            src="$(find . -type f -name "$1" -print -quit)"
-            if [ -z "${src}" ]; then
-              echo "Missing expected asset: $1" >&2
-              exit 1
-            fi
-            cp "${src}" "release-assets/$1"
-          }
-
-          collect_one RPi_A-legacy-linux-x86_64
-          collect_one RPi_B-legacy-linux-x86_64
-          collect_one RPi_A-legacy-linux-aarch64
-          collect_one RPi_B-legacy-linux-aarch64
-          collect_one RPi_A-oop-linux-x86_64
-          collect_one RPi_B-oop-linux-x86_64
-          collect_one RPi_A-oop-linux-aarch64
-          collect_one RPi_B-oop-linux-aarch64
+          find . -path ./release-assets -prune -o -type f -name 'RPi_[AB]-oop-linux-*' -print \
+            | while read -r src; do cp "$src" "release-assets/$(basename "$src")"; done
+          count=$(find release-assets -type f | wc -l)
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          ls -l release-assets || true
 
       - name: Publish raw binaries to "latest-build" Release
+        if: steps.collect.outputs.count != '0'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest-build
           name: Latest Build
           body: |
-            Automated build of legacy and OOP socket binaries.
+            Automated build of the OOP socket binaries.
             Commit: ${{ github.sha }}
-          files: |
-            release-assets/RPi_A-legacy-linux-x86_64
-            release-assets/RPi_B-legacy-linux-x86_64
-            release-assets/RPi_A-legacy-linux-aarch64
-            release-assets/RPi_B-legacy-linux-aarch64
-            release-assets/RPi_A-oop-linux-x86_64
-            release-assets/RPi_B-oop-linux-x86_64
-            release-assets/RPi_A-oop-linux-aarch64
-            release-assets/RPi_B-oop-linux-aarch64
-          fail_on_unmatched_files: true
+          files: release-assets/*
+          fail_on_unmatched_files: false
