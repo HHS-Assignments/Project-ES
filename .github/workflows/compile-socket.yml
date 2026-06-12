@@ -1,15 +1,15 @@
 # Compile Socket Binaries
 #
-# Compiles pi_a.cpp and pi_b.cpp for both linux-x86_64 (native) and
-# linux-aarch64 (Raspberry Pi) and uploads the binaries as workflow
-# artifacts so the test workflow can download and run them without
-# recompiling.
+# Compiles both the legacy pi_a.cpp / pi_b.cpp socket code and the new
+# OOP socket implementations for linux-x86_64 (native) and linux-aarch64
+# (Raspberry Pi).
 #
-# Also publishes the raw binaries to a GitHub Release ("latest-build")
-# so they can be downloaded directly without unzipping.
+# The legacy linux-x86_64 build keeps the historic artifact name so the
+# socket test workflow can keep downloading it unchanged. The workflow
+# also publishes 8 release assets: 2 binaries x 2 targets x 2 variants.
 #
-# Triggered when any C/C++ source or header in PI/Socket changes.
-# Can also be triggered manually from the Actions tab.
+# Triggered when any C/C++ source or header in the socket directories
+# changes. Can also be triggered manually from the Actions tab.
 
 name: Compiling Socket Binaries
 
@@ -18,12 +18,16 @@ on:
     #branches: [main, dev]
     paths:
       - 'PI/Socket/**'
+      - 'PI/Socket-OOP-A/**'
+      - 'PI/Socket-OOP-B/**'
       - 'Code-Tests/**'
       - '.github/workflows/**'
   pull_request:
     branches: [main, dev]
     paths:
       - 'PI/Socket/**'
+      - 'PI/Socket-OOP-A/**'
+      - 'PI/Socket-OOP-B/**'
       - 'Code-Tests/**'
       - '.github/workflows/**'
   workflow_dispatch:
@@ -33,18 +37,33 @@ permissions:
 
 jobs:
   compile:
-    name: Compile (${{ matrix.target }})
+    name: Compile (${{ matrix.variant }} / ${{ matrix.target }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         include:
           - target: linux-x86_64
+            variant: legacy
             cxx: g++
             apt_pkgs: build-essential
+            artifact_name: socket-binaries-linux-x86_64
           - target: linux-aarch64
+            variant: legacy
             cxx: aarch64-linux-gnu-g++
             apt_pkgs: build-essential g++-aarch64-linux-gnu
+            artifact_name: socket-binaries-linux-aarch64
+          - target: linux-x86_64
+            variant: oop
+            cxx: g++
+            apt_pkgs: build-essential
+            artifact_name: socket-binaries-oop-linux-x86_64
+          - target: linux-aarch64
+            variant: oop
+            cxx: aarch64-linux-gnu-g++
+            apt_pkgs: build-essential g++-aarch64-linux-gnu
+            artifact_name: socket-binaries-oop-linux-aarch64
 
     steps:
       - name: Checkout code
@@ -55,9 +74,11 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq ${{ matrix.apt_pkgs }}
 
-      - name: Compile pi_a and pi_b
+      - name: Compile legacy Pi A and Pi B
+        if: matrix.variant == 'legacy'
         working-directory: PI/Socket
         run: |
+          set -euo pipefail
           mkdir -p build/${{ matrix.target }}
           OUT=build/${{ matrix.target }}
           CXX="${{ matrix.cxx }}"
@@ -69,35 +90,133 @@ jobs:
           echo "Compiling pi_b.cpp -> $OUT/RPi_B"
           $CXX $CXXFLAGS pi_b.cpp -o "$OUT/RPi_B"
 
+          cp "$OUT/RPi_A" "$OUT/RPi_A-${{ matrix.target }}"
+          cp "$OUT/RPi_B" "$OUT/RPi_B-${{ matrix.target }}"
+
+          if [ "${{ matrix.target }}" = "linux-x86_64" ]; then
+            cp "$OUT/RPi_A" build/RPi_A
+            cp "$OUT/RPi_B" build/RPi_B
+          fi
+
           file "$OUT/RPi_A" "$OUT/RPi_B"
+          file "$OUT/RPi_A-${{ matrix.target }}" "$OUT/RPi_B-${{ matrix.target }}"
 
-      - name: Rename binaries for release (include target)
-        working-directory: PI/Socket/build/${{ matrix.target }}
+      - name: Compile OOP Pi A and Pi B
+        if: matrix.variant == 'oop'
         run: |
-          cp RPi_A "RPi_A-${{ matrix.target }}"
-          cp RPi_B "RPi_B-${{ matrix.target }}"
+          set -euo pipefail
+          CXX="${{ matrix.cxx }}"
+          CXXFLAGS="-O2 -std=c++17 -pthread -Wall -Wextra"
 
-      # Zipped artifact (used by the test workflow)
-      - name: Upload ${{ matrix.target }} artifacts
+          mkdir -p PI/Socket-OOP-A/build/${{ matrix.target }}
+          mkdir -p PI/Socket-OOP-B/build/${{ matrix.target }}
+
+          echo "Compiling PI/Socket-OOP-A -> PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A"
+          $CXX $CXXFLAGS \
+            PI/Socket-OOP-A/main.cpp \
+            PI/Socket-OOP-A/CAN.cpp \
+            PI/Socket-OOP-A/PiSocketServer.cpp \
+            PI/Socket-OOP-A/DataParser.cpp \
+            PI/Socket-OOP-A/CanGatewayController.cpp \
+            -o PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A
+
+          echo "Compiling PI/Socket-OOP-B -> PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B"
+          $CXX $CXXFLAGS \
+            PI/Socket-OOP-B/main.cpp \
+            PI/Socket-OOP-B/PiSocketClient.cpp \
+            PI/Socket-OOP-B/WemosCommunication.cpp \
+            PI/Socket-OOP-B/DataParser.cpp \
+            PI/Socket-OOP-B/WemosGatewayController.cpp \
+            -o PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B
+
+          cp PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A-oop-${{ matrix.target }}
+          cp PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B-oop-${{ matrix.target }}
+
+          file \
+            PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A \
+            PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B \
+            PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A-oop-${{ matrix.target }} \
+            PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B-oop-${{ matrix.target }}
+
+      - name: Upload legacy x86_64 artifacts
+        if: matrix.variant == 'legacy' && matrix.target == 'linux-x86_64'
         uses: actions/upload-artifact@v4
         with:
-          name: socket-binaries-${{ matrix.target }}
+          name: ${{ matrix.artifact_name }}
+          path: |
+            PI/Socket/build/RPi_A
+            PI/Socket/build/RPi_B
+            PI/Socket/build/${{ matrix.target }}/RPi_A
+            PI/Socket/build/${{ matrix.target }}/RPi_B
+            PI/Socket/build/${{ matrix.target }}/RPi_A-${{ matrix.target }}
+            PI/Socket/build/${{ matrix.target }}/RPi_B-${{ matrix.target }}
+          if-no-files-found: error
+
+      - name: Upload legacy aarch64 artifacts
+        if: matrix.variant == 'legacy' && matrix.target == 'linux-aarch64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
           path: |
             PI/Socket/build/${{ matrix.target }}/RPi_A
             PI/Socket/build/${{ matrix.target }}/RPi_B
+            PI/Socket/build/${{ matrix.target }}/RPi_A-${{ matrix.target }}
+            PI/Socket/build/${{ matrix.target }}/RPi_B-${{ matrix.target }}
           if-no-files-found: error
 
-      # Raw binaries published as Release assets (no zip wrapping)
+      - name: Upload OOP x86_64 artifacts
+        if: matrix.variant == 'oop' && matrix.target == 'linux-x86_64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A
+            PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B
+            PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A-oop-${{ matrix.target }}
+            PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B-oop-${{ matrix.target }}
+          if-no-files-found: error
+
+      - name: Upload OOP aarch64 artifacts
+        if: matrix.variant == 'oop' && matrix.target == 'linux-aarch64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A
+            PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B
+            PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A-oop-${{ matrix.target }}
+            PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B-oop-${{ matrix.target }}
+          if-no-files-found: error
+
+  publish:
+    name: Publish release assets
+    runs-on: ubuntu-latest
+    needs: compile
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Download all compiled socket artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: socket-binaries-*
+          path: .
+          merge-multiple: true
+
       - name: Publish raw binaries to "latest-build" Release
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest-build
           name: Latest Build
           body: |
-            Automated build of pi_a / pi_b socket binaries.
+            Automated build of legacy and OOP socket binaries.
             Commit: ${{ github.sha }}
           files: |
-            PI/Socket/build/${{ matrix.target }}/RPi_A-${{ matrix.target }}
-            PI/Socket/build/${{ matrix.target }}/RPi_B-${{ matrix.target }}
+            PI/Socket/build/linux-x86_64/RPi_A-legacy-linux-x86_64
+            PI/Socket/build/linux-x86_64/RPi_B-legacy-linux-x86_64
+            PI/Socket/build/linux-aarch64/RPi_A-legacy-linux-aarch64
+            PI/Socket/build/linux-aarch64/RPi_B-legacy-linux-aarch64
+            PI/Socket-OOP-A/build/linux-x86_64/RPi_A-oop-linux-x86_64
+            PI/Socket-OOP-B/build/linux-x86_64/RPi_B-oop-linux-x86_64
+            PI/Socket-OOP-A/build/linux-aarch64/RPi_A-oop-linux-aarch64
+            PI/Socket-OOP-B/build/linux-aarch64/RPi_B-oop-linux-aarch64
           fail_on_unmatched_files: true
