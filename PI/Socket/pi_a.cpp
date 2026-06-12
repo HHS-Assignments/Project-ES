@@ -24,6 +24,9 @@
 #include <atomic>
 #include <mutex>
 #include <iostream>
+#include <chrono>
+
+#include "automations.h"
 
 static std::atomic<bool> g_run{true};
 
@@ -105,6 +108,59 @@ static bool sendLine(int fd, const std::string& line) {
     return true;
 }
 
+// Vuurt één automatiseringsactie: schrijft het CAN-frame op de bus
+// én stuurt dezelfde boodschap als Wemos-JSON naar Pi B.
+static void fireAutomation(int canFd, int idx) {
+    uint32_t id;
+    uint8_t  data;
+    const char *name;
+    {
+        std::lock_guard<std::mutex> lk(g_autoMu);
+        id   = g_automations[idx].canId;
+        data = g_automations[idx].data;
+        name = g_automations[idx].name;
+    }
+
+    can_frame f{};
+    f.can_id  = id;
+    f.data[0] = data;
+    f.can_dlc = 1;
+    if (::write(canFd, &f, sizeof(f)) != (ssize_t)sizeof(f)) perror("write(CAN)");
+
+    char buf[64];
+    std::snprintf(buf, sizeof(buf), "{\"CAN_ID\":\"0x%03X\",\"Data\":%d}", id, (int)data);
+    int fd;
+    { std::lock_guard<std::mutex> lk(g_txMu); fd = g_peerFd; }
+    if (fd >= 0) sendLine(fd, buf);
+
+    std::cout << "[A] automatisering '" << name << "' -> " << buf << "\n";
+}
+
+// Automation-thread: checkt elke seconde de Pi-klok en vuurt acties
+// op hun geconfigureerde hh:mm (eenmaal per dag).
+static void automationLoop(int canFd) {
+    while (g_run) {
+        time_t t = time(nullptr);
+        tm lt{};
+        localtime_r(&t, &lt);
+
+        for (int i = 0; i < kNumAutomations; i++) {
+            bool vuren = false;
+            {
+                std::lock_guard<std::mutex> lk(g_autoMu);
+                TimeAction &a = g_automations[i];
+                if (a.hour == lt.tm_hour && a.minute == lt.tm_min &&
+                    a.lastFiredDay != lt.tm_yday) {
+                    a.lastFiredDay = lt.tm_yday;
+                    vuren = true;
+                }
+            }
+            if (vuren) fireAutomation(canFd, i);
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+}
+
 // CAN -> TCP  (Wemos format)
 static void canReader(int canFd) {
     while (g_run) {
@@ -114,6 +170,20 @@ static void canReader(int canFd) {
         if (n < (ssize_t)sizeof(can_frame)) continue;
 
         uint32_t id = f.can_id & (f.can_id & CAN_EFF_FLAG ? CAN_EFF_MASK : CAN_SFF_MASK);
+
+        // 0x192 = tijdconfiguratie dag/nacht: alleen voor de Pi, niet doorsturen
+        if (id == 0x192) {
+            int dagH, dagM, nachtH, nachtM;
+            if (parseTijdConfig(f.data, f.can_dlc, dagH, dagM, nachtH, nachtM)) {
+                setDagNachtTijden(dagH, dagM, nachtH, nachtM);
+                std::printf("[A] tijdconfig: dag %02d:%02d, nacht %02d:%02d\n",
+                            dagH, dagM, nachtH, nachtM);
+                fireAutomation(canFd, bepaalHuidigeModus());  // direct in sync brengen
+            } else {
+                std::cerr << "[A] ongeldige 0x192 tijdconfig (dlc=" << (int)f.can_dlc << ")\n";
+            }
+            continue;
+        }
 
         char hexId[12];
         std::snprintf(hexId, sizeof(hexId), "0x%03X", id);
@@ -197,6 +267,10 @@ int main(int argc, char** argv) {
     std::cout << "[A] CAN=" << iface << "  listening on :" << port << "\n";
 
     std::thread tCan(canReader, canFd);
+    std::thread tAuto(automationLoop, canFd);
+
+    // Opstart: huidige dag/nacht-modus direct versturen zodat het systeem in sync is
+    fireAutomation(canFd, bepaalHuidigeModus());
 
     while (g_run) {
         sockaddr_in cli{}; socklen_t cl = sizeof(cli);
@@ -221,5 +295,6 @@ int main(int argc, char** argv) {
     ::close(srv);
     ::close(canFd);
     if (tCan.joinable()) tCan.join();
+    if (tAuto.joinable()) tAuto.join();
     return 0;
 }
