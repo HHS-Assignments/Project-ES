@@ -1,0 +1,88 @@
+---
+references:
+  - "File: /PI/Socket-OOP-A/main.cpp"
+  - "File: /PI/Socket-OOP-A"
+generationTime: 2026-06-12T09:51:59.866Z
+---
+classDiagram
+    %% Interface definitions
+    class Communication {
+        <<interface>>
+        +begin() bool
+        +send(line: string) bool
+        +receive(line: string) bool
+        +isConnected() bool
+        +stop() void
+    }
+
+    class BusCommunication {
+        <<interface>>
+        +readMessage(msg: CanMessage) bool
+        +writeMessage(msg: CanMessage) bool
+        +send(line: string) bool
+        +receive(line: string) bool
+    }
+
+    %% Data structures
+    class CanMessage {
+        +id: uint32_t
+        +data: uint8_t[8]
+        +len: uint8_t
+    }
+
+    %% Concrete implementations
+    class CAN {
+        -_iface: string
+        -_fd: int
+        +begin() bool
+        +isConnected() bool
+        +stop() void
+        +readMessage(msg: CanMessage) bool
+        +writeMessage(msg: CanMessage) bool
+    }
+
+    class PiSocketServer {
+        -_port: uint16_t
+        -_srvFd: int
+        -_peerFd: int
+        -_mu: mutex
+        -_acc: string
+        +begin() bool
+        +send(line: string) bool
+        +receive(line: string) bool
+        +isConnected() bool
+        +stop() void
+        -_accept() bool
+        -_dropPeer() void
+    }
+
+    class DataParser {
+        +messageToJson(msg: CanMessage) string
+        +jsonToMessage(line: string, msg: CanMessage) bool
+        +isTextId(id: uint32_t) bool$
+    }
+
+    class CanGatewayController {
+        -_bus: BusCommunication*
+        -_socket: Communication*
+        -_parser: DataParser*
+        -_running: atomic~bool~
+        -_busThread: thread
+        +getInstance() CanGatewayController$
+        +init(bus: BusCommunication*, socket: Communication*, parser: DataParser*) void
+        +begin() bool
+        +run() void
+        +stop() void
+        -_busNaarSocket() void
+        -_socketNaarBus() void
+    }
+
+    %% Relationships
+    Communication <|.. PiSocketServer : implements
+    BusCommunication <|.. CAN : implements
+    BusCommunication --> CanMessage : uses
+    DataParser --> CanMessage : converts
+    CanGatewayController --> BusCommunication : orchestrates
+    CanGatewayController --> Communication : orchestrates
+    CanGatewayController --> DataParser : uses
+    CanGatewayController --> "1" CanMessage : processes

@@ -90,8 +90,8 @@ jobs:
           echo "Compiling pi_b.cpp -> $OUT/RPi_B"
           $CXX $CXXFLAGS pi_b.cpp -o "$OUT/RPi_B"
 
-          cp "$OUT/RPi_A" "$OUT/RPi_A-${{ matrix.target }}"
-          cp "$OUT/RPi_B" "$OUT/RPi_B-${{ matrix.target }}"
+          cp "$OUT/RPi_A" "$OUT/RPi_A-legacy-${{ matrix.target }}"
+          cp "$OUT/RPi_B" "$OUT/RPi_B-legacy-${{ matrix.target }}"
 
           if [ "${{ matrix.target }}" = "linux-x86_64" ]; then
             cp "$OUT/RPi_A" build/RPi_A
@@ -99,7 +99,7 @@ jobs:
           fi
 
           file "$OUT/RPi_A" "$OUT/RPi_B"
-          file "$OUT/RPi_A-${{ matrix.target }}" "$OUT/RPi_B-${{ matrix.target }}"
+          file "$OUT/RPi_A-legacy-${{ matrix.target }}" "$OUT/RPi_B-legacy-${{ matrix.target }}"
 
       - name: Compile OOP Pi A and Pi B
         if: matrix.variant == 'oop'
@@ -148,8 +148,8 @@ jobs:
             PI/Socket/build/RPi_B
             PI/Socket/build/${{ matrix.target }}/RPi_A
             PI/Socket/build/${{ matrix.target }}/RPi_B
-            PI/Socket/build/${{ matrix.target }}/RPi_A-${{ matrix.target }}
-            PI/Socket/build/${{ matrix.target }}/RPi_B-${{ matrix.target }}
+            PI/Socket/build/${{ matrix.target }}/RPi_A-legacy-${{ matrix.target }}
+            PI/Socket/build/${{ matrix.target }}/RPi_B-legacy-${{ matrix.target }}
           if-no-files-found: error
 
       - name: Upload legacy aarch64 artifacts
@@ -160,8 +160,8 @@ jobs:
           path: |
             PI/Socket/build/${{ matrix.target }}/RPi_A
             PI/Socket/build/${{ matrix.target }}/RPi_B
-            PI/Socket/build/${{ matrix.target }}/RPi_A-${{ matrix.target }}
-            PI/Socket/build/${{ matrix.target }}/RPi_B-${{ matrix.target }}
+            PI/Socket/build/${{ matrix.target }}/RPi_A-legacy-${{ matrix.target }}
+            PI/Socket/build/${{ matrix.target }}/RPi_B-legacy-${{ matrix.target }}
           if-no-files-found: error
 
       - name: Upload OOP x86_64 artifacts
@@ -202,6 +202,29 @@ jobs:
           path: .
           merge-multiple: true
 
+      - name: Collect release assets
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+
+          collect_one() {
+            src="$(find . -type f -name "$1" -print -quit)"
+            if [ -z "${src}" ]; then
+              echo "Missing expected asset: $1" >&2
+              exit 1
+            fi
+            cp "${src}" "release-assets/$1"
+          }
+
+          collect_one RPi_A-legacy-linux-x86_64
+          collect_one RPi_B-legacy-linux-x86_64
+          collect_one RPi_A-legacy-linux-aarch64
+          collect_one RPi_B-legacy-linux-aarch64
+          collect_one RPi_A-oop-linux-x86_64
+          collect_one RPi_B-oop-linux-x86_64
+          collect_one RPi_A-oop-linux-aarch64
+          collect_one RPi_B-oop-linux-aarch64
+
       - name: Publish raw binaries to "latest-build" Release
         uses: softprops/action-gh-release@v2
         with:
@@ -211,12 +234,12 @@ jobs:
             Automated build of legacy and OOP socket binaries.
             Commit: ${{ github.sha }}
           files: |
-            PI/Socket/build/linux-x86_64/RPi_A-legacy-linux-x86_64
-            PI/Socket/build/linux-x86_64/RPi_B-legacy-linux-x86_64
-            PI/Socket/build/linux-aarch64/RPi_A-legacy-linux-aarch64
-            PI/Socket/build/linux-aarch64/RPi_B-legacy-linux-aarch64
-            PI/Socket-OOP-A/build/linux-x86_64/RPi_A-oop-linux-x86_64
-            PI/Socket-OOP-B/build/linux-x86_64/RPi_B-oop-linux-x86_64
-            PI/Socket-OOP-A/build/linux-aarch64/RPi_A-oop-linux-aarch64
-            PI/Socket-OOP-B/build/linux-aarch64/RPi_B-oop-linux-aarch64
+            release-assets/RPi_A-legacy-linux-x86_64
+            release-assets/RPi_B-legacy-linux-x86_64
+            release-assets/RPi_A-legacy-linux-aarch64
+            release-assets/RPi_B-legacy-linux-aarch64
+            release-assets/RPi_A-oop-linux-x86_64
+            release-assets/RPi_B-oop-linux-x86_64
+            release-assets/RPi_A-oop-linux-aarch64
+            release-assets/RPi_B-oop-linux-aarch64
           fail_on_unmatched_files: true
