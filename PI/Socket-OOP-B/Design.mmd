@@ -1,0 +1,203 @@
+---
+references:
+  - "File: /PI/Socket-OOP-A/Design.mmd"
+  - "File: /PI/Socket-OOP-B"
+generationTime: 2026-06-12T09:53:45.801Z
+---
+classDiagram
+    %% ============ INTERFACES ============
+    class Communication {
+        <<interface>>
+        +begin() bool
+        +send(line: string) bool
+        +receive(line: string) bool
+        +isConnected() bool
+        +stop() void
+    }
+
+    class BusCommunication {
+        <<interface>>
+        +readMessage(msg: CanMessage) bool
+        +writeMessage(msg: CanMessage) bool
+        +send(line: string) bool
+        +receive(line: string) bool
+    }
+
+    %% ============ DATA STRUCTURES ============
+    class CanMessage {
+        +id: uint32_t
+        +data: uint8_t[8]
+        +len: uint8_t
+    }
+
+    class WemosTarget {
+        +name: string
+        +ip: string
+        +port: uint16_t
+    }
+
+    %% ============ PI A - IMPLEMENTATIONS ============
+    class CAN {
+        -_iface: string
+        -_fd: int
+        +begin() bool
+        +isConnected() bool
+        +stop() void
+        +readMessage(msg: CanMessage) bool
+        +writeMessage(msg: CanMessage) bool
+    }
+
+    class PiSocketServer {
+        -_port: uint16_t
+        -_srvFd: int
+        -_peerFd: int
+        -_mu: mutex
+        -_acc: string
+        +begin() bool
+        +send(line: string) bool
+        +receive(line: string) bool
+        +isConnected() bool
+        +stop() void
+        -_accept() bool
+        -_dropPeer() void
+    }
+
+    class DataParserA {
+        +messageToJson(msg: CanMessage) string
+        +jsonToMessage(line: string, msg: CanMessage) bool
+        +isTextId(id: uint32_t) bool$
+        +parseTijdConfig(msg: CanMessage, dagH: int, dagM: int, nachtH: int, nachtM: int) bool$
+    }
+
+    class Vergelijking {
+        <<enumeration>>
+        Groter
+        Kleiner
+        Gelijk
+        Altijd
+    }
+
+    class Automation {
+        +name: string
+        +hour: int
+        +minute: int
+        +lastFiredDay: int
+        +triggerId: uint32_t
+        +vergelijking: Vergelijking
+        +drempel: int
+        +conditieWasWaar: bool
+        +actieId: uint32_t
+        +actieData: uint8_t
+    }
+
+    class AutomationEngine {
+        -_regels: vector~Automation~
+        -_mu: mutex
+        -_running: atomic~bool~
+        -_edgeTriggered: bool
+        -_thread: thread
+        -_fire: function~void(uint32_t, uint8_t)~
+        +addTijdActie(hour: int, minute: int, actieId: uint32_t, data: uint8_t, name: string) void
+        +addCanActie(triggerId: uint32_t, v: Vergelijking, drempel: int, actieId: uint32_t, data: uint8_t, name: string) void
+        +setEdgeTriggered(edge: bool) void
+        +onCanMessage(msg: CanMessage) void
+        +setDagNachtTijden(dagH: int, dagM: int, nachtH: int, nachtM: int) void
+        +evalueerNu() void
+        +start(fire: function) void
+        +stop() void
+        -_loop() void
+        -_vindOpActieId(actieId: uint32_t) Automation*
+        -_frameWaarde(msg: CanMessage) int$
+        -_voldoet(a: Automation, waarde: int) bool$
+    }
+
+    class CanGatewayController {
+        -_bus: BusCommunication*
+        -_socket: Communication*
+        -_parser: DataParserA*
+        -_automation: AutomationEngine*
+        -_running: atomic~bool~
+        -_busThread: thread
+        +getInstance() CanGatewayController$
+        +init(bus: BusCommunication*, socket: Communication*, parser: DataParserA*, automation: AutomationEngine*) void
+        +begin() bool
+        +run() void
+        +stop() void
+        -_busNaarSocket() void
+        -_socketNaarBus() void
+    }
+
+    %% ============ PI B - IMPLEMENTATIONS ============
+    class PiSocketClient {
+        -_host: string
+        -_port: uint16_t
+        -_fd: int
+        -_mu: mutex
+        -_acc: string
+        -_stopped: bool
+        +begin() bool
+        +send(line: string) bool
+        +receive(line: string) bool
+        +isConnected() bool
+        +stop() void
+        -_connect() bool
+        -_drop() void
+    }
+
+    class WemosCommunication {
+        -_receivePort: uint16_t
+        -_targets: vector~WemosTarget~
+        -_srvFd: int
+        +begin() bool
+        +send(line: string) bool
+        +receive(line: string) bool
+        +isConnected() bool
+        +stop() void
+    }
+
+    class DataParserB {
+        +isValid(line: string) bool
+    }
+
+    class WemosGatewayController {
+        -_piSocket: Communication*
+        -_wemos: Communication*
+        -_parser: DataParserB*
+        -_running: atomic~bool~
+        -_piThread: thread
+        +getInstance() WemosGatewayController$
+        +init(piSocket: Communication*, wemos: Communication*, parser: DataParserB*) void
+        +begin() bool
+        +run() void
+        +stop() void
+        -_piNaarWemos() void
+        -_wemosNaarPi() void
+    }
+
+    %% ============ RELATIONSHIPS ============
+    %% Interface implementations
+    Communication <|-- BusCommunication : extends
+    Communication <|.. PiSocketServer : implements
+    Communication <|.. PiSocketClient : implements
+    Communication <|.. WemosCommunication : implements
+    BusCommunication <|.. CAN : implements
+
+    %% Data models
+    CanGatewayController --> BusCommunication : orchestrates
+    CanGatewayController --> Communication : orchestrates
+    CanGatewayController --> DataParserA : uses
+    CanGatewayController --> AutomationEngine : orchestrates
+    CanGatewayController --> "1" CanMessage : processes
+    AutomationEngine --> "*" Automation : evalueert
+    Automation --> Vergelijking : gebruikt
+    CAN --> CanMessage : converts
+
+    DataParserA --> CanMessage : converts
+    DataParserB --> "*" WemosTarget : validates for
+
+    WemosGatewayController --> PiSocketClient : routes to
+    WemosGatewayController --> WemosCommunication : routes to
+    WemosGatewayController --> DataParserB : uses
+
+    WemosCommunication --> "1..*" WemosTarget : manages
+    PiSocketClient --> "1" PiSocketServer : connects to

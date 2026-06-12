@@ -1,0 +1,148 @@
+---
+references:
+  - "File: /PI/Socket-OOP-A/main.cpp"
+  - "File: /PI/Socket-OOP-A"
+generationTime: 2026-06-12T09:51:59.866Z
+---
+classDiagram
+    %% Interface definitions
+    class Communication {
+        <<interface>>
+        +begin() bool
+        +send(line: string) bool
+        +receive(line: string) bool
+        +isConnected() bool
+        +stop() void
+    }
+
+    class BusCommunication {
+        <<interface>>
+        +readMessage(msg: CanMessage) bool
+        +writeMessage(msg: CanMessage) bool
+        +send(line: string) bool
+        +receive(line: string) bool
+    }
+
+    %% Data structures
+    class CanMessage {
+        +id: uint32_t
+        +data: uint8_t[8]
+        +len: uint8_t
+    }
+
+    class Vergelijking {
+        <<enumeration>>
+        Groter
+        Kleiner
+        Gelijk
+        Altijd
+    }
+
+    class Automation {
+        +name: string
+        +hour: int
+        +minute: int
+        +lastFiredDay: int
+        +triggerId: uint32_t
+        +vergelijking: Vergelijking
+        +drempel: int
+        +conditieWasWaar: bool
+        +actieId: uint32_t
+        +actieData: uint8_t
+    }
+
+    %% Concrete implementations
+    class CAN {
+        -_iface: string
+        -_fd: int
+        +begin() bool
+        +isConnected() bool
+        +stop() void
+        +readMessage(msg: CanMessage) bool
+        +writeMessage(msg: CanMessage) bool
+    }
+
+    class PiSocketServer {
+        -_port: uint16_t
+        -_srvFd: int
+        -_peerFd: int
+        -_mu: mutex
+        -_acc: string
+        +begin() bool
+        +send(line: string) bool
+        +receive(line: string) bool
+        +isConnected() bool
+        +stop() void
+        -_accept() bool
+        -_dropPeer() void
+    }
+
+    class DataParser {
+        +messageToJson(msg: CanMessage) string
+        +jsonToMessage(line: string, msg: CanMessage) bool
+        +isTextId(id: uint32_t) bool$
+        +parseTijdConfig(msg: CanMessage, dagH: int, dagM: int, nachtH: int, nachtM: int) bool$
+    }
+
+    class AutomationEngine {
+        -_regels: vector~Automation~
+        -_mu: mutex
+        -_running: atomic~bool~
+        -_edgeTriggered: bool
+        -_thread: thread
+        -_fire: function~void(uint32_t, uint8_t)~
+        +addTijdActie(hour: int, minute: int, actieId: uint32_t, data: uint8_t, name: string) void
+        +addCanActie(triggerId: uint32_t, v: Vergelijking, drempel: int, actieId: uint32_t, data: uint8_t, name: string) void
+        +setEdgeTriggered(edge: bool) void
+        +onCanMessage(msg: CanMessage) void
+        +setDagNachtTijden(dagH: int, dagM: int, nachtH: int, nachtM: int) void
+        +evalueerNu() void
+        +start(fire: function) void
+        +stop() void
+        -_loop() void
+        -_vindOpActieId(actieId: uint32_t) Automation*
+        -_frameWaarde(msg: CanMessage) int$
+        -_voldoet(a: Automation, waarde: int) bool$
+    }
+
+    class CanGatewayController {
+        -_bus: BusCommunication*
+        -_socket: Communication*
+        -_parser: DataParser*
+        -_automation: AutomationEngine*
+        -_running: atomic~bool~
+        -_busThread: thread
+        +getInstance() CanGatewayController$
+        +init(bus: BusCommunication*, socket: Communication*, parser: DataParser*, automation: AutomationEngine*) void
+        +begin() bool
+        +run() void
+        +stop() void
+        -_busNaarSocket() void
+        -_socketNaarBus() void
+    }
+
+    %% Relationships
+    Communication <|-- BusCommunication : extends
+    Communication <|.. PiSocketServer : implements
+    BusCommunication <|.. CAN : implements
+    BusCommunication --> CanMessage : uses
+    DataParser --> CanMessage : converts
+    AutomationEngine --> "*" Automation : evalueert
+    Automation --> Vergelijking : gebruikt
+    AutomationEngine --> CanMessage : leest waarde uit
+    CanGatewayController --> BusCommunication : orchestrates
+    CanGatewayController --> Communication : orchestrates
+    CanGatewayController --> DataParser : uses
+    CanGatewayController --> AutomationEngine : orchestrates
+    CanGatewayController --> "1" CanMessage : processes
+
+    note for AutomationEngine "Regels geladen via AutomationConfig.h
+(laadAutomatiseringen). Twee triggertypes:
+- tijd: ALS tijd == hh:mm DAN stuur id + data
+- CAN: ALS triggerId binnenkomt en waarde
+  voldoet aan (vergelijking, drempel)
+  DAN stuur actieId + actieData
+Dag/nacht-regels herkend aan actieId 0x410/0x420;
+tijden runtime configureerbaar via CAN 0x192.
+Edge-triggering instelbaar via
+AUTOMATION_EDGE_TRIGGERED define."

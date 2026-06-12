@@ -31,19 +31,34 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
+      # The compile workflow only rebuilds the legacy binaries when their
+      # sources changed. If the artifact is missing, there is nothing to test.
+      - name: Check whether legacy binaries were rebuilt
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          found=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/${{ github.event.workflow_run.id }}/artifacts" \
+            --jq '[.artifacts[].name] | contains(["socket-binaries-linux-x86_64"])')
+          echo "found=$found" >> "$GITHUB_OUTPUT"
+          echo "Legacy artifact present: $found"
+
       # Check out the same commit that was compiled.
       - name: Checkout code
+        if: steps.check.outputs.found == 'true'
         uses: actions/checkout@v4.1.7
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Install test dependencies
+        if: steps.check.outputs.found == 'true'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq curl iproute2
 
       # Download the x86_64 binaries compiled by the upstream workflow.
       - name: Download linux-x86_64 socket binaries
+        if: steps.check.outputs.found == 'true'
         uses: actions/download-artifact@v4
         with:
           name: socket-binaries-linux-x86_64
@@ -52,10 +67,12 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Make binaries executable
+        if: steps.check.outputs.found == 'true'
         run: chmod +x PI/Socket/build/RPi_B PI/Socket/build/RPi_A
 
       # Run the test suite using the pre-built binaries (no recompilation).
       - name: Run end-to-end socket tests
+        if: steps.check.outputs.found == 'true'
         env:
           PI_B_BINARY: ${{ github.workspace }}/PI/Socket/build/RPi_B
           PI_A_BINARY: ${{ github.workspace }}/PI/Socket/build/RPi_A
