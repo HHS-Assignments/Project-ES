@@ -72,6 +72,10 @@ void CanGatewayController::_busNaarSocket() {
             continue;
         }
 
+        // CAN-getriggerde automatiseringen evalueren (bericht wordt daarna
+        // gewoon doorgestuurd naar Pi B)
+        _automation->onCanMessage(msg);
+
         std::string json = _parser->messageToJson(msg);
         if (_socket->isConnected()) {
             if (_socket->send(json)) {

@@ -69,28 +69,46 @@ classDiagram
         +parseTijdConfig(msg: CanMessage, dagH: int, dagM: int, nachtH: int, nachtM: int) bool$
     }
 
-    class TimeAction {
+    class Vergelijking {
+        <<enumeration>>
+        Groter
+        Kleiner
+        Gelijk
+        Altijd
+    }
+
+    class Automation {
+        +name: string
         +hour: int
         +minute: int
-        +canId: uint32_t
-        +data: uint8_t
-        +name: string
         +lastFiredDay: int
+        +triggerId: uint32_t
+        +vergelijking: Vergelijking
+        +drempel: int
+        +conditieWasWaar: bool
+        +actieId: uint32_t
+        +actieData: uint8_t
     }
 
     class AutomationEngine {
-        -_actions: vector~TimeAction~
+        -_regels: vector~Automation~
         -_mu: mutex
         -_running: atomic~bool~
+        -_edgeTriggered: bool
         -_thread: thread
         -_fire: function~void(uint32_t, uint8_t)~
-        +addAction(a: TimeAction) void
+        +addTijdActie(hour: int, minute: int, actieId: uint32_t, data: uint8_t, name: string) void
+        +addCanActie(triggerId: uint32_t, v: Vergelijking, drempel: int, actieId: uint32_t, data: uint8_t, name: string) void
+        +setEdgeTriggered(edge: bool) void
+        +onCanMessage(msg: CanMessage) void
         +setDagNachtTijden(dagH: int, dagM: int, nachtH: int, nachtM: int) void
         +evalueerNu() void
         +start(fire: function) void
         +stop() void
         -_loop() void
-        -_huidigeModus() int
+        -_vindOpActieId(actieId: uint32_t) Automation*
+        -_frameWaarde(msg: CanMessage) int$
+        -_voldoet(a: Automation, waarde: int) bool$
     }
 
     class CanGatewayController {
@@ -170,7 +188,8 @@ classDiagram
     CanGatewayController --> DataParserA : uses
     CanGatewayController --> AutomationEngine : orchestrates
     CanGatewayController --> "1" CanMessage : processes
-    AutomationEngine --> "*" TimeAction : schedules
+    AutomationEngine --> "*" Automation : evalueert
+    Automation --> Vergelijking : gebruikt
     CAN --> CanMessage : converts
 
     DataParserA --> CanMessage : converts

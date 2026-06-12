@@ -110,17 +110,7 @@ static bool sendLine(int fd, const std::string& line) {
 
 // Vuurt één automatiseringsactie: schrijft het CAN-frame op de bus
 // én stuurt dezelfde boodschap als Wemos-JSON naar Pi B.
-static void fireAutomation(int canFd, int idx) {
-    uint32_t id;
-    uint8_t  data;
-    const char *name;
-    {
-        std::lock_guard<std::mutex> lk(g_autoMu);
-        id   = g_automations[idx].canId;
-        data = g_automations[idx].data;
-        name = g_automations[idx].name;
-    }
-
+static void fireCan(int canFd, uint32_t id, uint8_t data, const char *name) {
     can_frame f{};
     f.can_id  = id;
     f.data[0] = data;
@@ -134,6 +124,20 @@ static void fireAutomation(int canFd, int idx) {
     if (fd >= 0) sendLine(fd, buf);
 
     std::cout << "[A] automatisering '" << name << "' -> " << buf << "\n";
+}
+
+// Vuurt een tijd-regel uit g_automations op index idx.
+static void fireAutomation(int canFd, int idx) {
+    uint32_t id;
+    uint8_t  data;
+    const char *name;
+    {
+        std::lock_guard<std::mutex> lk(g_autoMu);
+        id   = g_automations[idx].canId;
+        data = g_automations[idx].data;
+        name = g_automations[idx].name;
+    }
+    fireCan(canFd, id, data, name);
 }
 
 // Automation-thread: checkt elke seconde de Pi-klok en vuurt acties
@@ -183,6 +187,27 @@ static void canReader(int canFd) {
                 std::cerr << "[A] ongeldige 0x192 tijdconfig (dlc=" << (int)f.can_dlc << ")\n";
             }
             continue;
+        }
+
+        // CAN-getriggerde automatiseringen: ALS triggerId binnenkomt en de
+        // waarde voldoet, DAN actieId + actieData sturen. Het bericht zelf
+        // wordt daarna gewoon doorgestuurd naar Pi B.
+        {
+            int waarde = frameWaarde(f.data, f.can_dlc);
+            for (int i = 0; i < kNumCanAutomations; i++) {
+                bool relevant;
+                uint32_t actieId; uint8_t actieData; const char *name;
+                {
+                    std::lock_guard<std::mutex> lk(g_autoMu);
+                    relevant  = (g_canAutomations[i].triggerId == id);
+                    actieId   = g_canAutomations[i].actieId;
+                    actieData = g_canAutomations[i].actieData;
+                    name      = g_canAutomations[i].name;
+                }
+                if (relevant && checkCanAutomatisering(i, waarde)) {
+                    fireCan(canFd, actieId, actieData, name);
+                }
+            }
         }
 
         char hexId[12];

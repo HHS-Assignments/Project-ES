@@ -30,13 +30,25 @@ classDiagram
         +len: uint8_t
     }
 
-    class TimeAction {
+    class Vergelijking {
+        <<enumeration>>
+        Groter
+        Kleiner
+        Gelijk
+        Altijd
+    }
+
+    class Automation {
+        +name: string
         +hour: int
         +minute: int
-        +canId: uint32_t
-        +data: uint8_t
-        +name: string
         +lastFiredDay: int
+        +triggerId: uint32_t
+        +vergelijking: Vergelijking
+        +drempel: int
+        +conditieWasWaar: bool
+        +actieId: uint32_t
+        +actieData: uint8_t
     }
 
     %% Concrete implementations
@@ -73,18 +85,24 @@ classDiagram
     }
 
     class AutomationEngine {
-        -_actions: vector~TimeAction~
+        -_regels: vector~Automation~
         -_mu: mutex
         -_running: atomic~bool~
+        -_edgeTriggered: bool
         -_thread: thread
         -_fire: function~void(uint32_t, uint8_t)~
-        +addAction(a: TimeAction) void
+        +addTijdActie(hour: int, minute: int, actieId: uint32_t, data: uint8_t, name: string) void
+        +addCanActie(triggerId: uint32_t, v: Vergelijking, drempel: int, actieId: uint32_t, data: uint8_t, name: string) void
+        +setEdgeTriggered(edge: bool) void
+        +onCanMessage(msg: CanMessage) void
         +setDagNachtTijden(dagH: int, dagM: int, nachtH: int, nachtM: int) void
         +evalueerNu() void
         +start(fire: function) void
         +stop() void
         -_loop() void
-        -_huidigeModus() int
+        -_vindOpActieId(actieId: uint32_t) Automation*
+        -_frameWaarde(msg: CanMessage) int$
+        -_voldoet(a: Automation, waarde: int) bool$
     }
 
     class CanGatewayController {
@@ -109,15 +127,22 @@ classDiagram
     BusCommunication <|.. CAN : implements
     BusCommunication --> CanMessage : uses
     DataParser --> CanMessage : converts
-    AutomationEngine --> "*" TimeAction : schedules
+    AutomationEngine --> "*" Automation : evalueert
+    Automation --> Vergelijking : gebruikt
+    AutomationEngine --> CanMessage : leest waarde uit
     CanGatewayController --> BusCommunication : orchestrates
     CanGatewayController --> Communication : orchestrates
     CanGatewayController --> DataParser : uses
     CanGatewayController --> AutomationEngine : orchestrates
     CanGatewayController --> "1" CanMessage : processes
 
-    note for AutomationEngine "Acties geladen via AutomationConfig.h
-(laadAutomatiseringen): ALS tijd == hh:mm
-DAN stuur CAN id + data.
-[0]=dag (0x410), [1]=nacht (0x420).
-Tijden runtime configureerbaar via CAN 0x192."
+    note for AutomationEngine "Regels geladen via AutomationConfig.h
+(laadAutomatiseringen). Twee triggertypes:
+- tijd: ALS tijd == hh:mm DAN stuur id + data
+- CAN: ALS triggerId binnenkomt en waarde
+  voldoet aan (vergelijking, drempel)
+  DAN stuur actieId + actieData
+Dag/nacht-regels herkend aan actieId 0x410/0x420;
+tijden runtime configureerbaar via CAN 0x192.
+Edge-triggering instelbaar via
+AUTOMATION_EDGE_TRIGGERED define."

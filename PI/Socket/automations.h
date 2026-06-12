@@ -1,15 +1,25 @@
 #pragma once
 // automations.h
 // "If this, then that"-configuratie voor Pi-automatiseringen.
-//   ALS tijd == hh:mm  DAN stuur CAN-bericht (id, data).
 //
-// De tijden zijn runtime-variabelen: ze worden aangepast via CAN ID 0x192
-// (tijdconfiguratie vanaf de balieconsole, formaat 4x 16-bit big-endian:
-//  [dagUur][dagMin][nachtUur][nachtMin]).
+//   Tijd-trigger:  ALS tijd == hh:mm                          DAN stuur CAN id + data
+//   CAN-trigger:   ALS CAN id binnenkomt en waarde voldoet
+//                  aan (vergelijking, drempel)                DAN stuur CAN id + data
+//
+// De dag/nacht-tijden zijn runtime-variabelen: ze worden aangepast via CAN
+// ID 0x192 (tijdconfiguratie vanaf de balieconsole, layout per 4-byte helft
+// [00][uur][min][00]).
 
 #include <cstdint>
 #include <ctime>
 #include <mutex>
+
+// true  = CAN-regels vuren eenmalig per overschrijding (her-bewapening
+//         zodra de conditie weer onwaar is)
+// false = CAN-regels vuren bij elk bericht dat aan de conditie voldoet
+#define AUTOMATION_EDGE_TRIGGERED true
+
+// ---------- Tijd-regels ----------
 
 struct TimeAction {
     int      hour, minute;     // wanneer (runtime aanpasbaar, geen #define)
@@ -27,7 +37,57 @@ static TimeAction g_automations[] = {
 enum { AUTO_DAG = 0, AUTO_NACHT = 1 };
 static const int kNumAutomations = 2;
 
-static std::mutex g_autoMu;   // beschermt g_automations (0x192-handler vs. automation-thread)
+// ---------- CAN-regels ----------
+
+enum Vergelijking { VGL_GROTER, VGL_KLEINER, VGL_GELIJK };
+
+struct CanAction {
+    uint32_t     triggerId;        // ALS dit CAN ID binnenkomt...
+    Vergelijking vergelijking;     // ...en de waarde voldoet aan...
+    int          drempel;          // ...deze drempel...
+    uint32_t     actieId;          // DAN stuur dit CAN ID...
+    uint8_t      actieData;        // ...met deze data
+    const char  *name;
+    bool         conditieWasWaar;  // voor edge-detectie/her-bewapening
+};
+
+static CanAction g_canAutomations[] = {
+    // ALS CAN 0x300 (CO2) > 800  DAN stuur 0x120 data 1 (alle deuren open)
+    { 0x300, VGL_GROTER, 800, 0x120, 1, "co2_deuren_open", false },
+};
+static const int kNumCanAutomations = 1;
+
+static std::mutex g_autoMu;   // beschermt beide regel-tabellen
+
+// ---------- Helpers ----------
+
+// Waarde uit een CAN-frame: 16-bit big-endian bij 2+ bytes, anders byte 0.
+// (Zelfde conventie als 0x300/0x400.)
+inline int frameWaarde(const uint8_t *data, uint8_t len) {
+    if (len >= 2) return (data[0] << 8) | data[1];
+    if (len == 1) return data[0];
+    return 0;
+}
+
+// Evalueert CAN-regel [index] tegen een waarde; true = actie moet vuren.
+// Met AUTOMATION_EDGE_TRIGGERED vuurt een regel alleen op de overgang
+// onwaar -> waar (her-bewapening zodra de conditie weer onwaar is).
+inline bool checkCanAutomatisering(int index, int waarde) {
+    std::lock_guard<std::mutex> lk(g_autoMu);
+    CanAction &a = g_canAutomations[index];
+
+    bool waar = false;
+    switch (a.vergelijking) {
+        case VGL_GROTER:  waar = waarde >  a.drempel; break;
+        case VGL_KLEINER: waar = waarde <  a.drempel; break;
+        case VGL_GELIJK:  waar = waarde == a.drempel; break;
+    }
+
+    bool vuren = AUTOMATION_EDGE_TRIGGERED ? (waar && !a.conditieWasWaar)
+                                           : waar;
+    a.conditieWasWaar = waar;
+    return vuren;
+}
 
 // Parseert de 0x192-payload. Layout per 4-byte helft: [00][uur][min][00]
 //   byte 1 = dag-uur, byte 2 = dag-minuut, byte 5 = nacht-uur, byte 6 = nacht-minuut
