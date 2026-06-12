@@ -84,6 +84,7 @@ volatile uint8_t screenUpdateFlag = 1;
 volatile uint16_t co2 = 0;
 volatile uint8_t temp = 0;
 volatile uint8_t menuState = 0;
+volatile uint16_t ldr = 0;
 // 0 = main menu
 // 1 = color menu
 // 2 = brightness menu
@@ -624,7 +625,7 @@ int main(void)
 	            "  CO2  : %d ppm\r\n"
 	            "  Temp : %d C\r\n"
 	            "  LDR  : %d\r\n\r\n",
-	            co2, temp, 0
+	            co2, temp, ldr
 	        );
 	        UART_Print(buf);
 
@@ -1048,6 +1049,9 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 	if (RxHeader.StdId == 0x420) {
 		AddMelding("Het is nacht\r\n\r\n");
 		timeOfDay = 1;
+	}
+	if (RxHeader.StdId == 0x400) {
+	    ldr = ((uint16_t)RxData[0] << 8) | RxData[1];
 	}
 }
 
