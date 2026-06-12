@@ -1,0 +1,115 @@
+---
+title: Project-ES — Systeem sequencediagram
+description: >
+  De belangrijkste scenario's over het hele systeem. De CAN-bus is broadcast:
+  een pijl met een CAN-ID komt bij elke node aan die op dat ID filtert.
+  Pi A vertaalt CAN-frames naar Wemos-JSON regels over TCP naar Pi B;
+  Pi B fan-out't elke regel naar alle bekende Wemos-apparaten.
+---
+sequenceDiagram
+    autonumber
+    participant Balie as BalieConsole STM32
+    participant Sluis as HeadSluis STM32
+    participant Licht as Lichtvoorziening STM32
+    participant PiA as Pi A CanGateway
+    participant PiB as Pi B WemosGateway
+    participant LK as Wemos Lichtkrant
+    participant RS as Wemos Relaxstoel
+
+    Note over PiA,PiB: Opstart: PiSocketClient (B) verbindt met PiSocketServer (A).<br/>Pi A stuurt direct de huidige dag/nacht-modus (0x410 of 0x420).
+
+    rect rgba(200, 220, 255, 0.25)
+    Note over Licht,Balie: Scenario 1 — Klimaatmeting en deurautomatisering
+    loop elke 10 seconden
+        Licht->>Licht: SGP30_ReadCO2() en SHT3x_Read()
+        Licht->>PiA: CAN 0x300 CO2 (2 bytes BE)
+        Licht->>Balie: CAN 0x300 (broadcast)
+        Licht->>PiA: CAN 0x310 temperatuur
+        Licht->>Balie: CAN 0x310 (broadcast)
+        Balie->>Balie: statusoverzicht + WARN-LED bij CO2>=600 / temp>=25
+        PiA->>PiB: JSON 0x300 / 0x310 (doorsturen)
+    end
+    alt CO2 > 600 of temp > 25 (overgang onwaar->waar)
+        PiA->>Sluis: CAN 0x120 data 1 (alle deuren open)
+        PiA->>PiB: JSON 0x120 (zelfde actie)
+        Sluis->>Sluis: state = STATE_ALLOPEN, beide servo's open
+    else waarde zakt weer onder drempel
+        PiA->>Sluis: CAN 0x120 data 0 (deuren dicht)
+        Sluis->>Sluis: state = STATE_NORMAL, terug naar RFID-werking
+    end
+    end
+
+    rect rgba(255, 200, 200, 0.25)
+    Note over Balie,RS: Scenario 2 — Noodknop
+    Balie->>Balie: EXTI noodknop, noodActief toggelt
+    Balie->>Sluis: CAN 0x001 data 1
+    Balie->>Licht: CAN 0x001 (broadcast)
+    Balie->>PiA: CAN 0x001 (broadcast)
+    Sluis->>Sluis: STATE_EMERGENCY: buitendeur open, binnendeur dicht, "!" op matrix
+    Licht->>Licht: noodActief = 1, rode chase-animatie op ledstrip
+    PiA->>PiB: JSON 0x001 data 1
+    PiB->>LK: JSON 0x001 (fan-out)
+    PiB->>RS: JSON 0x001 (fan-out, genegeerd)
+    LK->>LK: _setModus(nood): noodtekst op display
+    Balie->>Sluis: CAN 0x001 data 0 (nood uit, alles terug naar normaal)
+    end
+
+    rect rgba(200, 255, 200, 0.25)
+    Note over Sluis,LK: Scenario 3 — RFID-toegang bij de luchtsluis
+    Sluis->>Sluis: MFRC522_ReadUid() leest pas
+    Sluis->>Balie: CAN 0x210 UID (4 bytes, broadcast)
+    alt UID in database
+        Sluis->>Sluis: vinkje op matrix, deurcyclus buiten->binnen
+    else UID onbekend
+        Sluis->>Sluis: kruisje op matrix, toegang geweigerd
+    end
+    end
+
+    rect rgba(255, 240, 200, 0.25)
+    Note over Balie,RS: Scenario 4 — Relaxstoel bedienen en status terug
+    Balie->>Balie: schakelaar relaxstoel (EXTI)
+    Balie->>PiA: CAN 0x140 data 1/0
+    PiA->>PiB: JSON 0x140
+    PiB->>RS: JSON 0x140 (fan-out)
+    RS->>RS: _setMotor(): vibratiemotor aan/uit (ook lokaal via knop D7)
+    RS->>PiB: JSON 0x430 status (TCP push)
+    PiB->>PiA: JSON 0x430 (doorsturen)
+    PiA->>Balie: CAN 0x430
+    Balie->>Balie: melding + status-LED relaxstoel
+    end
+
+    rect rgba(230, 200, 255, 0.25)
+    Note over RS,Balie: Scenario 5 — LDR-meting van de relaxhoek
+    loop elke 10 seconden
+        RS->>RS: LDR lezen; schemerlamp aan onder drempel
+        RS->>PiB: JSON 0x400 LDR-waarde
+        PiB->>PiA: JSON 0x400 (doorsturen)
+        PiA->>Balie: CAN 0x400 (2 bytes BE)
+        Balie->>Balie: LDR-waarde in statusoverzicht
+    end
+    end
+
+    rect rgba(200, 255, 255, 0.25)
+    Note over Balie,LK: Scenario 6 — Lichtkranttekst en LED-instellingen via het baliemenu
+    Balie->>Balie: UART-menu: tekst invoeren (max 3 delen van 8 tekens)
+    Balie->>PiA: CAN 0x180 + 0x190 + 0x191 (normale tekst, ASCII)
+    Note right of Balie: noodtekst gaat via 0x150/0x160/0x170
+    PiA->>PiB: JSON met tekst-delen
+    PiB->>LK: JSON (fan-out)
+    LK->>LK: delen samenvoegen, tonen op Parola-display
+    Balie->>Licht: CAN 0x100 kleur / 0x110 helderheid
+    Licht->>Licht: RGB_Set() + WS2812B-strip bijwerken
+    end
+
+    rect rgba(255, 255, 200, 0.25)
+    Note over Balie,Sluis: Scenario 7 — Dag/nacht-tijdconfiguratie
+    Balie->>Balie: UART-menu 6: tijden invoeren
+    Balie->>PiA: CAN 0x192 [00 uur min 00] x2
+    PiA->>PiA: parseTijdConfig() + setDagNachtTijden()<br/>(0x192 wordt NIET doorgestuurd)
+    PiA->>Balie: CAN 0x410 (dag) of 0x420 (nacht) — direct in sync
+    PiA->>Licht: CAN 0x420 (broadcast, nachtmodus)
+    Balie->>Balie: dag/nacht-status in overzicht
+    loop dagelijks op ingestelde tijden
+        PiA->>Balie: CAN 0x410 om dag-tijd / 0x420 om nacht-tijd
+    end
+    end

@@ -1,0 +1,413 @@
+---
+title: Project-ES — Systeem klassendiagram
+description: >
+  Volledig systeem: BalieConsole, HeadSluis (Luchtsluis) en Lichtvoorziening
+  (STM32, procedureel C — gemodelleerd als modules), Pi A (CAN-gateway),
+  Pi B (Wemos-gateway) en de Wemos-controllers Lichtkrant en Relaxstoel.
+---
+classDiagram
+    direction LR
+
+    %% ════════════════════════ STM32-NODES (C-modules) ════════════════════════
+    namespace STM32 {
+        class BalieConsole {
+            <<module>>
+            -noodActief : uint8_t
+            -relaxStoelStatus : uint8_t
+            -co2High : uint8_t
+            -tempHigh : uint8_t
+            -timeOfDay : uint8_t
+            -co2 : uint16_t
+            -temp : uint8_t
+            -ldr : uint16_t
+            -menuState : uint8_t
+            -meldingen : char[5][32]
+            +HandleCommand(cmd) void
+            +SendColor(kleur) void
+            +SendBrightness(procent) void
+            +AddMelding(msg) void
+            +SendCanMessage(len, data, canID) void
+            +HAL_UART_RxCpltCallback() void
+            +HAL_CAN_RxFifo0MsgPendingCallback() void
+            +HAL_GPIO_EXTI_Callback(pin) void
+        }
+
+        class LuchtSluis {
+            <<module>>
+            -state : system_state_t
+            -servo1_pos : int
+            -servo2_pos : int
+            -UIDDatabase : uint8_t[][4]
+            -DoorloopCyclus : uint8_t
+            +KaiDeurAutomatiseringBuitenBinnen() void
+            +KaiDeurAutomatiseringBinnenBuiten() void
+            +ResetDeuren() void
+            +Servo_Move_Smooth(kanaal, van, naar, stap) void
+            +max7219_show_2d(patroon) void
+            +SendCanMessage(len, data, canID) void
+            +HAL_CAN_RxFifo0MsgPendingCallback() void
+            +HAL_GPIO_EXTI_Callback(pin) void
+        }
+
+        class system_state_t {
+            <<enumeration>>
+            STATE_NORMAL
+            STATE_EMERGENCY
+            STATE_ALLOPEN
+        }
+
+        class MFRC522_STM32 {
+            <<driver>>
+            +MFRC522_Init(rfid) status
+            +MFRC522_RequestA(rfid, atqa) status
+            +MFRC522_ReadUid(rfid, uid) status
+        }
+
+        class Lichtvoorziening {
+            <<module>>
+            -noodActief : uint8_t
+            -huidigeKleur : uint8_t
+            -helderheid : uint8_t
+            -led_on : uint8_t
+            -mc_colors : Color[12]
+            +SGP30_Init() void
+            +SGP30_ReadCO2() uint16_t
+            +SHT3x_Read(temp) void
+            +RGB_Set(r, g, b, helderheid) void
+            +chase_tick(stap) void
+            +SendCanMessage(len, data, canID) void
+            +HAL_CAN_RxFifo0MsgPendingCallback() void
+            +HAL_GPIO_EXTI_Callback(pin) void
+        }
+
+        class WS2812B {
+            <<driver>>
+            +WS2812B_SetLED(i, r, g, b) void
+            +WS2812B_Clear() void
+            +WS2812B_DMA_HalfCpltCallback() void
+            +WS2812B_DMA_CpltCallback() void
+        }
+    }
+
+    %% ════════════════════════ PI A — CAN-GATEWAY ════════════════════════
+    namespace PiA_CanGateway {
+        class Pi_Communication {
+            <<interface>>
+            +begin() bool
+            +send(line) bool
+            +receive(line) bool
+            +isConnected() bool
+            +stop() void
+        }
+
+        class BusCommunication {
+            <<interface>>
+            +readMessage(msg) bool
+            +writeMessage(msg) bool
+        }
+
+        class CanMessage {
+            +id : uint32_t
+            +data : uint8_t[8]
+            +len : uint8_t
+        }
+
+        class CAN {
+            -_iface : string
+            -_fd : int
+            +begin() bool
+            +readMessage(msg) bool
+            +writeMessage(msg) bool
+            +isConnected() bool
+            +stop() void
+        }
+
+        class PiSocketServer {
+            -_port : uint16_t
+            -_srvFd : int
+            -_peerFd : int
+            +begin() bool
+            +send(line) bool
+            +receive(line) bool
+            +isConnected() bool
+            +stop() void
+        }
+
+        class DataParserA {
+            +messageToJson(msg) string
+            +jsonToMessage(line, msg) bool
+            +isTextId(id)$ bool
+            +parseTijdConfig(msg, dagH, dagM, nachtH, nachtM)$ bool
+        }
+
+        class Vergelijking {
+            <<enumeration>>
+            Groter
+            Kleiner
+            Gelijk
+            Altijd
+        }
+
+        class Automation {
+            +name : string
+            +hour : int
+            +minute : int
+            +triggerId : uint32_t
+            +vergelijking : Vergelijking
+            +drempel : int
+            +conditieWasWaar : bool
+            +actieId : uint32_t
+            +actieData : uint8_t
+        }
+
+        class AutomationEngine {
+            -_regels : vector~Automation~
+            -_edgeTriggered : bool
+            +addTijdActie(uur, min, actieId, data, naam) void
+            +addCanActie(triggerId, vgl, drempel, actieId, data, naam) void
+            +setEdgeTriggered(edge) void
+            +onCanMessage(msg) void
+            +setDagNachtTijden(dagH, dagM, nachtH, nachtM) void
+            +evalueerNu() void
+            +start(fire) void
+            +stop() void
+        }
+
+        class CanGatewayController {
+            <<singleton>>
+            +getInstance()$ CanGatewayController
+            +init(bus, socket, parser, automation) void
+            +begin() bool
+            +run() void
+            +stop() void
+            -_busNaarSocket() void
+            -_socketNaarBus() void
+        }
+    }
+
+    %% ════════════════════════ PI B — WEMOS-GATEWAY ════════════════════════
+    namespace PiB_WemosGateway {
+        class PiSocketClient {
+            -_host : string
+            -_port : uint16_t
+            -_fd : int
+            +begin() bool
+            +send(line) bool
+            +receive(line) bool
+            +isConnected() bool
+            +stop() void
+        }
+
+        class WemosTarget {
+            +name : string
+            +ip : string
+            +port : uint16_t
+        }
+
+        class WemosCommunication {
+            -_receivePort : uint16_t
+            -_targets : vector~WemosTarget~
+            +begin() bool
+            +send(line) bool
+            +receive(line) bool
+            +isConnected() bool
+            +stop() void
+        }
+
+        class DataParserB {
+            +isValid(line) bool
+        }
+
+        class WemosGatewayController {
+            <<singleton>>
+            +getInstance()$ WemosGatewayController
+            +init(piSocket, wemos, parser) void
+            +begin() bool
+            +run() void
+            +stop() void
+            -_piNaarWemos() void
+            -_wemosNaarPi() void
+        }
+    }
+
+    %% ════════════════════════ WEMOS — GEDEELDE COMMUNICATIE ════════════════════════
+    namespace Wemos_Gedeeld {
+        class Wemos_Communication {
+            <<interface>>
+            +begin() void
+            +send(data) bool
+            +receive(buf, len) bool
+            +sendCanJson(canId, data) bool
+            +isConnected() bool
+            +connect(ssid, pass) bool
+            +reconnect() void
+        }
+
+        class WirelessCommunication {
+            <<interface>>
+            +connect(ssid, pass) bool
+            +isConnected() bool
+        }
+
+        class WiFiCommunication {
+            -_piHost : string
+            -_piPort : int
+            -_server : WiFiServer
+            +begin() void
+            +connect(ssid, pass) bool
+            +reconnect() void
+            +isConnected() bool
+            +send(data) bool
+            +receive(buf, len) bool
+            +sendCanJson(canId, data) bool
+        }
+    }
+
+    %% ════════════════════════ WEMOS LICHTKRANT ════════════════════════
+    namespace Wemos_Lichtkrant {
+        class Display {
+            <<interface>>
+            +begin() void
+            +toonTekst(tekst) void
+            +update() void
+        }
+
+        class ParolaDisplay {
+            -_parola : MD_Parola
+            -_huidigeTekst : char[128]
+            +begin() void
+            +toonTekst(tekst) void
+            +update() void
+        }
+
+        class LichtkrantController {
+            <<singleton>>
+            -_noodModus : bool
+            -_normaleTekst : char[128]
+            -_noodTekst : char[128]
+            -_noodDelen : char[3][64]
+            -_normaalDelen : char[3][64]
+            +getInstance()$ LichtkrantController
+            +init(display, comm) void
+            +begin() void
+            +update() void
+            -_setModus(nood) void
+            -_verwerkTekstDeel(incoming, delen, index, doel, isNood) void
+            -_verwerkCommando(incoming) void
+        }
+    }
+
+    %% ════════════════════════ WEMOS RELAXSTOEL ════════════════════════
+    namespace Wemos_Relaxstoel {
+        class Motor {
+            <<interface>>
+            +begin() void
+            +setSpeed(pct) void
+        }
+
+        class Vibratiemotor {
+            -_pin : uint8_t
+            +begin() void
+            +setSpeed(pct) void
+        }
+
+        class Lamp {
+            <<interface>>
+            +begin() void
+            +setAan() void
+            +setUit() void
+        }
+
+        class Schemerlamp {
+            -_pin : uint8_t
+            +begin() void
+            +setAan() void
+            +setUit() void
+        }
+
+        class Lichtsensor {
+            <<interface>>
+            +begin() void
+            +getWaarde() int
+        }
+
+        class LDR {
+            -_pin : uint8_t
+            +begin() void
+            +getWaarde() int
+        }
+
+        class RelaxstoelController {
+            <<singleton>>
+            -_motorAan : bool
+            -_ldrDrempel : int
+            -_laatsteLdr : int
+            -_knopPin : uint8_t
+            +getInstance()$ RelaxstoelController
+            +init(motor, lamp, sensor, comm, ldrDrempel, knopPin) void
+            +begin() void
+            +update() void
+            -_verwerkCommando(incoming) void
+            -_setMotor(aan) void
+        }
+    }
+
+    %% ════════════════════════ RELATIES — Pi A ════════════════════════
+    Pi_Communication <|-- BusCommunication : extends
+    Pi_Communication <|.. PiSocketServer : implements
+    BusCommunication <|.. CAN : implements
+    CAN --> CanMessage : leest/schrijft
+    DataParserA --> CanMessage : converteert
+    AutomationEngine --> "*" Automation : evalueert
+    Automation --> Vergelijking : gebruikt
+    AutomationEngine --> CanMessage : leest waarde uit
+    CanGatewayController --> BusCommunication : orkestreert
+    CanGatewayController --> Pi_Communication : orkestreert
+    CanGatewayController --> DataParserA : gebruikt
+    CanGatewayController --> AutomationEngine : orkestreert
+
+    %% ════════════════════════ RELATIES — Pi B ════════════════════════
+    Pi_Communication <|.. PiSocketClient : implements
+    Pi_Communication <|.. WemosCommunication : implements
+    WemosCommunication --> "1..*" WemosTarget : beheert
+    WemosGatewayController --> PiSocketClient : routeert van/naar
+    WemosGatewayController --> WemosCommunication : routeert van/naar
+    WemosGatewayController --> DataParserB : gebruikt
+    PiSocketClient ..> PiSocketServer : TCP-verbinding
+
+    %% ════════════════════════ RELATIES — Wemos ════════════════════════
+    Wemos_Communication <|-- WirelessCommunication : extends
+    WirelessCommunication <|.. WiFiCommunication : implements
+    Display <|.. ParolaDisplay : implements
+    LichtkrantController --> Display : stuurt aan
+    LichtkrantController --> Wemos_Communication : gebruikt
+    Motor <|.. Vibratiemotor : implements
+    Lamp <|.. Schemerlamp : implements
+    Lichtsensor <|.. LDR : implements
+    RelaxstoelController --> Motor : stuurt aan
+    RelaxstoelController --> Lamp : stuurt aan
+    RelaxstoelController --> Lichtsensor : leest
+    RelaxstoelController --> Wemos_Communication : gebruikt
+    WemosCommunication ..> WiFiCommunication : TCP via WiFi
+
+    %% ════════════════════════ RELATIES — STM32 / CAN-bus ════════════════════════
+    HeadSluis --> system_state_t : heeft toestand
+    HeadSluis --> MFRC522_STM32 : leest RFID via
+    Lichtvoorziening --> WS2812B : stuurt ledstrip via
+    BalieConsole ..> CAN : CAN-bus
+    HeadSluis ..> CAN : CAN-bus
+    Lichtvoorziening ..> CAN : CAN-bus
+
+    note for CanGatewayController "Pi A brugt SocketCAN en TCP (Wemos-JSON).
+0x192 (tijdconfig) wordt lokaal verwerkt.
+Automatiseringen: tijd 08:00/22:00 naar 0x410/0x420;
+CO2 0x300 boven 600 en temp 0x310 boven 25 naar
+0x120 deuren open, eronder weer dicht (edge-triggered)."
+
+    note for BalieConsole "UART-menu: LED-kleur 0x100, helderheid 0x110,
+lichtkranttekst 0x180/0x190/0x191, noodtekst
+0x150/0x160/0x170, tijdconfig 0x192.
+Knoppen: nood 0x001, deuren open 0x120,
+deurcyclus 0x130, relaxstoel 0x140.
+Ontvangt: 0x001, 0x300, 0x310, 0x400, 0x410,
+0x420, 0x430 voor het statusoverzicht."
