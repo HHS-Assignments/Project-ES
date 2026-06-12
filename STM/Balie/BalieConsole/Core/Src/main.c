@@ -349,7 +349,7 @@ void HandleCommand(char *cmd)
         }
 
         // ----------------------------
-        // SEND FRAMES
+        // SEND FRAME
         // ----------------------------
         SendCanMessage(8, pack1, 0x180);
         SendCanMessage(8, pack2, 0x190);
