@@ -21,8 +21,8 @@ int main(int argc, char **argv) {
 
     // Bekende Wemos-doelen (poort = waar de Wemos WiFiServer op luistert)
     std::vector<WemosTarget> targets = {
-        {"wemos_relaxstoel", "10.42.0.10", 9001},
-        {"wemos_lichtkrant", "10.42.0.11", 9001},
+        {"wemos_relaxstoel", "10.42.0.101", 9001},
+        {"wemos_lichtkrant", "10.42.0.100", 9001},
     };
 
     PiSocketClient     piSocket(piIp, piPort);
