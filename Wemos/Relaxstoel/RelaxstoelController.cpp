@@ -93,11 +93,13 @@ void RelaxstoelController::_setMotor(bool aan) {
     if (_motorAan) {
         _motor->setSpeed(50);
         Serial.println(F("[Motor] Relaxstoel AAN"));
-        _comm->sendCanJson("0x430", 1);
     } else {
         _motor->setSpeed(0);
         Serial.println(F("[Motor] Relaxstoel UIT"));
-        _comm->sendCanJson("0x430", 0);
+    }
+    // Alleen status sturen als WiFi er is; anders blokkeert client.connect() seconden
+    if (_comm->isConnected()) {
+        _comm->sendCanJson("0x430", _motorAan ? 1 : 0);
     }
 }
 

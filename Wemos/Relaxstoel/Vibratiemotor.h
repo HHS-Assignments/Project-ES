@@ -8,6 +8,9 @@ public:
 
     void begin() override {
         pinMode(_pin, OUTPUT);
+        // Lagere PWM-frequentie: ESP8266 software-PWM op 1 kHz
+        // steelt interrupt-tijd van de WiFi-stack
+        analogWriteFreq(200);
     }
 
     void setSpeed(uint8_t pct) override {
