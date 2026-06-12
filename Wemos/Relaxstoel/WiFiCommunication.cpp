@@ -14,32 +14,42 @@ void WiFiCommunication::begin() {
 bool WiFiCommunication::connect(const char *ssid, const char *pass) {
     _ssid = ssid;
     _pass = pass;
-    WiFi.persistent(false);  // geen credentials naar flash schrijven
-    WiFi.setAutoReconnect(false); // eigen reconnect() gebruiken; auto-reconnect gooit statisch IP weg
-    WiFi.disconnect();
-    delay(100);
-    WiFi.mode(WIFI_STA);
 
+    // Zelfde volgorde als de werkende WiFiTest sketch:
+    // config -> persistent -> autoReconnect -> mode -> begin
+    // (geen WiFi.disconnect() vooraf; die verstoort de verbinding)
     IPAddress ip(10, 42, 0, 10);
     IPAddress gateway(10, 42, 0, 1);
     IPAddress subnet(255, 255, 255, 0);
     IPAddress dns(10, 42, 0, 1);
     WiFi.config(ip, gateway, subnet, dns);
 
+    WiFi.persistent(false);       // geen credentials naar flash schrijven
+    WiFi.setAutoReconnect(false); // eigen reconnect() gebruiken
+    WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, pass);
+
+    Serial.print(F("[WiFi] Verbinden met "));
+    Serial.println(ssid);
+
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts < 20) {
         delay(500);
         Serial.print(".");
+        Serial.print(WiFi.status());   // status per poging voor debugging
         attempts++;
     }
     Serial.println();
     if (isConnected()) {
         Serial.print(F("[WiFi] Verbonden! IP: "));
-        Serial.println(WiFi.localIP());
+        Serial.print(WiFi.localIP());
+        Serial.print(F("  RSSI: "));
+        Serial.print(WiFi.RSSI());
+        Serial.println(F(" dBm"));
         return true;
     }
-    Serial.println(F("[WiFi] Verbinding mislukt!"));
+    Serial.print(F("[WiFi] Verbinding mislukt! Eindstatus: "));
+    Serial.println(WiFi.status());
     return false;
 }
 
