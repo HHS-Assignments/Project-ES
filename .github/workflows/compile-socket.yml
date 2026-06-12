@@ -43,8 +43,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       legacy: ${{ steps.filter.outputs.legacy }}
-      oop-a: ${{ steps.filter.outputs.oop-a }}
-      oop-b: ${{ steps.filter.outputs.oop-b }}
+      oop-a: ${{ steps.filter.outputs['oop-a'] }}
+      oop-b: ${{ steps.filter.outputs['oop-b'] }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
