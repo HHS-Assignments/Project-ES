@@ -1,268 +1,136 @@
-# Compile Socket Binaries
-#
-# Compiles the socket code for linux-x86_64 (native) and linux-aarch64
-# (Raspberry Pi). Each group (legacy, oop-a, oop-b) is only recompiled
-# when its own sources changed (or on manual dispatch).
-#
-# The legacy binaries are still compiled for the socket test workflow
-# (which downloads the historic socket-binaries-linux-x86_64 artifact),
-# but they are NO LONGER published to the release. The publish job also
-# removes any previously published legacy assets from the release, and
-# only publishes the 4 OOP release assets: 2 binaries x 2 targets.
-#
-# Triggered when any C/C++ source or header in the socket directories
-# changes. Can also be triggered manually from the Actions tab.
+name: Testing Socket Binaries
 
-name: Compiling Socket Binaries
-
+# Triggered automatically after the "Compile Socket Binaries" workflow
+# finishes successfully, or manually from the Actions tab.
 on:
-  push:
-    #branches: [main, dev]
-    paths:
-      - 'PI/Socket/**'
-      - 'PI/Socket-OOP-A/**'
-      - 'PI/Socket-OOP-B/**'
-      - 'Code-Tests/**'
-      - '.github/workflows/**'
-  pull_request:
-    branches: [main, dev]
-    paths:
-      - 'PI/Socket/**'
-      - 'PI/Socket-OOP-A/**'
-      - 'PI/Socket-OOP-B/**'
-      - 'Code-Tests/**'
-      - '.github/workflows/**'
+  workflow_run:
+    workflows: ["Compile Socket Binaries"]
+    types:
+      - completed
   workflow_dispatch:
 
-permissions:
-  contents: write   # needed to publish a Release
-
 jobs:
-  changes:
-    name: Detect changed sources
+  test:
+    # Only run when the upstream compile workflow succeeded.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    outputs:
-      legacy: ${{ steps.filter.outputs.legacy }}
-      oop-a: ${{ steps.filter.outputs['oop-a'] }}
-      oop-b: ${{ steps.filter.outputs['oop-b'] }}
+    timeout-minutes: 10
+
     steps:
-      - name: Checkout code
+      # ------------------------------------------------------------------
+      # 1. Checkout repo (we need the test script + sources)
+      # ------------------------------------------------------------------
+      - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Filter changed paths
-        uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            legacy:
-              - 'PI/Socket/**'
-              - 'Code-Tests/**'
-              - '.github/workflows/**'
-            oop-a:
-              - 'PI/Socket-OOP-A/**'
-              - '.github/workflows/**'
-            oop-b:
-              - 'PI/Socket-OOP-B/**'
-              - '.github/workflows/**'
-
-  compile:
-    name: Compile (${{ matrix.group }} / ${{ matrix.target }})
-    runs-on: ubuntu-latest
-    needs: changes
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - group: legacy
-            target: linux-x86_64
-            cxx: g++
-            apt_pkgs: build-essential
-            artifact_name: socket-binaries-linux-x86_64
-          - group: legacy
-            target: linux-aarch64
-            cxx: aarch64-linux-gnu-g++
-            apt_pkgs: build-essential g++-aarch64-linux-gnu
-            artifact_name: socket-binaries-linux-aarch64
-          - group: oop-a
-            target: linux-x86_64
-            cxx: g++
-            apt_pkgs: build-essential
-            artifact_name: socket-binaries-oop-a-linux-x86_64
-          - group: oop-a
-            target: linux-aarch64
-            cxx: aarch64-linux-gnu-g++
-            apt_pkgs: build-essential g++-aarch64-linux-gnu
-            artifact_name: socket-binaries-oop-a-linux-aarch64
-          - group: oop-b
-            target: linux-x86_64
-            cxx: g++
-            apt_pkgs: build-essential
-            artifact_name: socket-binaries-oop-b-linux-x86_64
-          - group: oop-b
-            target: linux-aarch64
-            cxx: aarch64-linux-gnu-g++
-            apt_pkgs: build-essential g++-aarch64-linux-gnu
-            artifact_name: socket-binaries-oop-b-linux-aarch64
-
-    env:
-      # Build when this group's sources changed, or on manual dispatch.
-      SHOULD_BUILD: ${{ needs.changes.outputs[matrix.group] == 'true' || github.event_name == 'workflow_dispatch' }}
-
-    steps:
-      - name: Checkout code
-        if: env.SHOULD_BUILD == 'true'
-        uses: actions/checkout@v4
-
-      - name: Install build tools
-        if: env.SHOULD_BUILD == 'true'
+      # ------------------------------------------------------------------
+      # 2. Install basic tooling needed by the test harness
+      # ------------------------------------------------------------------
+      - name: Install base dependencies
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ${{ matrix.apt_pkgs }}
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential gcc curl iproute2 kmod can-utils
 
-      - name: Compile legacy Pi A and Pi B
-        if: env.SHOULD_BUILD == 'true' && matrix.group == 'legacy'
-        working-directory: PI/Socket
-        run: |
-          set -euo pipefail
-          mkdir -p build/${{ matrix.target }}
-          OUT=build/${{ matrix.target }}
-          CXX="${{ matrix.cxx }}"
-          CXXFLAGS="-O2 -std=c++17 -pthread -Wall -Wextra"
-
-          echo "Compiling pi_a.cpp -> $OUT/RPi_A"
-          $CXX $CXXFLAGS pi_a.cpp -o "$OUT/RPi_A"
-
-          echo "Compiling pi_b.cpp -> $OUT/RPi_B"
-          $CXX $CXXFLAGS pi_b.cpp -o "$OUT/RPi_B"
-
-          if [ "${{ matrix.target }}" = "linux-x86_64" ]; then
-            cp "$OUT/RPi_A" build/RPi_A
-            cp "$OUT/RPi_B" build/RPi_B
-          fi
-
-          file "$OUT/RPi_A" "$OUT/RPi_B"
-
-      - name: Compile OOP Pi A
-        if: env.SHOULD_BUILD == 'true' && matrix.group == 'oop-a'
-        run: |
-          set -euo pipefail
-          CXX="${{ matrix.cxx }}"
-          CXXFLAGS="-O2 -std=c++17 -pthread -Wall -Wextra"
-
-          mkdir -p PI/Socket-OOP-A/build/${{ matrix.target }}
-
-          echo "Compiling PI/Socket-OOP-A -> PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A"
-          $CXX $CXXFLAGS \
-            PI/Socket-OOP-A/*.cpp \
-            -o PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A
-
-          cp PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A-oop-${{ matrix.target }}
-          file PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A-oop-${{ matrix.target }}
-
-      - name: Compile OOP Pi B
-        if: env.SHOULD_BUILD == 'true' && matrix.group == 'oop-b'
-        run: |
-          set -euo pipefail
-          CXX="${{ matrix.cxx }}"
-          CXXFLAGS="-O2 -std=c++17 -pthread -Wall -Wextra"
-
-          mkdir -p PI/Socket-OOP-B/build/${{ matrix.target }}
-
-          echo "Compiling PI/Socket-OOP-B -> PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B"
-          $CXX $CXXFLAGS \
-            PI/Socket-OOP-B/*.cpp \
-            -o PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B
-
-          cp PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B-oop-${{ matrix.target }}
-          file PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B-oop-${{ matrix.target }}
-
-      - name: Upload legacy x86_64 artifacts
-        if: env.SHOULD_BUILD == 'true' && matrix.group == 'legacy' && matrix.target == 'linux-x86_64'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: |
-            PI/Socket/build/RPi_A
-            PI/Socket/build/RPi_B
-            PI/Socket/build/${{ matrix.target }}/RPi_A
-            PI/Socket/build/${{ matrix.target }}/RPi_B
-          if-no-files-found: error
-
-      - name: Upload legacy aarch64 artifacts
-        if: env.SHOULD_BUILD == 'true' && matrix.group == 'legacy' && matrix.target == 'linux-aarch64'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: |
-            PI/Socket/build/${{ matrix.target }}/RPi_A
-            PI/Socket/build/${{ matrix.target }}/RPi_B
-          if-no-files-found: error
-
-      - name: Upload OOP Pi A artifacts
-        if: env.SHOULD_BUILD == 'true' && matrix.group == 'oop-a'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A-oop-${{ matrix.target }}
-          if-no-files-found: error
-
-      - name: Upload OOP Pi B artifacts
-        if: env.SHOULD_BUILD == 'true' && matrix.group == 'oop-b'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B-oop-${{ matrix.target }}
-          if-no-files-found: error
-
-  publish:
-    name: Publish release assets
-    runs-on: ubuntu-latest
-    needs: [changes, compile]
-    if: >-
-      !cancelled() &&
-      needs.compile.result == 'success' &&
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-
-    steps:
-      - name: Remove legacy assets from release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          for asset in \
-            RPi_A-legacy-linux-x86_64 \
-            RPi_B-legacy-linux-x86_64 \
-            RPi_A-legacy-linux-aarch64 \
-            RPi_B-legacy-linux-aarch64; do
-            gh release delete-asset latest-build "$asset" --yes --repo "$GITHUB_REPOSITORY" || true
-          done
-
-      - name: Download compiled OOP artifacts
-        uses: actions/download-artifact@v4
+      # ------------------------------------------------------------------
+      # 3. Install the kernel "extras" package that contains vcan.ko
+      #
+      #    The Azure-flavoured kernel used by GitHub-hosted runners
+      #    (linux-image-<ver>-azure) ships a *minimal* module set.
+      #    vcan / can_raw live in linux-modules-extra-<ver>-azure and
+      #    must be installed explicitly, otherwise:
+      #        modprobe: FATAL: Module vcan not found in directory
+      #        /lib/modules/<ver>-azure
+      #
+      #    We try the exact running kernel first, then fall back to the
+      #    generic meta-package.  The whole step is allowed to fail so
+      #    that a broken APT mirror never blocks the workflow — the next
+      #    step will report what really happened.
+      # ------------------------------------------------------------------
+      - name: Install vcan kernel module (linux-modules-extra)
         continue-on-error: true
-        with:
-          pattern: socket-binaries-oop-*
-          path: .
-          merge-multiple: true
-
-      - name: Collect release assets
-        id: collect
         run: |
-          set -euo pipefail
-          mkdir -p release-assets
-          find . -path ./release-assets -prune -o -type f -name 'RPi_[AB]-oop-linux-*' -print \
-            | while read -r src; do cp "$src" "release-assets/$(basename "$src")"; done
-          count=$(find release-assets -type f | wc -l)
-          echo "count=$count" >> "$GITHUB_OUTPUT"
-          ls -l release-assets || true
+          set -x
+          KREL="$(uname -r)"
+          echo "Running kernel: $KREL"
+          sudo apt-get install -y --no-install-recommends \
+            "linux-modules-extra-${KREL}" \
+            || sudo apt-get install -y --no-install-recommends \
+                 linux-modules-extra-azure \
+            || sudo apt-get install -y --no-install-recommends \
+                 linux-modules-extra-$(uname -r | sed 's/-azure$//')-generic \
+            || true
+          ls /lib/modules/"${KREL}"/kernel/drivers/net/can/ 2>/dev/null || true
+          ls /lib/modules/"${KREL}"/kernel/net/can/ 2>/dev/null || true
 
-      - name: Publish raw binaries to "latest-build" Release
-        if: steps.collect.outputs.count != '0'
-        uses: softprops/action-gh-release@v2
+      # ------------------------------------------------------------------
+      # 4. Set up a virtual CAN interface named "can0".
+      #
+      #    Pi-A.c opens a SocketCAN socket and calls
+      #        ioctl(fd, SIOCGIFINDEX, &ifr)   with ifr.ifr_name = "can0"
+      #    On a hosted runner there is no real CAN hardware, so without
+      #    a vcan interface that ioctl fails with "No such device" and
+      #    Pi-A exits *before* it opens its TCP listener.  Pi-B then
+      #    can't reach it and every socket test fails.
+      #
+      #    The step is allowed to fail (continue-on-error) so we always
+      #    reach the test runner and see Pi-A's real output in the logs.
+      # ------------------------------------------------------------------
+      - name: Create virtual CAN interface (can0)
+        continue-on-error: true
+        run: |
+          set -x
+          sudo modprobe vcan || {
+            echo "::warning::vcan module unavailable on this runner kernel ($(uname -r)). Pi-A may fail SIOCGIFINDEX."
+            exit 0
+          }
+          sudo modprobe can_raw || true
+          if ! ip link show can0 >/dev/null 2>&1; then
+            sudo ip link add dev can0 type vcan || {
+              echo "::warning::could not create vcan can0"
+              exit 0
+            }
+          fi
+          sudo ip link set up can0 || true
+          ip -details link show can0 || true
+
+      # ------------------------------------------------------------------
+      # 5. Download the pre-built binaries from the compile workflow
+      # ------------------------------------------------------------------
+      - name: Download Pi-A / Pi-B binaries
+        uses: dawidd6/action-download-artifact@v6
         with:
-          tag_name: latest-build
-          name: Latest Build
-          body: |
-            Automated build of the OOP socket binaries.
-            Commit: ${{ github.sha }}
-          files: release-assets/*
-          fail_on_unmatched_files: false
+          workflow: compile-socket.yml
+          workflow_conclusion: success
+          name: socket-binaries
+          path: PI/Socket/build
+          if_no_artifact_found: warn
+
+      - name: Make binaries executable
+        run: |
+          set -e
+          ls -la PI/Socket/build || true
+          chmod +x PI/Socket/build/RPi_A PI/Socket/build/RPi_B 2>/dev/null || true
+
+      # ------------------------------------------------------------------
+      # 6. Run the end-to-end test script
+      # ------------------------------------------------------------------
+      - name: Run socket tests
+        env:
+          PI_A_BINARY: ${{ github.workspace }}/PI/Socket/build/RPi_A
+          PI_B_BINARY: ${{ github.workspace }}/PI/Socket/build/RPi_B
+        run: |
+          bash Code-Tests/Socket/test_socket.sh
+
+      # ------------------------------------------------------------------
+      # 7. Upload logs on failure for post-mortem
+      # ------------------------------------------------------------------
+      - name: Upload server logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: socket-test-logs
+          path: |
+            /tmp/pi1_out.txt
+            /tmp/pi2_out.txt
+          if-no-files-found: ignore
