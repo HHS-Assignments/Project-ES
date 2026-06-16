@@ -1,16 +1,10 @@
-# Test Socket Binaries
-#
-# Downloads the compiled x86_64 binaries produced by the
-# "Compiling Socket Binaries" workflow and runs the end-to-end test
-# suite in Code-Tests/Socket/test_socket.sh.
-#
-# This workflow is triggered automatically when "Compiling Socket Binaries"
-# completes. It only proceeds if the compile job succeeded, so there is no
-# point in running tests against a broken build.
 name: Testing Socket Binaries
+
+# Triggered automatically after the "Compile Socket Binaries" workflow
+# finishes successfully, or manually from the Actions tab.
 on:
   workflow_run:
-    workflows: ["Compiling Socket Binaries"]
+    workflows: ["Compile Socket Binaries"]
     types:
       - completed
   workflow_dispatch:
@@ -20,60 +14,86 @@ permissions:
   contents: read
 jobs:
   test:
-    name: Testing Socket Binaries
-    # Only run when the compile workflow succeeded, or on manual dispatch.
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+    # Only run when the upstream compile workflow succeeded.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    timeout-minutes: 10
+
     steps:
-      # The compile workflow only rebuilds the legacy binaries when their
-      # sources changed. If the artifact is missing, there is nothing to test.
-      - name: Check whether legacy binaries were rebuilt
-        id: check
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # ------------------------------------------------------------------
+      # 1. Checkout repo (we need the test script + sources)
+      # ------------------------------------------------------------------
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      # ------------------------------------------------------------------
+      # 2. Install tooling needed by the test harness
+      # ------------------------------------------------------------------
+      - name: Install dependencies
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-            echo "Manual dispatch, skipping artifact check"
-            exit 0
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential gcc curl iproute2 kmod can-utils
+
+      # ------------------------------------------------------------------
+      # 3. Set up a virtual CAN interface named "can0"
+      #
+      #    Pi-A.c opens a SocketCAN socket and calls
+      #        ioctl(fd, SIOCGIFINDEX, &ifr)   with ifr.ifr_name = "can0"
+      #
+      #    On a GitHub-hosted runner there is no real CAN hardware, so
+      #    that ioctl fails with "No such device" and Pi-A exits *before*
+      #    it ever opens its TCP listener.  Pi-B then can't reach it and
+      #    every socket test fails.  Creating a vcan device named can0
+      #    satisfies the ioctl and lets Pi-A continue normally.
+      # ------------------------------------------------------------------
+      - name: Create virtual CAN interface (can0)
+        run: |
+          set -e
+          sudo modprobe vcan || true
+          if ! ip link show can0 >/dev/null 2>&1; then
+            sudo ip link add dev can0 type vcan
           fi
-          found=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/${{ github.event.workflow_run.id }}/artifacts" \
-            --jq '[.artifacts[].name] | contains(["socket-binaries-linux-x86_64"])')
-          echo "found=$found" >> "$GITHUB_OUTPUT"
-          echo "Legacy artifact present: $found"
-      # Check out the same commit that was compiled.
-      - name: Checkout code
-        if: steps.check.outputs.found == 'true'
-        uses: actions/checkout@v4.1.7
+          sudo ip link set up can0
+          ip -details link show can0
+
+      # ------------------------------------------------------------------
+      # 4. Download the pre-built binaries produced by the compile workflow
+      # ------------------------------------------------------------------
+      - name: Download Pi-A / Pi-B binaries
+        uses: dawidd6/action-download-artifact@v6
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-      - name: Install test dependencies
-        if: steps.check.outputs.found == 'true'
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq curl iproute2
-      # Download the x86_64 binaries compiled by the upstream workflow.
-      # path matches where the compile workflow placed the flat copies:
-      # PI/Socket/build/RPi_A and PI/Socket/build/RPi_B.
-      - name: Download linux-x86_64 socket binaries
-        if: steps.check.outputs.found == 'true'
-        uses: actions/download-artifact@v4
-        with:
-          name: socket-binaries-linux-x86_64
+          workflow: compile-socket.yml
+          workflow_conclusion: success
+          name: socket-binaries
           path: PI/Socket/build
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          if_no_artifact_found: warn
+
       - name: Make binaries executable
-        if: steps.check.outputs.found == 'true'
-        run: chmod +x PI/Socket/build/RPi_A PI/Socket/build/RPi_B
-      # Run the test suite using the pre-built binaries, no recompilation.
-      - name: Run end-to-end socket tests
-        if: steps.check.outputs.found == 'true'
+        run: |
+          set -e
+          ls -la PI/Socket/build || true
+          chmod +x PI/Socket/build/RPi_A PI/Socket/build/RPi_B 2>/dev/null || true
+
+      # ------------------------------------------------------------------
+      # 5. Run the end-to-end test script
+      # ------------------------------------------------------------------
+      - name: Run socket tests
         env:
           PI_A_BINARY: ${{ github.workspace }}/PI/Socket/build/RPi_A
           PI_B_BINARY: ${{ github.workspace }}/PI/Socket/build/RPi_B
-        run: bash Code-Tests/Socket/test_socket.sh
+        run: |
+          bash Code-Tests/Socket/test_socket.sh
+
+      # ------------------------------------------------------------------
+      # 6. Upload logs on failure for post-mortem
+      # ------------------------------------------------------------------
+      - name: Upload server logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: socket-test-logs
+          path: |
+            /tmp/pi1_out.txt
+            /tmp/pi2_out.txt
+          if-no-files-found: ignore
