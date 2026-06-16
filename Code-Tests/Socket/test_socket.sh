@@ -65,14 +65,15 @@ pass() { echo "[PASS] $*"; PASS=$((PASS + 1)); }
 fail() { echo "[FAIL] $*"; FAIL=$((FAIL + 1)); }
 
 cleanup() {
-    [[ -n "${B_PID:-}" ]] && kill "$B_PID" 2>/dev/null || true
-    [[ -n "${A_PID:-}" ]] && kill "$A_PID" 2>/dev/null || true
-    [[ -n "${TAILA:-}" ]] && kill "$TAILA" 2>/dev/null || true
-    [[ -n "${TAILB:-}" ]] && kill "$TAILB" 2>/dev/null || true
+    [[ -n "${B_PID:-}" ]]  && kill "$B_PID"  2>/dev/null || true
+    [[ -n "${A_PID:-}" ]]  && kill "$A_PID"  2>/dev/null || true
+    [[ -n "${TAILA:-}" ]]  && kill "$TAILA"  2>/dev/null || true
+    [[ -n "${TAILB:-}" ]]  && kill "$TAILB"  2>/dev/null || true
     # Only delete binaries that we compiled ourselves.
-    [[ "$COMPILED_B" == true ]] && rm -f "$B_BIN" || true
-    [[ "$COMPILED_A" == true ]] && rm -f "$A_BIN" || true
+    [[ "${COMPILED_B:-false}" == true ]] && rm -f "$B_BIN" || true
+    [[ "${COMPILED_A:-false}" == true ]] && rm -f "$A_BIN" || true
     rm -f /tmp/pi2_out.txt /tmp/pi1_out.txt
+    rm -f "${PIA_FIFO:-/tmp/piA_in}" "${PIB_FIFO:-/tmp/piB_in}"
 }
 trap cleanup EXIT
 
@@ -80,10 +81,17 @@ trap cleanup EXIT
 PIA_FIFO=/tmp/piA_in
 PIB_FIFO=/tmp/piB_in
 
-cleanup_fifos() {
-    rm -f "$PIA_FIFO" "$PIB_FIFO"
+# Non-blocking write to a FIFO.  If the reader (Pi-A or Pi-B) is not
+# actively consuming stdin, a write to the FIFO will block forever.  We
+# wrap the write in `timeout` and run it in the background so the test
+# script can never get stuck on a stalled binary.
+fifo_write() {
+    local fifo="$1"
+    local line="$2"
+    # 2 second cap; runs in background so the test never blocks.
+    ( timeout 2 bash -c "printf '%s\n' \"\$0\" > \"\$1\"" "$line" "$fifo" \
+        || echo "[WARN] FIFO write to $fifo timed out" >&2 ) &
 }
-trap cleanup_fifos EXIT
 
 # ── Build (only when pre-built binaries were not provided) ─────────────────
 
@@ -108,6 +116,8 @@ fi
 log "Creating FIFOs for simulated stdin: $PIA_FIFO, $PIB_FIFO"
 rm -f "$PIA_FIFO" "$PIB_FIFO"
 mkfifo "$PIA_FIFO" "$PIB_FIFO"
+
+# Keep the write end of each FIFO open so the binary's stdin never sees EOF.
 tail -f /dev/null > "$PIA_FIFO" &
 TAILA=$!
 tail -f /dev/null > "$PIB_FIFO" &
@@ -136,6 +146,9 @@ for i in $(seq 1 20); do
     sleep 0.5
 done
 
+# Give the back-channel (Pi-A → Pi-B) a moment to establish.
+sleep 1
+
 # ── Test helpers ───────────────────────────────────────────────────────────
 
 send_post() {
@@ -146,18 +159,21 @@ send_post() {
         -d "$body" || echo ""
 }
 
+# Wait up to <timeout> seconds for <needle> to appear in <file>.
 wait_for_output() {
     local file="$1"
     local needle="$2"
     local timeout="${3:-5}"
-    local elapsed=0
-    while [[ "$elapsed" -lt "$timeout" ]]; do
+    # Loop runs at 0.2s granularity so the wall-clock timeout is accurate.
+    local iterations=$(( timeout * 5 ))
+    local i
+    for ((i = 0; i < iterations; i++)); do
         grep -qF "$needle" "$file" && return 0
-        sleep 0.5
-        elapsed=$((elapsed + 1))
+        sleep 0.2
     done
     return 1
 }
+
 # ── Test 1: WMos button press (numeric Data) ──────────────────────────────
 log "Test 1: WMos button press with numeric Data"
 
@@ -273,7 +289,7 @@ fi
 
 # ── Test 8: Pi-B typed stdin command forwarded to Pi-A ─────────────────────
 log "Test 8: Pi-B types 'Wmos,FromB,99' -> forwarded to Pi-A"
-printf '%s\n' 'Wmos,FromB,99' > "$PIB_FIFO"
+fifo_write "$PIB_FIFO" 'Wmos,FromB,99'
 if wait_for_output /tmp/pi2_out.txt "FromB" 5 && wait_for_output /tmp/pi2_out.txt "99" 5; then
     pass "Pi-A received and printed command from Pi-B via stdin"
 else
@@ -284,7 +300,7 @@ fi
 
 # ── Test 9: Pi-A typed stdin command forwarded to Pi-B ─────────────────────
 log "Test 9: Pi-A types 'Wmos,FromA,123' -> forwarded to Pi-B"
-printf '%s\n' 'Wmos,FromA,123' > "$PIA_FIFO"
+fifo_write "$PIA_FIFO" 'Wmos,FromA,123'
 if wait_for_output /tmp/pi1_out.txt "FromA" 5 && wait_for_output /tmp/pi1_out.txt "123" 5; then
     pass "Pi-B received and printed command from Pi-A via stdin"
 else
@@ -292,6 +308,9 @@ else
     echo "--- Pi-B output ---"
     cat /tmp/pi1_out.txt
 fi
+
+# Reap any background FIFO writers so the script exits cleanly.
+wait 2>/dev/null || true
 
 # ── Summary ────────────────────────────────────────────────────────────────
 echo ""
