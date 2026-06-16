@@ -2,7 +2,7 @@
 #
 # Compiles the socket code for linux-x86_64 (native) and linux-aarch64
 # (Raspberry Pi). Each group (legacy, oop-a, oop-b) is only recompiled
-# when its own sources changed, or on manual dispatch.
+# when its own sources changed (or on manual dispatch).
 #
 # The legacy binaries are still compiled for the socket test workflow
 # (which downloads the historic socket-binaries-linux-x86_64 artifact),
@@ -151,8 +151,6 @@ jobs:
 
           mkdir -p PI/Socket-OOP-A/build/${{ matrix.target }}
 
-          # Alle .cpp-bestanden in de map worden meegecompileerd, zodat
-          # nieuwe klassen niet handmatig toegevoegd hoeven te worden.
           echo "Compiling PI/Socket-OOP-A -> PI/Socket-OOP-A/build/${{ matrix.target }}/RPi_A"
           $CXX $CXXFLAGS \
             PI/Socket-OOP-A/*.cpp \
@@ -170,8 +168,6 @@ jobs:
 
           mkdir -p PI/Socket-OOP-B/build/${{ matrix.target }}
 
-          # Alle .cpp-bestanden in de map worden meegecompileerd, zodat
-          # nieuwe klassen niet handmatig toegevoegd hoeven te worden.
           echo "Compiling PI/Socket-OOP-B -> PI/Socket-OOP-B/build/${{ matrix.target }}/RPi_B"
           $CXX $CXXFLAGS \
             PI/Socket-OOP-B/*.cpp \
@@ -228,8 +224,6 @@ jobs:
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
 
     steps:
-      # Verwijder de oude legacy-assets uit de release zodat alleen de
-      # OOP-binaries zichtbaar blijven in het Releases-tabblad.
       - name: Remove legacy assets from release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -242,10 +236,6 @@ jobs:
             gh release delete-asset latest-build "$asset" --yes --repo "$GITHUB_REPOSITORY" || true
           done
 
-      # Alleen de OOP-artifacts worden gepubliceerd. Bij selectieve builds
-      # zijn niet alle artifacts aanwezig: bestaande release-assets met
-      # dezelfde naam blijven dan gewoon staan (alleen gewijzigde binaries
-      # worden overschreven).
       - name: Download compiled OOP artifacts
         uses: actions/download-artifact@v4
         continue-on-error: true
@@ -273,4 +263,6 @@ jobs:
           name: Latest Build
           body: |
             Automated build of the OOP socket binaries.
-            Commit: ${{
+            Commit: ${{ github.sha }}
+          files: release-assets/*
+          fail_on_unmatched_files: false
