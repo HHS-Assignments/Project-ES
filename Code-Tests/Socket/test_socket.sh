@@ -15,22 +15,22 @@
 #   0  All tests passed.
 #   1  One or more tests failed.
 
-set -uo pipefail
+set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOCKET_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/Socket"
 
 # Use pre-built binaries if supplied, otherwise compile locally.
 # Backward compatible env vars are still supported:
 #   PI_B_BINARY preferred over B_BINARY/PI1_BINARY
 #   PI_A_BINARY preferred over A_BINARY/PI2_BINARY
-if [ -n "${PI_B_BINARY:-}" ] && [ -x "${PI_B_BINARY}" ]; then
+if [[ -n "${PI_B_BINARY:-}" && -x "${PI_B_BINARY}" ]]; then
     B_BIN="${PI_B_BINARY}"
     COMPILED_B=false
-elif [ -n "${B_BINARY:-}" ] && [ -x "${B_BINARY}" ]; then
+elif [[ -n "${B_BINARY:-}" && -x "${B_BINARY}" ]]; then
     B_BIN="${B_BINARY}"
     COMPILED_B=false
-elif [ -n "${PI1_BINARY:-}" ] && [ -x "${PI1_BINARY}" ]; then
+elif [[ -n "${PI1_BINARY:-}" && -x "${PI1_BINARY}" ]]; then
     B_BIN="${PI1_BINARY}"
     COMPILED_B=false
 else
@@ -38,13 +38,13 @@ else
     COMPILED_B=true
 fi
 
-if [ -n "${PI_A_BINARY:-}" ] && [ -x "${PI_A_BINARY}" ]; then
+if [[ -n "${PI_A_BINARY:-}" && -x "${PI_A_BINARY}" ]]; then
     A_BIN="${PI_A_BINARY}"
     COMPILED_A=false
-elif [ -n "${A_BINARY:-}" ] && [ -x "${A_BINARY}" ]; then
+elif [[ -n "${A_BINARY:-}" && -x "${A_BINARY}" ]]; then
     A_BIN="${A_BINARY}"
     COMPILED_A=false
-elif [ -n "${PI2_BINARY:-}" ] && [ -x "${PI2_BINARY}" ]; then
+elif [[ -n "${PI2_BINARY:-}" && -x "${PI2_BINARY}" ]]; then
     A_BIN="${PI2_BINARY}"
     COMPILED_A=false
 else
@@ -65,13 +65,13 @@ pass() { echo "[PASS] $*"; PASS=$((PASS + 1)); }
 fail() { echo "[FAIL] $*"; FAIL=$((FAIL + 1)); }
 
 cleanup() {
-    [ -n "${B_PID:-}" ] && kill "$B_PID" 2>/dev/null || true
-    [ -n "${A_PID:-}" ] && kill "$A_PID" 2>/dev/null || true
-    [ -n "${TAILA:-}" ] && kill "$TAILA" 2>/dev/null || true
-    [ -n "${TAILB:-}" ] && kill "$TAILB" 2>/dev/null || true
+    [[ -n "${B_PID:-}" ]] && kill "$B_PID" 2>/dev/null || true
+    [[ -n "${A_PID:-}" ]] && kill "$A_PID" 2>/dev/null || true
+    [[ -n "${TAILA:-}" ]] && kill "$TAILA" 2>/dev/null || true
+    [[ -n "${TAILB:-}" ]] && kill "$TAILB" 2>/dev/null || true
     # Only delete binaries that we compiled ourselves.
-    [ "$COMPILED_B" = true ] && rm -f "$B_BIN" || true
-    [ "$COMPILED_A" = true ] && rm -f "$A_BIN" || true
+    [[ "$COMPILED_B" == true ]] && rm -f "$B_BIN" || true
+    [[ "$COMPILED_A" == true ]] && rm -f "$A_BIN" || true
     rm -f /tmp/pi2_out.txt /tmp/pi1_out.txt
 }
 trap cleanup EXIT
@@ -87,7 +87,7 @@ trap cleanup_fifos EXIT
 
 # ── Build (only when pre-built binaries were not provided) ─────────────────
 
-if [ "$COMPILED_B" = true ]; then
+if [[ "$COMPILED_B" == true ]]; then
     log "Compiling Pi-B..."
     gcc -O2 -o "$B_BIN" "$SOCKET_DIR/Pi-B.c" "$SOCKET_DIR/cJSON.c" \
         -lm -lpthread || { echo "[FAIL] Compilation of Pi-B failed"; exit 1; }
@@ -95,7 +95,7 @@ else
     log "Using pre-built Pi-B: $B_BIN"
 fi
 
-if [ "$COMPILED_A" = true ]; then
+if [[ "$COMPILED_A" == true ]]; then
     log "Compiling Pi-A..."
     gcc -O2 -o "$A_BIN" "$SOCKET_DIR/Pi-A.c" "$SOCKET_DIR/cJSON.c" \
         -lm -lpthread || { echo "[FAIL] Compilation of Pi-A failed"; exit 1; }
@@ -130,8 +130,6 @@ log "Starting Pi-B on port $PI1_PORT forwarding to 127.0.0.1:$PI2_PORT..."
 B_PID=$!
 
 # Wait until Pi-B's WMos port is in LISTEN state.
-# Pi-B only reaches listen() after successfully connecting to Pi-A,
-# so this also confirms the Pi-B ↔ Pi-A connection is up.
 log "Waiting for Pi-B to be ready..."
 for i in $(seq 1 20); do
     ss -tlnp 2>/dev/null | grep -q ":${PI1_PORT}" && break
@@ -140,31 +138,26 @@ done
 
 # ── Test helpers ───────────────────────────────────────────────────────────
 
-# send_post <json_body>
-# Sends an HTTP POST to Pi-B and returns the response body.
 send_post() {
     local body="$1"
-        curl -s --max-time 5 \
-            -X POST "http://127.0.0.1:${PI1_PORT}/" \
-         -H "Content-Type: application/json" \
-         -d "$body" 2>/dev/null || echo ""
+    curl -s --max-time 5 \
+        -X POST "http://127.0.0.1:${PI1_PORT}/" \
+        -H "Content-Type: application/json" \
+        -d "$body" || echo ""
 }
 
-# wait_for_output <file> <string> [<timeout_seconds>]
-# Polls <file> until <string> appears or the timeout expires.
 wait_for_output() {
     local file="$1"
     local needle="$2"
     local timeout="${3:-5}"
     local elapsed=0
-    while [ "$elapsed" -lt "$timeout" ]; do
-        grep -qF "$needle" "$file" 2>/dev/null && return 0
+    while [[ "$elapsed" -lt "$timeout" ]]; do
+        grep -qF "$needle" "$file" && return 0
         sleep 0.5
         elapsed=$((elapsed + 1))
     done
     return 1
 }
-
 # ── Test 1: WMos button press (numeric Data) ──────────────────────────────
 log "Test 1: WMos button press with numeric Data"
 
@@ -306,4 +299,4 @@ echo "==============================="
 echo "Results: $PASS passed, $FAIL failed"
 echo "==============================="
 
-[ "$FAIL" -eq 0 ] && exit 0 || exit 1
+[[ "$FAIL" -eq 0 ]] && exit 0 || exit 1
