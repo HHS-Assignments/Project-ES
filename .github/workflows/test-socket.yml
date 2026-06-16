@@ -2,7 +2,7 @@
 #
 # Downloads the compiled x86_64 binaries produced by the
 # "Compiling Socket Binaries" workflow and runs the end-to-end test
-# suite in Tests/Socket/test_socket.sh.
+# suite in Code-Tests/Socket/test_socket.sh.
 #
 # This workflow is triggered automatically when "Compiling Socket Binaries"
 # completes. It only proceeds if the compile job succeeded, so there is no
@@ -57,21 +57,23 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq curl iproute2
       # Download the x86_64 binaries compiled by the upstream workflow.
+      # path matches where the compile workflow placed the flat copies:
+      # PI/Socket/build/RPi_A and PI/Socket/build/RPi_B.
       - name: Download linux-x86_64 socket binaries
         if: steps.check.outputs.found == 'true'
         uses: actions/download-artifact@v4
         with:
           name: socket-binaries-linux-x86_64
-          path: .
+          path: PI/Socket/build
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Make binaries executable
         if: steps.check.outputs.found == 'true'
-        run: chmod +x PI/Socket/build/RPi_B PI/Socket/build/RPi_A
-      # Run the test suite using the pre-built binaries (no recompilation).
+        run: chmod +x PI/Socket/build/RPi_A PI/Socket/build/RPi_B
+      # Run the test suite using the pre-built binaries, no recompilation.
       - name: Run end-to-end socket tests
         if: steps.check.outputs.found == 'true'
         env:
-          PI_B_BINARY: ${{ github.workspace }}/PI/Socket/build/RPi_B
           PI_A_BINARY: ${{ github.workspace }}/PI/Socket/build/RPi_A
+          PI_B_BINARY: ${{ github.workspace }}/PI/Socket/build/RPi_B
         run: bash Code-Tests/Socket/test_socket.sh

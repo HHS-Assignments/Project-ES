@@ -2,7 +2,7 @@
 #
 # Compiles the socket code for linux-x86_64 (native) and linux-aarch64
 # (Raspberry Pi). Each group (legacy, oop-a, oop-b) is only recompiled
-# when its own sources changed (or on manual dispatch).
+# when its own sources changed, or on manual dispatch.
 #
 # The legacy binaries are still compiled for the socket test workflow
 # (which downloads the historic socket-binaries-linux-x86_64 artifact),
@@ -273,6 +273,4 @@ jobs:
           name: Latest Build
           body: |
             Automated build of the OOP socket binaries.
-            Commit: ${{ github.sha }}
-          files: release-assets/*
-          fail_on_unmatched_files: false
+            Commit: ${{
