@@ -5,32 +5,29 @@
 # suite in Tests/Socket/test_socket.sh.
 #
 # This workflow is triggered automatically when "Compiling Socket Binaries"
-# completes — it only proceeds if the compile job succeeded, so there is no
+# completes. It only proceeds if the compile job succeeded, so there is no
 # point in running tests against a broken build.
-
 name: Testing Socket Binaries
-
 on:
   workflow_run:
     workflows: ["Compiling Socket Binaries"]
     types:
       - completed
   workflow_dispatch:
-
 permissions:
   # Needed to download artifacts from the triggering workflow run.
   actions: read
   contents: read
-
 jobs:
   test:
     name: Testing Socket Binaries
-    # Only run when the compile workflow succeeded.
-    if: github.event.workflow_run.conclusion == 'success'
+    # Only run when the compile workflow succeeded, or on manual dispatch.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
     steps:
       # The compile workflow only rebuilds the legacy binaries when their
       # sources changed. If the artifact is missing, there is nothing to test.
@@ -39,24 +36,26 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "Manual dispatch, skipping artifact check"
+            exit 0
+          fi
           found=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/${{ github.event.workflow_run.id }}/artifacts" \
             --jq '[.artifacts[].name] | contains(["socket-binaries-linux-x86_64"])')
           echo "found=$found" >> "$GITHUB_OUTPUT"
           echo "Legacy artifact present: $found"
-
       # Check out the same commit that was compiled.
       - name: Checkout code
         if: steps.check.outputs.found == 'true'
         uses: actions/checkout@v4.1.7
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Install test dependencies
         if: steps.check.outputs.found == 'true'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq curl iproute2
-
       # Download the x86_64 binaries compiled by the upstream workflow.
       - name: Download linux-x86_64 socket binaries
         if: steps.check.outputs.found == 'true'
@@ -66,11 +65,9 @@ jobs:
           path: .
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Make binaries executable
         if: steps.check.outputs.found == 'true'
         run: chmod +x PI/Socket/build/RPi_B PI/Socket/build/RPi_A
-
       # Run the test suite using the pre-built binaries (no recompilation).
       - name: Run end-to-end socket tests
         if: steps.check.outputs.found == 'true'
